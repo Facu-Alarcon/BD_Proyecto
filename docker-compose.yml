@@ -1,0 +1,72 @@
+# docker-compose.yml
+# Orquesta tres contenedores: MySQL, phpMyAdmin y el entorno de Django.
+#
+# El contenedor "web" usa la imagen oficial de Python SIN Dockerfile:
+# Django y las librerias se instalan MANUALMENTE entrando al contenedor
+# con  ->  docker exec -i -t escuela_web bash
+
+services:
+
+  # ---------- Servicio 1: Base de datos MySQL ----------
+  db:
+    image: mysql:8.0
+    container_name: escuela_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ---------- Servicio 2: phpMyAdmin (administrador web de MySQL) ----------
+  phpmyadmin:
+    image: phpmyadmin:5
+    container_name: escuela_phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+
+  # ---------- Servicio 3: Entorno de Django (Python) ----------
+  web:
+    image: python:3.11
+    container_name: escuela_web
+    restart: always
+    # Carpeta de trabajo dentro del contenedor
+    working_dir: /opt/app
+    # Enlaza la carpeta local con el contenedor (codigo compartido)
+    volumes:
+      - .:/opt/app
+    # Puerto del servidor de desarrollo de Django
+    ports:
+      - "8000:8000"
+    # Variables de entorno que leera settings.py para conectarse a MySQL
+    environment:
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_HOST: db
+      DB_PORT: 3306
+    # Mantiene el contenedor encendido para poder entrar con docker exec
+    stdin_open: true
+    tty: true
+    depends_on:
+      db:
+        condition: service_healthy
+
+# Volumen nombrado: conserva los datos de MySQL aunque se borre el contenedor
+volumes:
+  db_data:

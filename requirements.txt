@@ -1,0 +1,8 @@
+# Librerias del proyecto. Se instalan MANUALMENTE dentro del contenedor con:
+#   pip install -r requirements.txt
+#
+# PyMySQL es un conector MySQL escrito 100% en Python: no necesita compilar
+# nada, ideal para una instalacion manual rapida dentro del contenedor.
+
+Django==4.2.16
+PyMySQL==1.1.1

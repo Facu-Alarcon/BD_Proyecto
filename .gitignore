@@ -1,0 +1,15 @@
+# Variables de entorno (no subir credenciales al repositorio)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Entornos virtuales
+venv/
+.venv/
+
+# Editores
+.vscode/
+.idea/
