@@ -15,3 +15,12 @@ class Puesto(models.Model):
 
     def __str__(self):
         return self.nombre_puesto
+    
+class Empleado(models.Model):
+    nombre_emp = models.CharField(max_length=50)
+    apellido_emp = models.CharField(max_length=50)
+    telefono_emp = models.CharField(max_length=20)
+    email_emp = models.EmailField()
+    
+    def __str__(self):
+        return f'{self.nombre_emp}{self.apellido_emp}'
