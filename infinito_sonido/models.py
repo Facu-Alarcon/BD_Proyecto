@@ -4,23 +4,14 @@ from django.db import models
 Van los modelos de la base datos === TABLAS DE LA BD 
 Se lo crea como objetos
 '''
-class Alumno(models.Model):
-    """Modelo de ejemplo. Cada instancia es una fila en la tabla de MySQL."""
+class Sueldo(models.Model):
+   monto_sueldo = models.DecimalField(max_digits = 10, decimal_places = 2)
+   def __str__(self):
+        return f'${self.monto_sueldo}'
 
-    nombre = models.CharField('Nombre', max_length=50)
-    nota = models.DecimalField(
-        'Nota',
-        max_digits=4,
-        decimal_places=2,
-        null=True,
-        blank=True,
-    )
-    fecha_alta = models.DateTimeField('Fecha de alta', auto_now_add=True)
-
-    class Meta:
-        verbose_name = 'Alumno'
-        verbose_name_plural = 'Alumnos'
-        ordering = ['nombre']
+class Puesto(models.Model):
+    nombre_puesto = models.CharField(max_length = 50)
+    id_sueldo = models.ForeignKey(Sueldo,on_delete=models.PROTECT)
 
     def __str__(self):
-        return f'{self.nombre} ({self.nota})'
+        return self.nombre_puesto

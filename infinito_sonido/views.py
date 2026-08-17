@@ -1,14 +1,5 @@
 from django.shortcuts import render
 
-from .models import Alumno
-
-#Cambiar
-
-def lista_alumnos(request):
-    """Página de inicio: muestra todos los alumnos guardados en MySQL."""
-    alumnos = Alumno.objects.all()
-    contexto = {
-        'alumnos': alumnos,
-        'total': alumnos.count(),
-    }
-    return render(request, 'escuela/lista_alumnos.html', contexto)
+def inicio(request):
+    """Página de inicio temporal"""
+    return render(request, 'infinito_sonido/lista_alumnos.html')

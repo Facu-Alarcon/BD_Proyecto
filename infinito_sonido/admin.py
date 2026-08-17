@@ -1,13 +1,13 @@
 from django.contrib import admin
 
-from .models import Alumno
+from .models import Puesto, Sueldo
 
-#Agregar las nuevas vistas al panel de admin
 
-@admin.register(Alumno)
-class AlumnoAdmin(admin.ModelAdmin):
-    """Configura cómo se muestra el modelo Alumno en el panel /admin."""
+@admin.register(Sueldo)
+class SueldoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'monto_sueldo')
 
-    list_display = ('id', 'nombre', 'nota', 'fecha_alta')
-    list_filter = ('fecha_alta',)
-    search_fields = ('nombre',)
+@admin.register(Puesto)
+class PuestoAdmin(admin.ModelAdmin):
+    list_display = ('id', 'nombre_puesto', 'id_sueldo')
+    search_fields = ('nombre_puesto',)

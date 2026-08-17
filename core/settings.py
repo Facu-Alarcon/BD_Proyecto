@@ -27,7 +27,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Nuestra app:
-    'escuela',
+    'infinito_sonido',
 ]
 
 MIDDLEWARE = [
