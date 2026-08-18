@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Puesto, Sueldo, Empleado, TipoEquipo, Equipo, Servicio, EquipoPorServicio, Clientes, Reservas, DetallesReservas
+from .models import Puesto, Sueldo, Empleado, TipoEquipo, Equipo, Servicio, EquipoPorServicio, Clientes, Reservas, DetallesReservas, Pagos, DetallesDePago, MetodoPago
 
 
 @admin.register(Sueldo)
@@ -75,3 +75,26 @@ class DetallesReservasAdmin(admin.ModelAdmin):
     list_display = ('id_detalle_reserva', 'reserva', 'empleado')
     list_filter = ('empleado',)
     search_fields = ('reserva__id', 'empleado__nombre_empleado')
+
+@admin.register(MetodoPago)
+class MetodoOagoAdmin(admin.ModelAdmin):
+    list_display = ('id_metodo_pago','metodo_pago')
+    search_fields = ('metodo_pago')
+
+#PErmite agregar/editar los metodos de pago directamente al crear o ver un pago
+class DetallesDePagoInline(admin.TabularInline):
+    model = DetallesDePago
+    extra = 1 #filas vacias adicionales oara agregar métodos de pago
+
+@admin.register(Pagos)
+class PagosAdmin(admin.ModelAdmin):
+    list_display = ('id_pago','reserva','monto')
+    list_filter = ('reserva')
+    search_fields = ('reserva_id',)
+    inlines = [DetallesDePagoInline]
+
+@admin.register(DetallesDePago)
+class DetallesDePagoAdmin(admin.ModelAdmin):
+    list_display = ('id_detelle_pago','pago','metodo_pago')
+    list_filter = ('metodo_pago',)
+    search_fields = ('pago__id_pago')

@@ -149,3 +149,43 @@ class DetallesReservas(models.Model):
 
     def __str__(self):
         return f"Detalle {self.id_detalle_reserva} - Reserva {self.reserva_id}"
+
+
+class MetodoPago(models.Model):
+    id_metodo_pago = models.AutoField(primary_key=True)
+    metodo_pago = models.CharField(max_length=50, verbose_name="Método de pago")
+
+    class Meta:
+        verbose_name = "Método de Pago"
+        verbose_name_plural = "Métodos de Pago"
+
+    def __str__(self):
+        return self.metodo_pago
+
+
+class Pagos(models.Model):
+    id_pago = models.AutoField(primary_key=True)
+    reserva = models.ForeignKey(Reservas, on_delete=models.PROTECT, db_column='id_reserva')
+    monto = models.FloatField(default=0)
+
+    class Meta:
+        verbose_name = "Pago"
+        verbose_name_plural = "Pagos"
+
+    def __str__(self):
+        return f"Pago N°{self.id_pago} - Reserva {self.reserva_id}"
+
+    """
+    Tabla intermedia Detalles_de_Pago.
+    """
+class DetallesDePago(models.Model):
+    id_detalle_pago = models.AutoField(primary_key=True)
+    pago = models.ForeignKey(Pagos, on_delete=models.CASCADE, db_column='id_pago', related_name='detalles_pago')
+    metodo_pago = models.ForeignKey(MetodoPago, on_delete=models.PROTECT, db_column='id_metodo_pago')
+
+    class Meta:
+        verbose_name = "Detalle de Pago"
+        verbose_name_plural = "Detalles de Pago"
+
+    def __str__(self):
+        return f"Detalle {self.id_detalle_pago} - Pago {self.pago_id}"
