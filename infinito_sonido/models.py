@@ -111,3 +111,41 @@ class EquipoPorServicio(models.Model):
 
     def __str__(self):
         return f"{self.cantidad}x {self.equipo.nombre_equipo} para {self.servicio.nombre_servicio}"
+
+
+class Clientes(models.Model):
+    nombre_cliente = models.CharField(max_length=50)
+    apellido_cliente = models.CharField(max_length=50)
+    domicilio_cliente = models.CharField(max_length=100)
+    telefono_cliente= models.CharField(max_length=20)
+    email_cliente = models.EmailField(max_length=100)
+
+    def __str__(self):
+        return f"{self.nombre_cliente} {self.apellido_cliente}"
+
+
+class Reservas(models.Model):
+    ESTADO_CHOICES = [
+        ('ACTIVA', 'Activa'),
+        ('FINALIZADA', 'Finalizada'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+
+    cliente = models.ForeignKey(Clientes, on_delete=models.PROTECT, db_column='id_cliente')
+    fecha_evento = models.DateField()
+    direccion_evento = models.CharField(max_length=100)
+    duracion_evento = models.TimeField()
+    monto_total = models.FloatField(default=0)
+    estado_reserva = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='ACTIVA')
+
+    def __str__(self):
+        return f"Reserva N°{self.id} - {self.cliente}"
+
+
+class DetallesReservas(models.Model):
+    id_detalle_reserva = models.AutoField(primary_key=True)
+    reserva = models.ForeignKey(Reservas, on_delete=models.CASCADE, db_column='id_reserva')
+    empleado = models.ForeignKey(Empleado, on_delete=models.PROTECT, db_column='id_empleado')
+
+    def __str__(self):
+        return f"Detalle {self.id_detalle_reserva} - Reserva {self.reserva_id}"
