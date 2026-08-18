@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Puesto, Sueldo, Empleado, TipoEquipo, Equipo, Servicio, EquipoPorServicio
+from .models import Puesto, Sueldo, Empleado, TipoEquipo, Equipo, Servicio, EquipoPorServicio, Clientes, Reservas, DetallesReservas
 
 
 @admin.register(Sueldo)
@@ -48,3 +48,30 @@ class EquipoPorServicioAdmin(admin.ModelAdmin):
     list_display = ('id', 'servicio', 'equipo', 'cantidad')
     list_filter = ('servicio', 'equipo')
     search_fields = ('servicio__nombre_servicio', 'equipo__nombre_equipo')
+
+
+@admin.register(Clientes)
+class ClientesAdmin(admin.ModelAdmin):
+    list_display = ('id', 'nombre_cliente', 'apellido_cliente', 'telefono_cliente', 'email_cliente')
+    search_fields = ('nombre_cliente', 'apellido_cliente', 'email_cliente')
+
+
+# Permite agregar/editar los detalles (empleados) directamente al crear o ver una Reserva
+class DetallesReservasInline(admin.TabularInline):
+    model = DetallesReservas
+    extra = 1  # Filas vacías adicionales para agregar empleados
+
+
+@admin.register(Reservas)
+class ReservasAdmin(admin.ModelAdmin):
+    list_display = ('id', 'cliente', 'fecha_evento', 'monto_total', 'estado_reserva')
+    list_filter = ('estado_reserva', 'fecha_evento')
+    search_fields = ('cliente__nombre_cliente', 'cliente__apellido_cliente', 'direccion_evento')
+    inlines = [DetallesReservasInline]
+
+
+@admin.register(DetallesReservas)
+class DetallesReservasAdmin(admin.ModelAdmin):
+    list_display = ('id_detalle_reserva', 'reserva', 'empleado')
+    list_filter = ('empleado',)
+    search_fields = ('reserva__id', 'empleado__nombre_empleado')
