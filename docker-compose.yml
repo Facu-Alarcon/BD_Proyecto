@@ -10,7 +10,7 @@ services:
   # ---------- Servicio 1: Base de datos MySQL ----------
   db:
     image: mysql:8.0
-    container_name: escuela_db
+    container_name: Infinito_Sonido_db
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -30,7 +30,7 @@ services:
   # ---------- Servicio 2: phpMyAdmin (administrador web de MySQL) ----------
   phpmyadmin:
     image: phpmyadmin:5
-    container_name: escuela_phpmyadmin
+    container_name: Infinito_Sonido_phpmyadmin
     restart: always
     environment:
       PMA_HOST: db
@@ -43,7 +43,7 @@ services:
   # ---------- Servicio 3: Entorno de Django (Python) ----------
   web:
     image: python:3.11
-    container_name: escuela_web
+    container_name: Infinito_Sonido_web
     restart: always
     # Carpeta de trabajo dentro del contenedor
     working_dir: /opt/app
