@@ -5,11 +5,11 @@ Proyecto de ejemplo para el taller: un stack de 3 contenedores con
 
 ## Arquitectura
 
-| Contenedor          | Imagen           | Puerto host | Para que sirve                       |
-|---------------------|------------------|-------------|--------------------------------------|
-| `escuela_db`        | `mysql:8.0`      | 3306        | Base de datos MySQL                  |
-| `escuela_phpmyadmin`| `phpmyadmin:5`   | 8080        | Administrador web de MySQL           |
-| `escuela_web`       | `python:3.11`    | 8000        | Entorno donde corre Django           |
+| Contenedor                  | Imagen           | Puerto host | Para que sirve                       |
+|-----------------------------|------------------|-------------|--------------------------------------|
+| `Infinito_Sonido_db`        | `mysql:8.0`      | 3306        | Base de datos MySQL                  |
+| `Infinito_Sonido_phpmyadmin`| `phpmyadmin:5`   | 8080        | Administrador web de MySQL           |
+| `Infinito_Sonido_web`       | `python:3.11`    | 8000        | Entorno donde corre Django           |
 
 ## Estructura de archivos
 
@@ -25,13 +25,13 @@ Django_MySQL_Docker/
 │   ├── urls.py
 │   ├── wsgi.py
 │   └── asgi.py
-└── escuela/                # App de ejemplo
-    ├── models.py           # Modelo Alumno
+└── infinito_sonido/                # App de ejemplo
+    ├── models.py           # Modelo Infinito sonidos
     ├── admin.py
     ├── views.py
     ├── urls.py
     ├── migrations/
-    └── templates/escuela/lista_alumnos.html
+    └── templates/infinito_sonidos.html
 ```
 
 ## Puesta en marcha (instalacion manual)
@@ -46,7 +46,7 @@ docker-compose up -d
 ### 2. Entrar al contenedor de Django
 
 ```bash
-docker exec -i -t escuela_web bash
+docker exec -i -t Infinito_Sonido_web bash
 ```
 
 ### 3. Instalar Django y el conector MySQL (dentro del contenedor)
@@ -54,8 +54,13 @@ docker exec -i -t escuela_web bash
 ```bash
 pip install -r requirements.txt
 ```
+### 4-1. Aplicar makemigrations (carga las tablas)
 
-### 4. Aplicar las migraciones (crea las tablas en MySQL)
+```bash
+python manage.py makemigrations infinito_sonido
+```
+
+### 4-2. Aplicar las migraciones (crea las tablas en MySQL)
 
 ```bash
 python manage.py migrate
