@@ -23,4 +23,21 @@ class Empleado(models.Model):
     email_emp = models.EmailField()
     
     def __str__(self):
-        return f'{self.nombre_emp}{self.apellido_emp}'
+        return f'{self.nombre_emp} {self.apellido_emp}'
+
+#! facumacaione - agregando clase Usuario y Perfil
+
+class Perfil(models.Model):
+    tipo_perfil = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.tipo_perfil
+
+
+class Usuario(models.Model):
+    id_perfil = models.ForeignKey(Perfil, on_delete=models.PROTECT)
+    usuario = models.CharField(max_length=50)
+    contraseña = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.usuario
