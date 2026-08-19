@@ -19,13 +19,71 @@ class Puesto(models.Model):
         return self.nombre_puesto
     
 class Empleado(models.Model):
+    id_empleado = models.AutoField(primary_key=True)
     nombre_emp = models.CharField(max_length=50)
     apellido_emp = models.CharField(max_length=50)
     telefono_emp = models.CharField(max_length=20)
     email_emp = models.EmailField()
+
+    class Meta:
+        verbose_name = "Empleado"
+        verbose_name_plural = "Empleados"
     
     def __str__(self):
-        return f'{self.nombre_emp}{self.apellido_emp}'
+        return f'{self.nombre_emp} {self.apellido_emp}'
+
+#! facumacaione - Usuario y Perfil, agrego Horarios también porque
+#! quiero terminar la tabla intermediaria que me toca.
+
+class Horario(models.Model):
+    id_horario = models.AutoField(primary_key=True)
+    cantidad_horas = models.IntegerField()
+
+    class Meta:
+        verbose_name = "Horario"
+        verbose_name_plural = "Horarios"
+
+    def __str__(self):
+        return f"Horario {self.id_horario} - {self.cantidad_horas}hs"
+
+class Perfil(models.Model):
+    id_perfil = models.AutoField(primary_key=True)
+    tipo_perfil = models.CharField(max_length=50)
+
+    class Meta:
+        verbose_name = "Perfil"
+        verbose_name_plural = "Perfiles"
+
+    def __str__(self):
+        return self.tipo_perfil
+
+
+class Usuario(models.Model):
+    id_usuario = models.AutoField(primary_key=True)
+    id_perfil = models.ForeignKey(Perfil, on_delete=models.PROTECT, db_column='id_perfil')
+    usuario = models.CharField(max_length=50)
+    contraseña = models.CharField(max_length=50)
+
+    class Meta:
+        verbose_name = "Usuario"
+        verbose_name_plural = "Usuarios"
+
+    def __str__(self):
+        return self.usuario
+
+class Horarios_x_Empleados(models.Model):
+    id_empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, db_column='id_empleado')
+    id_horario = models.ForeignKey(Horario, on_delete=models.CASCADE, db_column='id_horario')
+
+    class Meta:
+        verbose_name = "Horario x Empleado"
+        verbose_name_plural = "Horarios x Empleados"
+        unique_together = ('id_empleado', 'id_horario')
+
+    def __str__(self):
+        return f"{self.id_empleado} - {self.id_horario}"
+
+#* facualarcon - TipoEquipo, Equipo y Servicios
 
 class TipoEquipo(models.Model):
     nombre_tipoeq = models.CharField(max_length=50)
@@ -84,7 +142,7 @@ class Servicio(models.Model):
     """
     Tabla intermedia Equipos_x_Servicios.
     """
-class EquipoPorServicio(models.Model):
+class Equipo_x_Servicio(models.Model):
     servicio = models.ForeignKey(
         Servicio, 
         on_delete=models.CASCADE, 
@@ -190,14 +248,6 @@ class DetallesDePago(models.Model):
     def __str__(self):
         return f"Detalle {self.id_detalle_pago} - Pago {self.pago_id}"
 
-    
-class Horarios_x_Empleados(models.Model):
-    id_empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
-    id_horario = models.ForeignKey(Horario, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f'{self.id_empleado} - {self.id_horario}'
-
 class Puestos_x_Empleados(models.Model):
     id_empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     id_puesto = models.ForeignKey(Puesto, on_delete=models.CASCADE)
@@ -206,8 +256,8 @@ class Puestos_x_Empleados(models.Model):
         return f'{self.id_empleado} - {self.id_puesto}'
 
 class Reservas_x_Servicios(models.Model):
-    id_reserva = models.ForeignKey(Reserva, on_delete=models.CASCADE)
-    id_servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
+    id_reserva = models.ForeignKey(Reservas, on_delete=models.CASCADE, db_column='id_reserva')
+    id_servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE, db_column='id_servicio')
 
     def __str__(self):
         return f'{self.id_reserva} - {self.id_servicio}'
