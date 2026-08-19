@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Puesto, Sueldo, Empleado, TipoEquipo, Equipo, Servicio, EquipoPorServicio, Clientes, Reservas, DetallesReservas, Pagos, DetallesDePago, MetodoPago, Horarios_x_Empleados, Puestos_x_Empleados, Reservas_x_Servicios
+from .models import Puesto, Sueldo, Empleado, TipoEquipo, Equipo, Servicio, Equipo_x_Servicio, Clientes, Reservas, DetallesReservas, Pagos, DetallesDePago, MetodoPago, Horarios_x_Empleados, Puestos_x_Empleados, Reservas_x_Servicios, Perfil, Usuario, Horario
 
 
 @admin.register(Sueldo)
@@ -13,7 +13,7 @@ class PuestoAdmin(admin.ModelAdmin):
     search_fields = ('nombre_puesto',)
 
 @admin.register(Empleado)
-class Empleadodmin(admin.ModelAdmin):
+class EmpleadoAdmin(admin.ModelAdmin):
     list_display = ('id', 'nombre_emp', 'apellido_emp', 'email_emp')
     search_fields = ('nombre_emp','apellido_emp')
 
@@ -31,8 +31,8 @@ class EquipoAdmin(admin.ModelAdmin):
 
 
 # Permite agregar/editar los equipos y sus cantidades directamente al crear o ver un Servicio
-class EquipoPorServicioInline(admin.TabularInline):
-    model = EquipoPorServicio
+class Equipo_x_Servicio(admin.TabularInline):
+    model = Equipo_x_Servicio
     extra = 1  # Filas vacías adicionales para agregar equipos
 
 
@@ -40,7 +40,7 @@ class EquipoPorServicioInline(admin.TabularInline):
 class ServicioAdmin(admin.ModelAdmin):
     list_display = ('id', 'nombre_servicio', 'precio_servicio')
     search_fields = ('nombre_servicio', 'descripcion_servicio')
-    inlines = [EquipoPorServicioInline]
+    inlines = [Equipo_x_Servicio]
 
 
 @admin.register(EquipoPorServicio)
@@ -110,3 +110,20 @@ class PuestosXEmpleadosAdmin(admin.ModelAdmin):
 @admin.register(Reservas_x_Servicios)
 class ReservasXServiciosAdmin(admin.ModelAdmin):
     list_display = ('id', 'id_reserva', 'id_servicio')
+
+@admin.register(Perfil)
+class PerfilAdmin(admin.ModelAdmin):
+    list_display = ('id_perfil', 'tipo_perfil')
+    search_fields = ('tipo_perfil',)
+
+
+@admin.register(Usuario)
+class UsuarioAdmin(admin.ModelAdmin):
+    list_display = ('id_usuario', 'usuario', 'id_perfil')
+    list_filter = ('id_perfil',)
+    search_fields = ('usuario',)
+
+
+@admin.register(Horario)
+class HorarioAdmin(admin.ModelAdmin):
+    list_display = ('id_horario', 'cantidad_horas')

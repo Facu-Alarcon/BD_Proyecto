@@ -71,7 +71,7 @@ class Usuario(models.Model):
     def __str__(self):
         return self.usuario
 
-class HorariosXEmpleados(models.Model):
+class Horarios_x_Empleados(models.Model):
     id_empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, db_column='id_empleado')
     id_horario = models.ForeignKey(Horario, on_delete=models.CASCADE, db_column='id_horario')
 
@@ -142,7 +142,7 @@ class Servicio(models.Model):
     """
     Tabla intermedia Equipos_x_Servicios.
     """
-class EquipoPorServicio(models.Model):
+class Equipo_x_Servicio(models.Model):
     servicio = models.ForeignKey(
         Servicio, 
         on_delete=models.CASCADE, 
@@ -248,14 +248,6 @@ class DetallesDePago(models.Model):
     def __str__(self):
         return f"Detalle {self.id_detalle_pago} - Pago {self.pago_id}"
 
-    
-class Horarios_x_Empleados(models.Model):
-    id_empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
-    id_horario = models.ForeignKey(Horario, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f'{self.id_empleado} - {self.id_horario}'
-
 class Puestos_x_Empleados(models.Model):
     id_empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
     id_puesto = models.ForeignKey(Puesto, on_delete=models.CASCADE)
@@ -264,8 +256,8 @@ class Puestos_x_Empleados(models.Model):
         return f'{self.id_empleado} - {self.id_puesto}'
 
 class Reservas_x_Servicios(models.Model):
-    id_reserva = models.ForeignKey(Reserva, on_delete=models.CASCADE)
-    id_servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
+    id_reserva = models.ForeignKey(Reservas, on_delete=models.CASCADE, db_column='id_reserva')
+    id_servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE, db_column='id_servicio')
 
     def __str__(self):
         return f'{self.id_reserva} - {self.id_servicio}'
