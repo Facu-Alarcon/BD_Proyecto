@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Puesto, Sueldo, Empleado, TipoEquipo, Equipo, Servicio, EquipoPorServicio, Clientes, Reservas, DetallesReservas, Pagos, DetallesDePago, MetodoPago
+from .models import Puesto, Sueldo, Empleado, TipoEquipo, Equipo, Servicio, EquipoPorServicio, Clientes, Reservas, DetallesReservas, Pagos, DetallesDePago, MetodoPago, Horarios_x_Empleados, Puestos_x_Empleados, Reservas_x_Servicios
 
 
 @admin.register(Sueldo)
@@ -98,3 +98,15 @@ class DetallesDePagoAdmin(admin.ModelAdmin):
     list_display = ('id_detelle_pago','pago','metodo_pago')
     list_filter = ('metodo_pago',)
     search_fields = ('pago__id_pago')
+
+@admin.register(Horarios_x_Empleados)
+class HorariosXEmpleadosAdmin(admin.ModelAdmin):
+    list_display = ('id', 'id_empleado', 'id_horario')
+
+@admin.register(Puestos_x_Empleados)
+class PuestosXEmpleadosAdmin(admin.ModelAdmin):
+    list_display = ('id', 'id_empleado', 'id_puesto')
+
+@admin.register(Reservas_x_Servicios)
+class ReservasXServiciosAdmin(admin.ModelAdmin):
+    list_display = ('id', 'id_reserva', 'id_servicio')
