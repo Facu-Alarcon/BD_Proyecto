@@ -1,0 +1,174 @@
+/* =========================================
+   VARIABLES (Paleta extraída del logo)
+   ========================================= */
+:root {
+    /* Azules del texto y fondo "Infinito" */
+    --color-primary: #0077c8; 
+    --color-primary-dark: #004d80; 
+    
+    /* Verde neón de las esferas */
+    --color-accent: #78d61b; 
+    
+    /* Grises/Fondos */
+    --color-bg-light: #f4f8fb; 
+    --color-text-main: #222222;
+    --color-text-light: #ffffff;
+    
+    /* Layout */
+    --max-width: 1200px;
+    --spacing-md: 2rem;
+}
+
+/* =========================================
+   RESET BÁSICO (Mejor práctica)
+   ========================================= */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background-color: var(--color-bg-light);
+    color: var(--color-text-main);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Asegura que el footer quede abajo */
+}
+
+.container {
+    width: 90%;
+    max-width: var(--max-width);
+    margin: 0 auto;
+}
+
+/* =========================================
+   HEADER & NAV
+   ========================================= */
+.header {
+    background-color: var(--color-text-light);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: sticky; /* Se mantiene al hacer scroll */
+    top: 0;
+    z-index: 100;
+}
+
+.header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    flex-wrap: wrap; /* Fallback para mobile */
+}
+
+.logo {
+    height: 60px; /* Ajustar según tu asset */
+    object-fit: contain;
+}
+
+.main-nav ul {
+    list-style: none;
+    display: flex;
+    gap: 1.5rem;
+}
+
+.main-nav a {
+    text-decoration: none;
+    color: var(--color-primary-dark);
+    font-weight: 600;
+    transition: color 0.3s ease;
+}
+
+.main-nav a:hover,
+.main-nav a:focus {
+    color: var(--color-accent);
+}
+
+/* =========================================
+   SECCIONES PRINCIPALES
+   ========================================= */
+.hero {
+    background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+    color: var(--color-text-light);
+    padding: 4rem 0;
+    text-align: center;
+    border-bottom: 5px solid var(--color-accent);
+}
+
+.hero h1 {
+    font-size: clamp(2rem, 5vw, 3rem); /* Tipografía fluida */
+    margin-bottom: 1rem;
+}
+
+.services {
+    padding: var(--spacing-md) 0;
+}
+
+.services h2 {
+    text-align: center;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-md);
+}
+
+/* Uso de CSS Grid para Responsive Moderno */
+.services-grid {
+    display: grid;
+    /* auto-fit evita usar media queries para este bloque */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.service-card {
+    background: var(--color-text-light);
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    border-left: 4px solid var(--color-accent); /* Detalle corporativo */
+    transition: transform 0.2s ease;
+}
+
+.service-card:hover {
+    transform: translateY(-5px);
+}
+
+.service-card h3 {
+    color: var(--color-primary-dark);
+    margin-bottom: 0.5rem;
+}
+
+/* =========================================
+   ASIDE Y FOOTER
+   ========================================= */
+.promo {
+    background-color: var(--color-accent);
+    color: var(--color-primary-dark);
+    text-align: center;
+    padding: 1.5rem 0;
+    font-weight: bold;
+    margin: var(--spacing-md) 0;
+}
+
+.footer {
+    background-color: var(--color-primary-dark);
+    color: var(--color-text-light);
+    text-align: center;
+    padding: 2rem 0;
+    margin-top: auto; /* Empuja el footer al final usando flexbox en el body */
+}
+
+/* =========================================
+   MEDIA QUERIES (Mobile First adjustments)
+   ========================================= */
+@media (max-width: 768px) {
+    .header .container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .main-nav ul {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
