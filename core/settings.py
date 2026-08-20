@@ -95,7 +95,11 @@ USE_TZ = True
 
 
 # --- Archivos estáticos (CSS, JavaScript, imágenes) ---
-STATIC_URL = 'static/'
+# core/settings.py
 
+STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'infinito_sonido' / 'static',
+]
 # Tipo de clave primaria por defecto
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
