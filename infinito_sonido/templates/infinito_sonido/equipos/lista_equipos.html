@@ -1,0 +1,156 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinito Sonido - Inventario de Equipos</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Iconos de Bootstrap (opcional, para botones más visuales) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <!-- CSS General del Sistema -->
+    <link rel="stylesheet" href="{% static 'infinito_sonido/css/style.css' %}">
+    <!-- CSS Específico de Formularios y Tablas -->
+    <link rel="stylesheet" href="{% static 'infinito_sonido/css/equipos_form.css' %}">
+</head>
+<body>
+
+    <!-- Header Semántico -->
+    <header class="header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <span class="fs-4 fw-bold text-primary-dark">Infinito Sonido e Iluminación</span>
+            <nav class="main-nav" aria-label="Navegación principal">
+                <ul>
+                    <li><a href="{% url 'lista_equipos' %}" class="fw-bold">Inventario</a></li>
+                    <li><a href="#">Servicios</a></li>
+                    <li><a href="#">Reservas</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="container my-5">
+        
+        <!-- Notificaciones y Mensajes Flash de Django -->
+        {% if messages %}
+            <aside aria-label="Notificaciones del sistema" class="mb-4">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                    </div>
+                {% endfor %}
+            </aside>
+        {% endif %}
+
+        <section class="table-card-wrapper p-4 bg-white rounded-3 shadow-sm border-top-primary">
+            
+            <!-- Barra Superior: Título a la izquierda, Botón "Crear equipo" arriba a la derecha -->
+            <header class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4 pb-3 border-bottom">
+                <div>
+                    <h1 class="h3 mb-1 text-primary-dark fw-bold">Inventario de Equipos</h1>
+                    <p class="text-muted mb-0">Gestión y control de disponibilidad del equipamiento técnico.</p>
+                </div>
+                <div>
+                    <!-- Botón Crear Equipo arriba a la derecha -->
+                    <a href="{% url 'createEquipos' %}" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>Crear equipo</span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Tabla Semántica y Responsive -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-custom-header">
+                        <tr>
+                            <th scope="col">Nombre del Equipo</th>
+                            <th scope="col">Tipo de Equipo</th>
+                            <th scope="col" class="text-center">Cantidad en Stock</th>
+                            <th scope="col" class="text-center">Estado</th>
+                            <th scope="col" class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for equipo in equipos %}
+                            <tr>
+                                <!-- Nombre del equipo -->
+                                <td class="fw-semibold text-dark">
+                                    {{ equipo.nombre_equipo }}
+                                </td>
+
+                                <!-- Nombre del Tipo de Equipo (FK resuelta) -->
+                                <td>
+                                    <span class="badge bg-light text-secondary border">
+                                        {{ equipo.id_tipoeq.nombre_tipoeq }}
+                                    </span>
+                                </td>
+
+                                <!-- Cantidad en Stock -->
+                                <td class="text-center">
+                                    <span class="fw-bold">{{ equipo.cantidad_equipo }}</span> u.
+                                </td>
+
+                                <!-- Estado con Badge de Color -->
+                                <td class="text-center">
+                                    {% if equipo.estado_equipo == 'DISPONIBLE' %}
+                                        <span class="badge badge-disponible">Disponible</span>
+                                    {% elif equipo.estado_equipo == 'EN_USO' %}
+                                        <span class="badge badge-en-uso">En uso</span>
+                                    {% elif equipo.estado_equipo == 'EN_REPARACION' %}
+                                        <span class="badge badge-reparacion">En reparación</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ equipo.get_estado_equipo_display }}</span>
+                                    {% endif %}
+                                </td>
+
+                                <!-- Apartado de Acciones: Editar y Eliminar -->
+                                <td class="text-center">
+                                    <div class="d-inline-flex gap-2">
+                                        <!-- Botón Editar -->
+                                        <a href="#" class="btn btn-sm btn-outline-primary" title="Editar Equipo">
+                                            <i class="bi bi-pencil-square"></i> Editar
+                                        </a>
+
+                                        <!-- Botón Eliminar -->
+                                        <a href="#" class="btn btn-sm btn-outline-danger" title="Eliminar Equipo">
+                                            <i class="bi bi-trash"></i> Eliminar
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <!-- Estado vacío si no hay registros cargados -->
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                                    <p class="mb-2">No hay equipos registrados en el inventario todavía.</p>
+                                    <a href="{% url 'createEquipos' %}" class="btn btn-sm btn-primary-custom">
+                                        Registrar el primer equipo
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Footer Semántico -->
+    <footer class="footer mt-auto">
+        <div class="container">
+            <p class="mb-0">&copy; 2026 Infinito Sonido e Iluminación - Gestión Interna.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

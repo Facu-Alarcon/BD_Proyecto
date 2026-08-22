@@ -1,0 +1,43 @@
+/* =========================================
+   ESTILOS ADICIONALES PARA TABLAS Y BADGES
+   ========================================= */
+
+.border-top-primary {
+    border-top: 5px solid var(--color-primary, #0077c8);
+}
+
+.table-custom-header {
+    background-color: #eaf3fa;
+    color: var(--color-primary-dark, #004d80);
+}
+
+.table-custom-header th {
+    font-weight: 600;
+    padding: 1rem 0.75rem;
+    border-bottom: 2px solid #d0dce5;
+}
+
+/* Badges personalizados de Estado */
+.badge-disponible {
+    background-color: #eaf8dc;
+    color: #3b7508;
+    border: 1px solid #78d61b;
+    font-weight: 600;
+    padding: 0.4em 0.75em;
+}
+
+.badge-en-uso {
+    background-color: #fff8e1;
+    color: #b78103;
+    border: 1px solid #ffe082;
+    font-weight: 600;
+    padding: 0.4em 0.75em;
+}
+
+.badge-reparacion {
+    background-color: #fde8e8;
+    color: #c81e1e;
+    border: 1px solid #f8b4b4;
+    font-weight: 600;
+    padding: 0.4em 0.75em;
+}
