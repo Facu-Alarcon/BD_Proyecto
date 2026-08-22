@@ -1,38 +1,23 @@
-# infinito_sonido/forms.py
-
+# forms.py
 from django import forms
 from .models import Equipos
 
-
-class EquipoForm(forms.ModelForm):
+class EquiposForm(forms.ModelForm):
     class Meta:
         model = Equipos
-        fields = ['nombre_equipo', 'id_tipoeq', 'estado_equipo', 'cantidad_equipo']
-        widgets = {
-            'nombre_equipo': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Nombre del equipo',
-            }),
-            'id_tipoeq': forms.Select(attrs={
-                'class': 'form-select',
-            }),
-            'estado_equipo': forms.Select(attrs={
-                'class': 'form-select',
-            }),
-            'cantidad_equipo': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': 1,
-            }),
-        }
+        fields = '__all__'
         labels = {
-            'nombre_equipo': 'Nombre del equipo',
-            'id_tipoeq': 'Tipo de equipo',
-            'estado_equipo': 'Estado',
-            'cantidad_equipo': 'Cantidad',
+            'nombre_equipo': 'Nombre del Equipo',
+            'id_tipoeq': 'Tipo de Equipo',
+            'estado_equipo': 'Estado del Equipo',
+            'cantidad_equipo': 'Cantidad en Stock',
         }
 
-    def clean_cantidad_equipo(self):
-        cantidad = self.cleaned_data.get('cantidad_equipo')
-        if cantidad is not None and cantidad < 1:
-            raise forms.ValidationError("La cantidad debe ser al menos 1.")
-        return cantidad
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Asignación automática de clases CSS de Bootstrap según el tipo de widget
+        for field_name, field in self.fields.items():
+            if isinstance(field.widget, forms.Select):
+                field.widget.attrs.update({'class': 'form-select'})
+            else:
+                field.widget.attrs.update({'class': 'form-control'})
