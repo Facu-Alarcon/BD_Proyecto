@@ -1,19 +1,19 @@
 # infinito_sonido/forms.py
 
 from django import forms
-from .models import Equipo
+from .models import Equipos
 
 
 class EquipoForm(forms.ModelForm):
     class Meta:
-        model = Equipo
-        fields = ['nombre_equipo', 'tipo_equipo', 'estado_equipo', 'cantidad_equipo']
+        model = Equipos
+        fields = ['nombre_equipo', 'id_tipoeq', 'estado_equipo', 'cantidad_equipo']
         widgets = {
             'nombre_equipo': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Nombre del equipo',
             }),
-            'tipo_equipo': forms.Select(attrs={
+            'id_tipoeq': forms.Select(attrs={
                 'class': 'form-select',
             }),
             'estado_equipo': forms.Select(attrs={
@@ -26,7 +26,7 @@ class EquipoForm(forms.ModelForm):
         }
         labels = {
             'nombre_equipo': 'Nombre del equipo',
-            'tipo_equipo': 'Tipo de equipo',
+            'id_tipoeq': 'Tipo de equipo',
             'estado_equipo': 'Estado',
             'cantidad_equipo': 'Cantidad',
         }

@@ -6,38 +6,64 @@ from decimal import Decimal
 Van los modelos de la base datos === TABLAS DE LA BD 
 Se lo crea como objetos
 '''
-class Sueldo(models.Model):
-    monto_sueldo = models.DecimalField(max_digits = 10, decimal_places = 2)
+class Sueldos(models.Model):
+    id_sueldo = models.AutoField(primary_key=True)
+    monto_sueldo = models.FloatField()
+
+    class Meta:
+        verbose_name = "Sueldo"
+        verbose_name_plural = "Sueldos"
+
     def __str__(self):
         return f'${self.monto_sueldo}'
 
-class Puesto(models.Model):
-    nombre_puesto = models.CharField(max_length = 50)
-    id_sueldo = models.ForeignKey(Sueldo,on_delete=models.PROTECT)
+
+class Puestos(models.Model):
+    id_puesto = models.AutoField(primary_key=True)
+    id_sueldo = models.ForeignKey(Sueldos, on_delete=models.PROTECT, db_column='id_sueldo')
+    nombre_puesto = models.CharField(max_length=50)
+
+    class Meta:
+        verbose_name = "Puesto"
+        verbose_name_plural = "Puestos"
 
     def __str__(self):
         return self.nombre_puesto
-    
-class Empleado(models.Model):
+
+
+class Empleados(models.Model):
     id_empleado = models.AutoField(primary_key=True)
     nombre_emp = models.CharField(max_length=50)
     apellido_emp = models.CharField(max_length=50)
-    telefono_emp = models.CharField(max_length=20)
+    telefono_emp = models.IntegerField()
     email_emp = models.EmailField()
 
     class Meta:
         verbose_name = "Empleado"
         verbose_name_plural = "Empleados"
-    
+
     def __str__(self):
         return f'{self.nombre_emp} {self.apellido_emp}'
 
-#! facumacaione - Usuario y Perfil, agrego Horarios también porque
-#! quiero terminar la tabla intermediaria que me toca.
 
-class Horario(models.Model):
+class Puestos_x_Empleados(models.Model):
+    id_puesto_empleado = models.AutoField(primary_key=True)
+    id_empleado = models.ForeignKey(Empleados, on_delete=models.CASCADE, db_column='id_empleado')
+    id_puesto = models.ForeignKey(Puestos, on_delete=models.CASCADE, db_column='id_puesto')
+
+    class Meta:
+        verbose_name = "Puesto x Empleado"
+        verbose_name_plural = "Puestos x Empleados"
+        unique_together = ('id_empleado', 'id_puesto')
+
+    def __str__(self):
+        return f'{self.id_empleado} - {self.id_puesto}'
+
+#! facumacaione - Usuario, Perfil y Horarios
+
+class Horarios(models.Model):
     id_horario = models.AutoField(primary_key=True)
-    cantidad_horas = models.IntegerField()
+    cantidad_horas = models.FloatField()
 
     class Meta:
         verbose_name = "Horario"
@@ -46,7 +72,8 @@ class Horario(models.Model):
     def __str__(self):
         return f"Horario {self.id_horario} - {self.cantidad_horas}hs"
 
-class Perfil(models.Model):
+
+class Perfiles(models.Model):
     id_perfil = models.AutoField(primary_key=True)
     tipo_perfil = models.CharField(max_length=50)
 
@@ -58,9 +85,9 @@ class Perfil(models.Model):
         return self.tipo_perfil
 
 
-class Usuario(models.Model):
+class Usuarios(models.Model):
     id_usuario = models.AutoField(primary_key=True)
-    id_perfil = models.ForeignKey(Perfil, on_delete=models.PROTECT, db_column='id_perfil')
+    id_perfil = models.ForeignKey(Perfiles, on_delete=models.PROTECT, db_column='id_perfil')
     usuario = models.CharField(max_length=50)
     contraseña = models.CharField(max_length=50)
 
@@ -71,9 +98,11 @@ class Usuario(models.Model):
     def __str__(self):
         return self.usuario
 
+
 class Horarios_x_Empleados(models.Model):
-    id_empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, db_column='id_empleado')
-    id_horario = models.ForeignKey(Horario, on_delete=models.CASCADE, db_column='id_horario')
+    id_horario_empleado = models.AutoField(primary_key=True)
+    id_empleado = models.ForeignKey(Empleados, on_delete=models.CASCADE, db_column='id_empleado')
+    id_horario = models.ForeignKey(Horarios, on_delete=models.CASCADE, db_column='id_horario')
 
     class Meta:
         verbose_name = "Horario x Empleado"
@@ -83,28 +112,31 @@ class Horarios_x_Empleados(models.Model):
     def __str__(self):
         return f"{self.id_empleado} - {self.id_horario}"
 
-#* facualarcon - TipoEquipo, Equipo y Servicios
 
-class TipoEquipo(models.Model):
+#* facualarcon - Tipo_Equipos, Equipos y Servicios
+
+class Tipo_Equipos(models.Model):
+    id_tipoeq = models.AutoField(primary_key=True)
     nombre_tipoeq = models.CharField(max_length=50)
 
     class Meta:
         verbose_name = "Tipo de Equipo"
-        verbose_name_plural = "Tipos de Equipos"
+        verbose_name_plural = "Tipo de Equipos"
 
     def __str__(self):
         return self.nombre_tipoeq
 
 
-class Equipo(models.Model):
+class Equipos(models.Model):
     ESTADO_CHOICES = [
         ('DISPONIBLE', 'Disponible'),
         ('EN_USO', 'En uso'),
         ('EN_REPARACION', 'En reparación'),
     ]
 
+    id_equipo = models.AutoField(primary_key=True)
+    id_tipoeq = models.ForeignKey(Tipo_Equipos, on_delete=models.PROTECT, db_column='id_tipoeq')
     nombre_equipo = models.CharField(max_length=50)
-    tipo_equipo = models.ForeignKey(TipoEquipo, on_delete=models.PROTECT)
     estado_equipo = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='DISPONIBLE')
     cantidad_equipo = models.PositiveIntegerField(default=1)
 
@@ -113,109 +145,103 @@ class Equipo(models.Model):
         verbose_name_plural = "Equipos"
 
     def __str__(self):
-        return f"{self.nombre_equipo} ({self.tipo_equipo})"
+        return f"{self.nombre_equipo} ({self.id_tipoeq})"
 
-class Servicio(models.Model):
-    nombre_servicio = models.CharField(max_length=100, verbose_name="Nombre del Servicio")
-    descripcion_servicio = models.TextField(blank=True, null=True, verbose_name="Descripción")
-    precio_servicio = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        validators=[MinValueValidator(Decimal('0.00'))],
-        verbose_name="Precio base"
-    )
-    # Relación Muchos a Muchos a través de la tabla intermedia
-    equipos = models.ManyToManyField(
-        Equipo, 
-        through='EquipoPorServicio',
-        related_name='servicios',
-        blank=True
-    )
+
+class Servicios(models.Model):
+    id_servicio = models.AutoField(primary_key=True)
+    tipo_servicio = models.CharField(max_length=100)
+    precio_servicio = models.FloatField(validators=[MinValueValidator(0.0)])
 
     class Meta:
         verbose_name = "Servicio"
         verbose_name_plural = "Servicios"
 
     def __str__(self):
-        return self.nombre_servicio
+        return self.tipo_servicio
 
-    """
-    Tabla intermedia Equipos_x_Servicios.
-    """
-class Equipo_x_Servicio(models.Model):
-    servicio = models.ForeignKey(
-        Servicio, 
-        on_delete=models.CASCADE, 
-        related_name="detalle_equipos",
-        verbose_name="Servicio"
-    )
-    equipo = models.ForeignKey(
-        Equipo, 
-        on_delete=models.PROTECT, 
-        related_name="servicios_asociados",
-        verbose_name="Equipo"
-    )
-    cantidad = models.PositiveIntegerField(
-        default=1, 
-        validators=[MinValueValidator(1)],
-        verbose_name="Cantidad requerida"
-    )
+
+class Equipos_x_Servicios(models.Model):
+    id_equipo_servicio = models.AutoField(primary_key=True)
+    id_equipo = models.ForeignKey(Equipos, on_delete=models.PROTECT, db_column='id_equipo')
+    id_servicio = models.ForeignKey(Servicios, on_delete=models.CASCADE, db_column='id_servicio')
 
     class Meta:
-        verbose_name = "Equipo por Servicio"
-        verbose_name_plural = "Equipos por Servicio"
-        # Evita que se duplique el mismo equipo en el mismo servicio
-        unique_together = ('servicio', 'equipo')
+        verbose_name = "Equipo x Servicio"
+        verbose_name_plural = "Equipos x Servicios"
+        unique_together = ('id_equipo', 'id_servicio')
 
     def __str__(self):
-        return f"{self.cantidad}x {self.equipo.nombre_equipo} para {self.servicio.nombre_servicio}"
+        return f"{self.id_equipo} - {self.id_servicio}"
 
 
 class Clientes(models.Model):
+    id_cliente = models.AutoField(primary_key=True)
     nombre_cliente = models.CharField(max_length=50)
     apellido_cliente = models.CharField(max_length=50)
     domicilio_cliente = models.CharField(max_length=100)
-    telefono_cliente= models.CharField(max_length=20)
+    telefono_cliente = models.IntegerField()
     email_cliente = models.EmailField(max_length=100)
+
+    class Meta:
+        verbose_name = "Cliente"
+        verbose_name_plural = "Clientes"
 
     def __str__(self):
         return f"{self.nombre_cliente} {self.apellido_cliente}"
 
 
 class Reservas(models.Model):
-    ESTADO_CHOICES = [
-        ('ACTIVA', 'Activa'),
-        ('FINALIZADA', 'Finalizada'),
-        ('CANCELADA', 'Cancelada'),
-    ]
-
-    cliente = models.ForeignKey(Clientes, on_delete=models.PROTECT, db_column='id_cliente')
+    id_reserva = models.AutoField(primary_key=True)
+    id_cliente = models.ForeignKey(Clientes, on_delete=models.PROTECT, db_column='id_cliente')
     fecha_evento = models.DateField()
     direccion_evento = models.CharField(max_length=100)
     duracion_evento = models.TimeField()
     monto_total = models.FloatField(default=0)
-    estado_reserva = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='ACTIVA')
+    estado_reserva = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Reserva"
+        verbose_name_plural = "Reservas"
 
     def __str__(self):
-        return f"Reserva N°{self.id} - {self.cliente}"
+        return f"Reserva N°{self.id_reserva} - {self.id_cliente}"
 
 
-class DetallesReservas(models.Model):
+class Detalles_Reservas(models.Model):
     id_detalle_reserva = models.AutoField(primary_key=True)
-    reserva = models.ForeignKey(Reservas, on_delete=models.CASCADE, db_column='id_reserva')
-    empleado = models.ForeignKey(Empleado, on_delete=models.PROTECT, db_column='id_empleado')
+    id_reserva = models.ForeignKey(Reservas, on_delete=models.CASCADE, db_column='id_reserva')
+    id_empleado = models.ForeignKey(Empleados, on_delete=models.PROTECT, db_column='id_empleado')
+
+    class Meta:
+        verbose_name = "Detalle de Reserva"
+        verbose_name_plural = "Detalles Reservas"
 
     def __str__(self):
-        return f"Detalle {self.id_detalle_reserva} - Reserva {self.reserva_id}"
+        return f"Detalle {self.id_detalle_reserva} - Reserva {self.id_reserva_id}"
 
 
-class MetodoPago(models.Model):
+class Reservas_x_Servicios(models.Model):
+    id_reserva_servicio = models.AutoField(primary_key=True)
+    id_reserva = models.ForeignKey(Reservas, on_delete=models.CASCADE, db_column='id_reserva')
+    id_servicio = models.ForeignKey(Servicios, on_delete=models.CASCADE, db_column='id_servicio')
+
+    class Meta:
+        verbose_name = "Reserva x Servicio"
+        verbose_name_plural = "Reservas x Servicios"
+        unique_together = ('id_reserva', 'id_servicio')
+
+    def __str__(self):
+        return f'{self.id_reserva} - {self.id_servicio}'
+
+
+class Metodo_Pagos(models.Model):
     id_metodo_pago = models.AutoField(primary_key=True)
-    metodo_pago = models.CharField(max_length=50, verbose_name="Método de pago")
+    metodo_pago = models.CharField(max_length=50)
 
     class Meta:
         verbose_name = "Método de Pago"
-        verbose_name_plural = "Métodos de Pago"
+        verbose_name_plural = "Método de Pagos"
 
     def __str__(self):
         return self.metodo_pago
@@ -223,41 +249,26 @@ class MetodoPago(models.Model):
 
 class Pagos(models.Model):
     id_pago = models.AutoField(primary_key=True)
-    reserva = models.ForeignKey(Reservas, on_delete=models.PROTECT, db_column='id_reserva')
+    id_reserva = models.ForeignKey(Reservas, on_delete=models.PROTECT, db_column='id_reserva')
     monto = models.FloatField(default=0)
+    saldo_pendiente = models.FloatField(default=0)
 
     class Meta:
         verbose_name = "Pago"
         verbose_name_plural = "Pagos"
 
     def __str__(self):
-        return f"Pago N°{self.id_pago} - Reserva {self.reserva_id}"
+        return f"Pago N°{self.id_pago} - Reserva {self.id_reserva_id}"
 
-    """
-    Tabla intermedia Detalles_de_Pago.
-    """
-class DetallesDePago(models.Model):
+
+class Detalles_de_Pago(models.Model):
     id_detalle_pago = models.AutoField(primary_key=True)
-    pago = models.ForeignKey(Pagos, on_delete=models.CASCADE, db_column='id_pago', related_name='detalles_pago')
-    metodo_pago = models.ForeignKey(MetodoPago, on_delete=models.PROTECT, db_column='id_metodo_pago')
+    id_pago = models.ForeignKey(Pagos, on_delete=models.CASCADE, db_column='id_pago')
+    id_metodo_pago = models.ForeignKey(Metodo_Pagos, on_delete=models.PROTECT, db_column='id_metodo_pago')
 
     class Meta:
         verbose_name = "Detalle de Pago"
         verbose_name_plural = "Detalles de Pago"
 
     def __str__(self):
-        return f"Detalle {self.id_detalle_pago} - Pago {self.pago_id}"
-
-class Puestos_x_Empleados(models.Model):
-    id_empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE)
-    id_puesto = models.ForeignKey(Puesto, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f'{self.id_empleado} - {self.id_puesto}'
-
-class Reservas_x_Servicios(models.Model):
-    id_reserva = models.ForeignKey(Reservas, on_delete=models.CASCADE, db_column='id_reserva')
-    id_servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE, db_column='id_servicio')
-
-    def __str__(self):
-        return f'{self.id_reserva} - {self.id_servicio}'
+        return f"Detalle {self.id_detalle_pago} - Pago {self.id_pago_id}"

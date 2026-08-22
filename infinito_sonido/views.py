@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from .models import Equipo
+from .models import Equipos
 from .forms import EquipoForm
 
 def inicio(request):
@@ -8,7 +8,7 @@ def inicio(request):
     return render(request, 'infinito_sonido/lista_alumnos.html')
 
 def equipo_list(request):
-    equipos = Equipo.objects.select_related('tipo_equipo').all()
+    equipos = Equipos.objects.select_related('id_tipoeq').all()
     return render(request, 'infinito_sonido/equipo_list.html', {
         'equipos': equipos,
     })
@@ -31,7 +31,7 @@ def equipo_create(request):
 
 
 def equipo_update(request, pk):
-    equipo = get_object_or_404(Equipo, pk=pk)
+    equipo = get_object_or_404(Equipos, pk=pk)
 
     if request.method == 'POST':
         form = EquipoForm(request.POST, instance=equipo)
@@ -49,7 +49,7 @@ def equipo_update(request, pk):
 
 
 def equipo_delete(request, pk):
-    equipo = get_object_or_404(Equipo, pk=pk)
+    equipo = get_object_or_404(Equipos, pk=pk)
 
     if request.method == 'POST':
         equipo.delete()
