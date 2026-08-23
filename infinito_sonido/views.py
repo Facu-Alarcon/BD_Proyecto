@@ -1,61 +1,31 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.contrib import messages
 from .models import Equipos
-from .forms import EquipoForm
+from .forms import EquiposForm
 
 def inicio(request):
-    """Página de inicio temporal"""
-    return render(request, 'infinito_sonido/lista_alumnos.html')
+    """Página de inicio (Index general de la app)"""
+    return render(request, 'infinito_sonido/infinito_sonido.html')
 
-def equipo_list(request):
-    equipos = Equipos.objects.select_related('id_tipoeq').all()
-    return render(request, 'infinito_sonido/equipo_list.html', {
-        'equipos': equipos,
-    })
+def listaEquipos(request):
+    """
+    Lista todos los equipos del inventario.
+    Usamos select_related('id_tipoeq') para traer los datos del Tipo_Equipo 
+    en una única consulta SQL (evita el problema de consultas N+1).
+    """
+    equipos = Equipos.objects.select_related('id_tipoeq').all().order_by('nombre_equipo')
+    return render(request, 'infinito_sonido/equipos/lista_equipos.html', {'equipos': equipos})
 
-
-def equipo_create(request):
+def createEquipos(request):
     if request.method == 'POST':
-        form = EquipoForm(request.POST)
+        form = EquiposForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Equipo creado correctamente.')
-            return redirect('equipo_list')
+            messages.success(request, '¡Equipo registrado con éxito en el inventario!')
+            return redirect('lista_equipos')
+        else:
+            messages.error(request, 'Por favor, revise los errores.')
     else:
-        form = EquipoForm()
+        form = EquiposForm()
 
-    return render(request, 'infinito_sonido/equipo_form.html', {
-        'form': form,
-        'titulo': 'Nuevo Equipo',
-    })
-
-
-def equipo_update(request, pk):
-    equipo = get_object_or_404(Equipos, pk=pk)
-
-    if request.method == 'POST':
-        form = EquipoForm(request.POST, instance=equipo)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Equipo actualizado correctamente.')
-            return redirect('equipo_list')
-    else:
-        form = EquipoForm(instance=equipo)
-
-    return render(request, 'infinito_sonido/equipo_form.html', {
-        'form': form,
-        'titulo': 'Editar Equipo',
-    })
-
-
-def equipo_delete(request, pk):
-    equipo = get_object_or_404(Equipos, pk=pk)
-
-    if request.method == 'POST':
-        equipo.delete()
-        messages.success(request, 'Equipo eliminado correctamente.')
-        return redirect('equipo_list')
-
-    return render(request, 'infinito_sonido/equipo_confirm_delete.html', {
-        'equipo': equipo,
-    })
+    return render(request, 'infinito_sonido/equipos/create_equipos.html', {'form': form})
