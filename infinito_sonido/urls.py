@@ -9,4 +9,9 @@ urlpatterns = [
     path('equipos/nuevo/', views.equipo_create, name='equipo_create'),
     path('equipos/<int:pk>/editar/', views.equipo_update, name='equipo_update'),
     path('equipos/<int:pk>/eliminar/', views.equipo_delete, name='equipo_delete'),
+    #!Agregado por Aye Tipo_equipos 
+    path('tipoequipos/', views.tipoequipo_list, name='tipoequipo_list'),
+    path('tipoequipos/nuevo/', views.tipoequipo_create, name='tipoequipo_create'),
+    path('tipoequipos/<int:pk>/editar/', views.tipoequipo_update, name='tipoequipo_update'),
+    path('tipoequipos/<int:pk>/eliminar/', views.tipoequipo_delete, name='tipoequipo_delete'),
 ]
