@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,16 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Infinito Sonido e Iluminación - Servicios profesionales para eventos en Colonia Santa Rosa.">
     <title>Infinito | Sonido e Iluminación</title>
-    <link rel="stylesheet" href="./style/style.css">
+    
+    <!-- CSS General con Namespacing -->
+    <link rel="stylesheet" href="{% static 'infinito_sonido/style/style.css' %}">
 </head>
 <body>
     <header class="header">
         <div class="container">
-            <!-- NOTA: Reemplazar el src con la ruta real del logo recortado -->
-            <img src="logo.png" alt="Logo de Infinito Sonido e Iluminación" class="logo">
+            <!-- Logo servido desde static/infinito_sonido/img/ -->
+            <img src="{% static 'infinito_sonido/img/logo.png' %}" alt="Logo de Infinito Sonido e Iluminación" class="logo">
+            
             <nav class="main-nav" aria-label="Navegación principal">
                 <ul>
-                    <li><a href="#inicio">Inicio</a></li>
+                    <li><a href="{% url 'inicio' %}">Inicio</a></li>
+                    <!-- Apunta a la lista/tabla, NO a crear -->
+                    <li><a href="{% url 'lista_equipos' %}">Equipos</a></li>
                     <li><a href="#servicios">Servicios</a></li>
                     <li><a href="#contacto">Contacto</a></li>
                 </ul>
