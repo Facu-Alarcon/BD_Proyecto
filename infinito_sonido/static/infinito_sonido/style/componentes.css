@@ -1,0 +1,140 @@
+/* 
+    *ESTILOS GLOBALES: FORMULARIOS Y TABLAS
+    *Archivo: estilos_componentes.css
+*/
+
+/* 
+    *CONTENEDORES DE FORMULARIO
+*/
+.form-page-container {
+    flex: 1;
+}
+
+.form-card-wrapper {
+    background-color: var(--color-text-light, #ffffff);
+    max-width: 760px;
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 77, 128, 0.08);
+    border-top: 5px solid var(--color-primary, #0077c8);
+}
+
+.form-title {
+    color: var(--color-primary-dark, #004d80);
+    font-weight: 700;
+}
+
+.section-legend {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--color-primary, #0077c8);
+    border-bottom: 2px solid var(--color-accent, #78d61b);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    width: 100%;
+}
+
+/*
+    *2. INPUTS Y SELECTS (Bootstrap Sobreescrito)
+ */
+.form-control, 
+.form-select {
+    border: 1.5px solid #cedbe5;
+    border-radius: 6px;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus, 
+.form-select:focus {
+    border-color: var(--color-primary, #0077c8);
+    box-shadow: 0 0 0 0.25rem rgba(0, 119, 200, 0.2);
+}
+
+/* 
+    * BOTONES
+*/
+.btn-primary-custom {
+    background-color: var(--color-primary, #0077c8);
+    border-color: var(--color-primary, #0077c8);
+    color: var(--color-text-light, #ffffff);
+    font-weight: 600;
+    padding: 0.65rem 1.5rem;
+    border-radius: 6px;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-primary-custom:hover,
+.btn-primary-custom:focus {
+    background-color: var(--color-primary-dark, #004d80);
+    border-color: var(--color-primary-dark, #004d80);
+    color: var(--color-text-light, #ffffff);
+    transform: translateY(-1px);
+}
+
+.invalid-feedback {
+    font-size: 0.85rem;
+    color: #dc3545;
+    margin-top: 0.35rem;
+}
+
+/* 
+    * TABLAS
+*/
+.border-top-primary {
+    border-top: 5px solid var(--color-primary, #0077c8);
+}
+
+.table-custom-header {
+    background-color: #eaf3fa;
+    color: var(--color-primary-dark, #004d80);
+}
+
+.table-custom-header th {
+    font-weight: 600;
+    padding: 1rem 0.75rem;
+    border-bottom: 2px solid #d0dce5;
+}
+
+/* *Badges personalizados de Estado */
+.badge-disponible {
+    background-color: #eaf8dc !important;
+    color: #3b7508 !important;
+    border: 1px solid #78d61b !important;
+    font-weight: 600;
+    padding: 0.5em 0.8em;
+}
+
+.badge-en-uso {
+    background-color: #fff8e1 !important;
+    color: #b78103 !important;
+    border: 1px solid #ffe082 !important;
+    font-weight: 600;
+    padding: 0.5em 0.8em;
+}
+
+.badge-reparacion {
+    background-color: #fde8e8 !important;
+    color: #c81e1e !important;
+    border: 1px solid #f8b4b4 !important;
+    font-weight: 600;
+    padding: 0.5em 0.8em;
+}
+
+/* 
+    *AJUSTES RESPONSIVE (Móviles)
+*/
+@media (max-width: 576px) {
+    .form-card-wrapper {
+        padding: 1.5rem;
+    }
+    
+    .form-actions {
+        flex-direction: column-reverse;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+}

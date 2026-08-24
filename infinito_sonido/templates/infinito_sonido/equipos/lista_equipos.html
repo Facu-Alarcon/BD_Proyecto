@@ -11,10 +11,10 @@
     <!-- Iconos de Bootstrap (opcional, para botones más visuales) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     
-    <!-- CSS General del Sistema -->
-    <link rel="stylesheet" href="{% static 'infinito_sonido/css/style.css' %}">
-    <!-- CSS Específico de Formularios y Tablas -->
-    <link rel="stylesheet" href="{% static 'infinito_sonido/css/equipos_form.css' %}">
+    <!-- CSS Base / Global -->
+    <link rel="stylesheet" href="{% static 'infinito_sonido/style/style.css' %}">
+    <!-- CSS Global para Formularios y Tablas -->
+    <link rel="stylesheet" href="{% static 'infinito_sonido/style/estilos_componentes.css' %}">
 </head>
 <body>
 
@@ -56,8 +56,8 @@
                     <p class="text-muted mb-0">Gestión y control de disponibilidad del equipamiento técnico.</p>
                 </div>
                 <div>
-                    <!-- Botón Crear Equipo arriba a la derecha -->
-                    <a href="{% url 'createEquipos' %}" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+                    <!-- Reemplazá el botón Crear Equipo por este -->
+                    <a href="{% url 'createEquipos' %}" class="btn btn-success text-white border border-2 shadow-sm fw-bold d-inline-flex align-items-center gap-2">
                         <i class="bi bi-plus-circle"></i>
                         <span>Crear equipo</span>
                     </a>
@@ -66,11 +66,11 @@
 
             <!-- Tabla Semántica y Responsive -->
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover table-bordered align-middle mb-0">
                     <thead class="table-custom-header">
                         <tr>
                             <th scope="col">Nombre del Equipo</th>
-                            <th scope="col">Tipo de Equipo</th>
+                            <th scope="col" class="text-center">Tipo de Equipo</th>
                             <th scope="col" class="text-center">Cantidad en Stock</th>
                             <th scope="col" class="text-center">Estado</th>
                             <th scope="col" class="text-center">Acciones</th>
@@ -85,7 +85,7 @@
                                 </td>
 
                                 <!-- Nombre del Tipo de Equipo (FK resuelta) -->
-                                <td>
+                                <td class="text-center">
                                     <span class="badge bg-light text-secondary border">
                                         {{ equipo.id_tipoeq.nombre_tipoeq }}
                                     </span>
@@ -99,11 +99,11 @@
                                 <!-- Estado con Badge de Color -->
                                 <td class="text-center">
                                     {% if equipo.estado_equipo == 'DISPONIBLE' %}
-                                        <span class="badge badge-disponible">Disponible</span>
+                                        <span class="badge-disponible">Disponible</span>
                                     {% elif equipo.estado_equipo == 'EN_USO' %}
-                                        <span class="badge badge-en-uso">En uso</span>
+                                        <span class="badge-en-uso">En uso</span>
                                     {% elif equipo.estado_equipo == 'EN_REPARACION' %}
-                                        <span class="badge badge-reparacion">En reparación</span>
+                                        <span class="badge-reparacion">En reparación</span>
                                     {% else %}
                                         <span class="badge bg-secondary">{{ equipo.get_estado_equipo_display }}</span>
                                     {% endif %}
@@ -112,14 +112,14 @@
                                 <!-- Apartado de Acciones: Editar y Eliminar -->
                                 <td class="text-center">
                                     <div class="d-inline-flex gap-2">
-                                        <!-- Botón Editar -->
-                                        <a href="#" class="btn btn-sm btn-outline-primary" title="Editar Equipo">
-                                            <i class="bi bi-pencil-square"></i> Editar
+                                        <!-- Botón Editar (Amarillo) -->
+                                        <a href="#" class="btn btn-sm btn-warning fw-semibold" title="Editar Equipo">
+                                            <i class="bi bi-pencil-square"></i>
                                         </a>
 
-                                        <!-- Botón Eliminar -->
+                                        <!-- Botón Eliminar (Rojo - Se mantiene) -->
                                         <a href="#" class="btn btn-sm btn-outline-danger" title="Eliminar Equipo">
-                                            <i class="bi bi-trash"></i> Eliminar
+                                            <i class="bi bi-trash"></i>
                                         </a>
                                     </div>
                                 </td>
