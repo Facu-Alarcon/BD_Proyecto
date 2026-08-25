@@ -24,9 +24,8 @@
             <span class="fs-4 fw-bold text-primary-dark">Infinito Sonido e Iluminación</span>
             <nav class="main-nav" aria-label="Navegación principal">
                 <ul>
-                    <li><a href="{% url 'lista_equipos' %}" class="fw-bold">Inventario</a></li>
-                    <li><a href="#">Servicios</a></li>
-                    <li><a href="#">Reservas</a></li>
+                    <li><a href="{% url 'inicio' %}" class="fw-bold">Inicio</a></li>
+                    <li><a href="{% url 'lista_equipos' %}" >Equipos</a></li>
                 </ul>
             </nav>
         </div>
@@ -56,7 +55,6 @@
                     <p class="text-muted mb-0">Gestión y control de disponibilidad del equipamiento técnico.</p>
                 </div>
                 <div>
-                    <!-- Reemplazá el botón Crear Equipo por este -->
                     <a href="{% url 'createEquipos' %}" class="btn btn-success text-white border border-2 shadow-sm fw-bold d-inline-flex align-items-center gap-2">
                         <i class="bi bi-plus-circle"></i>
                         <span>Crear equipo</span>
@@ -113,14 +111,20 @@
                                 <td class="text-center">
                                     <div class="d-inline-flex gap-2">
                                         <!-- Botón Editar (Amarillo) -->
-                                        <a href="#" class="btn btn-sm btn-warning fw-semibold" title="Editar Equipo">
+                                        <a href="{% url 'editarEquipos' equipo.id_equipo %}" class="btn btn-sm btn-warning fw-semibold" title="Editar Equipo">
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
 
-                                        <!-- Botón Eliminar (Rojo - Se mantiene) -->
-                                        <a href="#" class="btn btn-sm btn-outline-danger" title="Eliminar Equipo">
+                                        <!-- Botón Eliminar (Rojo): abre el modal de confirmación compartido -->
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                title="Eliminar Equipo"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modalEliminarEquipo"
+                                                data-equipo-id="{{ equipo.id_equipo }}"
+                                                data-equipo-nombre="{{ equipo.nombre_equipo }}">
                                             <i class="bi bi-trash"></i>
-                                        </a>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -143,6 +147,36 @@
         </section>
     </main>
 
+    <!-- Modal de Confirmación: Eliminar Equipo (compartido por todas las filas) -->
+    <div class="modal fade" id="modalEliminarEquipo" tabindex="-1" aria-labelledby="modalEliminarEquipoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-danger">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="modalEliminarEquipoLabel">
+                        <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Confirmar eliminación
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">
+                        ¿Estás seguro de que querés eliminar el equipo
+                        "<strong id="modalEliminarEquipoNombre"></strong>" del inventario?
+                    </p>
+                    <p class="text-muted small mt-2 mb-0">Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <form id="formEliminarEquipo" method="post" action="">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger fw-semibold">
+                            <i class="bi bi-trash"></i> Sí, eliminar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer Semántico -->
     <footer class="footer mt-auto">
         <div class="container">
@@ -152,5 +186,24 @@
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script: completa el modal de eliminar con los datos de la fila clickeada -->
+    <script>
+        // URL "molde" con id=0, que reemplazamos por el id real antes de enviar el form.
+        // Evita tener que armar la URL a mano y mantiene el reverse de Django como fuente de verdad.
+        const URL_ELIMINAR_EQUIPO_BASE = "{% url 'eliminarEquipos' 0 %}";
+
+        const modalEliminarEquipo = document.getElementById('modalEliminarEquipo');
+        modalEliminarEquipo.addEventListener('show.bs.modal', function (event) {
+            const boton = event.relatedTarget; // botón que disparó el modal
+            const equipoId = boton.getAttribute('data-equipo-id');
+            const equipoNombre = boton.getAttribute('data-equipo-nombre');
+
+            document.getElementById('modalEliminarEquipoNombre').textContent = equipoNombre;
+
+            const form = document.getElementById('formEliminarEquipo');
+            form.action = URL_ELIMINAR_EQUIPO_BASE.replace('/0/', '/' + equipoId + '/');
+        });
+    </script>
 </body>
 </html>
