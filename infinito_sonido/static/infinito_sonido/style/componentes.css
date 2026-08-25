@@ -138,3 +138,29 @@
         width: 100%;
     }
 }
+
+/* 
+    *MODAL DE CONFIRMACIÓN (Eliminar Equipo)
+*/
+.modal-content-danger {
+    border-radius: 12px;
+    border: none;
+    border-top: 5px solid #dc3545;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.modal-content-danger .modal-header {
+    border-bottom: 1px solid #f1dede;
+}
+
+.modal-content-danger .modal-title {
+    color: var(--color-primary-dark, #004d80);
+}
+
+.modal-content-danger .modal-footer {
+    border-top: 1px solid #f1dede;
+}
+
+.modal-content-danger .btn-danger {
+    border-radius: 6px;
+}
