@@ -8,6 +8,8 @@ urlpatterns = [
     # Módulo Equipos
     path('equipos/', views.listaEquipos, name='lista_equipos'),
     path('equipos/crear/', views.createEquipos, name='createEquipos'),
+    path('equipos/editar/<int:id_equipo>/', views.editarEquipos, name='editarEquipos'),
+    path('equipos/eliminar/<int:id_equipo>/', views.eliminarEquipos, name='eliminarEquipos'),
 
     #Modulo Servicio
 
