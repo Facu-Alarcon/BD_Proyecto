@@ -89,7 +89,7 @@ class Usuarios(models.Model):
     id_usuario = models.AutoField(primary_key=True)
     id_perfil = models.ForeignKey(Perfiles, on_delete=models.PROTECT, db_column='id_perfil')
     usuario = models.CharField(max_length=50)
-    contraseña = models.CharField(max_length=50)
+    contraseña = models.CharField(max_length=128)
 
     class Meta:
         verbose_name = "Usuario"
@@ -97,6 +97,44 @@ class Usuarios(models.Model):
 
     def __str__(self):
         return self.usuario
+
+    @property
+    def is_authenticated(self):
+        """Permite que DRF (IsAuthenticated) trate a Usuarios como un usuario válido."""
+        return True
+
+
+class Permisos(models.Model):
+    id_permiso = models.AutoField(primary_key=True)
+    nombre_permiso = models.CharField(max_length=50, unique=True)
+    descripcion_permiso = models.CharField(max_length=150, blank=True)
+    estado_permiso = models.BooleanField(default=True)
+    # Clave interna estable que usa el backend para decidir accesos
+    # (ver infinito_sonido/permissions.py). No se edita desde la UI:
+    # se genera solo a partir del nombre al crear el permiso, y no
+    # cambia aunque después se renombre el permiso.
+    codigo = models.SlugField(max_length=60, unique=True, blank=True)
+
+    class Meta:
+        verbose_name = "Permiso"
+        verbose_name_plural = "Permisos"
+
+    def __str__(self):
+        return self.nombre_permiso
+
+
+class Permisos_x_Perfiles(models.Model):
+    id_permiso_perfil = models.AutoField(primary_key=True)
+    id_perfil = models.ForeignKey(Perfiles, on_delete=models.CASCADE, db_column='id_perfil')
+    id_permiso = models.ForeignKey(Permisos, on_delete=models.CASCADE, db_column='id_permiso')
+
+    class Meta:
+        verbose_name = "Permiso x Perfil"
+        verbose_name_plural = "Permisos x Perfiles"
+        unique_together = ('id_perfil', 'id_permiso')
+
+    def __str__(self):
+        return f"{self.id_perfil} - {self.id_permiso}"
 
 
 class Horarios_x_Empleados(models.Model):
@@ -127,17 +165,23 @@ class Tipo_Equipos(models.Model):
         return self.nombre_tipoeq
 
 
-class Equipos(models.Model):
-    ESTADO_CHOICES = [
-        ('DISPONIBLE', 'Disponible'),
-        ('EN_USO', 'En uso'),
-        ('EN_REPARACION', 'En reparación'),
-    ]
+class Estado_Equipos(models.Model):
+    id_estadoeq = models.AutoField(primary_key=True)
+    nombre_estadoeq = models.CharField(max_length=50, unique=True)
 
+    class Meta:
+        verbose_name = "Estado de Equipo"
+        verbose_name_plural = "Estados de Equipo"
+
+    def __str__(self):
+        return self.nombre_estadoeq
+
+
+class Equipos(models.Model):
     id_equipo = models.AutoField(primary_key=True)
     id_tipoeq = models.ForeignKey(Tipo_Equipos, on_delete=models.PROTECT, db_column='id_tipoeq')
     nombre_equipo = models.CharField(max_length=50)
-    estado_equipo = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='DISPONIBLE')
+    id_estadoeq = models.ForeignKey(Estado_Equipos, on_delete=models.PROTECT, db_column='id_estadoeq')
     cantidad_equipo = models.PositiveIntegerField(default=1)
 
     class Meta:
@@ -192,13 +236,21 @@ class Clientes(models.Model):
 
 
 class Reservas(models.Model):
+    ESTADO_CHOICES = [
+        ('PENDIENTE', 'Pendiente'),
+        ('CONFIRMADA', 'Confirmada'),
+        ('FINALIZADA', 'Finalizada'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+
     id_reserva = models.AutoField(primary_key=True)
     id_cliente = models.ForeignKey(Clientes, on_delete=models.PROTECT, db_column='id_cliente')
+    nombre_evento = models.CharField(max_length=100, blank=True)
     fecha_evento = models.DateField()
     direccion_evento = models.CharField(max_length=100)
     duracion_evento = models.TimeField()
     monto_total = models.FloatField(default=0)
-    estado_reserva = models.BooleanField(default=True)
+    estado_reserva = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE')
 
     class Meta:
         verbose_name = "Reserva"
@@ -269,6 +321,27 @@ class Detalles_de_Pago(models.Model):
     class Meta:
         verbose_name = "Detalle de Pago"
         verbose_name_plural = "Detalles de Pago"
+
+    def __str__(self):
+        return f"Detalle {self.id_detalle_pago} - Pago {self.id_pago_id}"
+
+
+class SesionToken(models.Model):
+    """
+    Token de sesión propio para autenticar contra el frontend en React.
+    No usamos rest_framework.authtoken porque ese token está atado a
+    auth.User, y nuestro modelo de usuarios es Usuarios (definido por el DER).
+    """
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    id_usuario = models.ForeignKey(Usuarios, on_delete=models.CASCADE, db_column='id_usuario')
+    creado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Sesión (token)"
+        verbose_name_plural = "Sesiones (tokens)"
+
+    def __str__(self):
+        return f"Token de {self.id_usuario}"
 
     def __str__(self):
         return f"Detalle {self.id_detalle_pago} - Pago {self.id_pago_id}"

@@ -1,0 +1,113 @@
+.login-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 20% 20%, #163169 0%, #0a1730 55%, #060f24 100%);
+}
+
+.login-bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(4px, 1.6vw, 22px);
+  padding: 0 4%;
+}
+
+.login-bars span {
+  flex: 1;
+  background: linear-gradient(180deg, rgba(120, 160, 220, 0.35), rgba(60, 100, 170, 0.12));
+  border-radius: 4px 4px 0 0;
+}
+
+.login-card {
+  position: relative;
+  z-index: 1;
+  width: min(420px, 90vw);
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 30px 60px rgba(4, 10, 30, 0.45);
+  padding: 44px 40px 32px;
+}
+
+.login-card h1 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  color: var(--navy-950);
+}
+
+.login-subtitle {
+  margin: 0 0 28px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.password-toggle:hover {
+  color: var(--navy-950);
+}
+
+.login-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  font-size: 13px;
+}
+
+.login-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.login-link {
+  color: var(--navy-700);
+  font-weight: 600;
+}
+.login-link:hover {
+  text-decoration: underline;
+}
+
+.login-submit {
+  width: 100%;
+  justify-content: center;
+  padding: 12px 16px;
+  font-size: 15px;
+}
+
+.login-footnote {
+  margin: 18px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
