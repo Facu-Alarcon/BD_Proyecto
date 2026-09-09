@@ -1,4 +1,4 @@
-{% extends "infinito_sonido/base.html" %}
+{% extends "infinito_sonido/pages/base.html" %}
 
 {% block content %}
 <div class="container mt-4">
@@ -32,7 +32,11 @@
                 <td>{{ equipo.cantidad_equipo }}</td>
                 <td>
                     <a href="{% url 'equipo_update' equipo.pk %}" class="btn btn-sm btn-warning">Editar</a>
-                    <a href="{% url 'equipo_delete' equipo.pk %}" class="btn btn-sm btn-danger">Eliminar</a>
+                    <form method="post" action="{% url 'equipo_delete' equipo.pk %}" class="d-inline"
+                          onsubmit="return confirm('¿Eliminar el equipo {{ equipo.nombre_equipo }}?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                    </form>
                 </td>
             </tr>
             {% empty %}

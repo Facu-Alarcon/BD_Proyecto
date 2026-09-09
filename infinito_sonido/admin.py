@@ -3,9 +3,10 @@ from django.contrib import admin
 from .models import (
     Sueldos, Puestos, Empleados, Puestos_x_Empleados,
     Horarios, Perfiles, Usuarios, Horarios_x_Empleados,
-    Tipo_Equipos, Equipos, Servicios, Equipos_x_Servicios,
+    Tipo_Equipos, Estado_Equipos, Equipos, Servicios, Equipos_x_Servicios,
     Clientes, Reservas, Detalles_Reservas, Reservas_x_Servicios,
     Metodo_Pagos, Pagos, Detalles_de_Pago,
+    Permisos, Permisos_x_Perfiles,
 )
 
 
@@ -62,10 +63,16 @@ class Tipo_Equipos_Admin(admin.ModelAdmin):
     search_fields = ('nombre_tipoeq',)
 
 
+@admin.register(Estado_Equipos)
+class Estado_Equipos_Admin(admin.ModelAdmin):
+    list_display = ('id_estadoeq', 'nombre_estadoeq')
+    search_fields = ('nombre_estadoeq',)
+
+
 @admin.register(Equipos)
 class Equipos_Admin(admin.ModelAdmin):
-    list_display = ('id_equipo', 'nombre_equipo', 'id_tipoeq', 'estado_equipo', 'cantidad_equipo')
-    list_filter = ('id_tipoeq', 'estado_equipo')
+    list_display = ('id_equipo', 'nombre_equipo', 'id_tipoeq', 'id_estadoeq', 'cantidad_equipo')
+    list_filter = ('id_tipoeq', 'id_estadoeq')
     search_fields = ('nombre_equipo',)
 
 
@@ -134,3 +141,16 @@ class Pagos_Admin(admin.ModelAdmin):
 class Detalles_de_Pago_Admin(admin.ModelAdmin):
     list_display = ('id_detalle_pago', 'id_pago', 'id_metodo_pago')
     list_filter = ('id_metodo_pago',)
+
+
+@admin.register(Permisos)
+class Permisos_Admin(admin.ModelAdmin):
+    list_display = ('id_permiso', 'nombre_permiso', 'estado_permiso')
+    list_filter = ('estado_permiso',)
+    search_fields = ('nombre_permiso',)
+
+
+@admin.register(Permisos_x_Perfiles)
+class Permisos_x_Perfiles_Admin(admin.ModelAdmin):
+    list_display = ('id_permiso_perfil', 'id_perfil', 'id_permiso')
+    list_filter = ('id_perfil', 'id_permiso')

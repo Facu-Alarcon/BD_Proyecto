@@ -26,12 +26,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Terceros:
+    'rest_framework',
+    'corsheaders',
     # Nuestra app:
     'infinito_sonido',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -39,6 +43,23 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# --- API (React consume esto desde otro puerto/origen) ---
+# Vite prueba 5173 y si está ocupado sigue con 5174, 5175, etc.,
+# así que permitimos cualquier puerto local en vez de fijar uno solo.
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^http://localhost:\d+$',
+    r'^http://127\.0\.0\.1:\d+$',
+]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'infinito_sonido.authentication.TokenUsuarioAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
 
 ROOT_URLCONF = 'core.urls'
 
