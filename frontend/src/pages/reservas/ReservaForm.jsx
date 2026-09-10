@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/client';
+import FormModal from '../../components/FormModal';
+import SuccessModal from '../../components/SuccessModal';
 
 const ESTADOS = [
   { value: 'PENDIENTE', label: 'Pendiente' },
@@ -32,6 +34,7 @@ export default function ReservaForm() {
   const [errores, setErrores] = useState({});
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [guardadoOk, setGuardadoOk] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -54,8 +57,8 @@ export default function ReservaForm() {
           direccion_evento: r.direccion_evento,
           estado_reserva: r.estado_reserva,
         });
-        setServiciosSel(new Set(r.servicios_detalle.map((s) => s.id_servicio)));
-        setEmpleadosSel(new Set(r.empleados_detalle.map((e) => e.id_empleado)));
+        setServiciosSel(new Set(r.servicios_detalle.map((s) => Number(s.id_servicio))));
+        setEmpleadosSel(new Set(r.empleados_detalle.map((e) => Number(e.id_empleado))));
       }
       setCargando(false);
     });
@@ -66,24 +69,31 @@ export default function ReservaForm() {
   }
 
   function toggleServicio(idServicio) {
+    const id = Number(idServicio);
     setServiciosSel((prev) => {
       const next = new Set(prev);
-      next.has(idServicio) ? next.delete(idServicio) : next.add(idServicio);
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   }
 
   function toggleEmpleado(idEmpleado) {
+    const id = Number(idEmpleado);
     setEmpleadosSel((prev) => {
       const next = new Set(prev);
-      next.has(idEmpleado) ? next.delete(idEmpleado) : next.add(idEmpleado);
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   }
 
   const total = servicios
-    .filter((s) => serviciosSel.has(s.id_servicio))
+    .filter((s) => serviciosSel.has(Number(s.id_servicio)))
     .reduce((acc, s) => acc + Number(s.precio_servicio), 0);
+
+  const clienteSeleccionado = clientes.find((c) => String(c.id_cliente) === String(form.id_cliente));
+  const subtitulo = clienteSeleccionado
+    ? [form.nombre_evento, `${clienteSeleccionado.nombre_cliente} ${clienteSeleccionado.apellido_cliente}`].filter(Boolean).join(' · ')
+    : undefined;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -97,10 +107,11 @@ export default function ReservaForm() {
     try {
       if (editando) {
         await api.put(`/reservas/${id}/`, payload);
+        setGuardadoOk(true);
       } else {
         await api.post('/reservas/', payload);
+        navigate('/reservas');
       }
-      navigate('/reservas');
     } catch (err) {
       if (err.response?.status === 400) {
         setErrores(err.response.data);
@@ -114,107 +125,127 @@ export default function ReservaForm() {
 
   if (cargando) return <p>Cargando...</p>;
 
+  if (guardadoOk) {
+    return (
+      <SuccessModal
+        titulo="Reserva modificada correctamente"
+        subtitulo={subtitulo}
+        textoBoton="Volver a reservas"
+        onContinuar={() => navigate('/reservas')}
+      />
+    );
+  }
+
+  const formulario = (
+    <form onSubmit={handleSubmit}>
+      {errores.detail && <div className="alert alert-error">{errores.detail}</div>}
+      {errores.empleados && <div className="alert alert-error">{errores.empleados}</div>}
+
+      <div className="form-field">
+        <label htmlFor="id_cliente">Cliente</label>
+        <select id="id_cliente" value={form.id_cliente} onChange={(e) => actualizar('id_cliente', e.target.value)} required>
+          <option value="">Seleccionar...</option>
+          {clientes.map((c) => (
+            <option key={c.id_cliente} value={c.id_cliente}>{c.nombre_cliente} {c.apellido_cliente}</option>
+          ))}
+        </select>
+        {errores.id_cliente && <span className="form-error">{errores.id_cliente}</span>}
+      </div>
+
+      <div className="form-field">
+        <label htmlFor="nombre_evento">Nombre del evento</label>
+        <input
+          id="nombre_evento"
+          placeholder="Ej: Cumpleaños de 15, Casamiento..."
+          value={form.nombre_evento}
+          onChange={(e) => actualizar('nombre_evento', e.target.value)}
+        />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="form-field">
+          <label htmlFor="fecha_evento">Fecha</label>
+          <input id="fecha_evento" type="date" value={form.fecha_evento} onChange={(e) => actualizar('fecha_evento', e.target.value)} required />
+          {errores.fecha_evento && <span className="form-error">{errores.fecha_evento}</span>}
+        </div>
+        <div className="form-field">
+          <label htmlFor="hora_evento">Hora</label>
+          <input id="hora_evento" type="time" value={form.hora_evento} onChange={(e) => actualizar('hora_evento', e.target.value)} required />
+          {errores.hora_evento && <span className="form-error">{errores.hora_evento}</span>}
+        </div>
+      </div>
+
+      <div className="form-field">
+        <label htmlFor="direccion_evento">Dirección del evento</label>
+        <input id="direccion_evento" placeholder="Ej: Salón Los Álamos, Av. San Martín 456" value={form.direccion_evento} onChange={(e) => actualizar('direccion_evento', e.target.value)} required />
+        {errores.direccion_evento && <span className="form-error">{errores.direccion_evento}</span>}
+      </div>
+
+      <div className="form-field">
+        <label htmlFor="estado_reserva">Estado</label>
+        <select id="estado_reserva" value={form.estado_reserva} onChange={(e) => actualizar('estado_reserva', e.target.value)}>
+          {ESTADOS.map((e) => (
+            <option key={e.value} value={e.value}>{e.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="form-field">
+        <label>Servicios</label>
+        <div className="checkbox-list">
+          {servicios.length === 0 && <p className="form-hint">No hay servicios cargados todavía.</p>}
+          {servicios.map((s) => (
+            <label key={s.id_servicio}>
+              <span>{s.tipo_servicio}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ color: 'var(--text-muted)' }}>${Number(s.precio_servicio).toLocaleString('es-AR')}</span>
+                <input type="checkbox" checked={serviciosSel.has(Number(s.id_servicio))} onChange={() => toggleServicio(s.id_servicio)} />
+              </span>
+            </label>
+          ))}
+        </div>
+        <span className="form-hint">Total estimado: <strong>${total.toLocaleString('es-AR')}</strong></span>
+      </div>
+
+      <div className="form-field">
+        <label>Personal asignado</label>
+        <div className="checkbox-list">
+          {empleados.length === 0 && <p className="form-hint">No hay empleados cargados todavía.</p>}
+          {empleados.map((e) => (
+            <label key={e.id_empleado}>
+              <span>{e.nombre_emp} {e.apellido_emp}</span>
+              <input type="checkbox" checked={empleadosSel.has(Number(e.id_empleado))} onChange={() => toggleEmpleado(e.id_empleado)} />
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <button type="submit" className="btn btn-primary" disabled={guardando}>
+        {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear reserva'}
+      </button>{' '}
+      <button type="button" className="btn btn-secondary" onClick={() => navigate('/reservas')}>
+        {editando ? 'Descartar cambios' : 'Cancelar'}
+      </button>
+    </form>
+  );
+
+  if (editando) {
+    return (
+      <FormModal titulo="Editar reserva" subtitulo={subtitulo} onClose={() => navigate('/reservas')} wide>
+        {formulario}
+      </FormModal>
+    );
+  }
+
   return (
     <div>
       <div className="page-header">
         <div>
-          <h1>{editando ? 'Editar Reserva' : 'Nueva Reserva'}</h1>
+          <h1>Nueva Reserva</h1>
         </div>
       </div>
-
       <div className="card" style={{ padding: 28, maxWidth: 640 }}>
-        <form onSubmit={handleSubmit}>
-          {errores.detail && <div className="alert alert-error">{errores.detail}</div>}
-          {errores.empleados && <div className="alert alert-error">{errores.empleados}</div>}
-
-          <div className="form-field">
-            <label htmlFor="id_cliente">Cliente</label>
-            <select id="id_cliente" value={form.id_cliente} onChange={(e) => actualizar('id_cliente', e.target.value)} required>
-              <option value="">Seleccionar...</option>
-              {clientes.map((c) => (
-                <option key={c.id_cliente} value={c.id_cliente}>{c.nombre_cliente} {c.apellido_cliente}</option>
-              ))}
-            </select>
-            {errores.id_cliente && <span className="form-error">{errores.id_cliente}</span>}
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="nombre_evento">Nombre del evento</label>
-            <input
-              id="nombre_evento"
-              placeholder="Ej: Cumpleaños de 15, Casamiento..."
-              value={form.nombre_evento}
-              onChange={(e) => actualizar('nombre_evento', e.target.value)}
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div className="form-field">
-              <label htmlFor="fecha_evento">Fecha</label>
-              <input id="fecha_evento" type="date" value={form.fecha_evento} onChange={(e) => actualizar('fecha_evento', e.target.value)} required />
-              {errores.fecha_evento && <span className="form-error">{errores.fecha_evento}</span>}
-            </div>
-            <div className="form-field">
-              <label htmlFor="hora_evento">Hora</label>
-              <input id="hora_evento" type="time" value={form.hora_evento} onChange={(e) => actualizar('hora_evento', e.target.value)} required />
-              {errores.hora_evento && <span className="form-error">{errores.hora_evento}</span>}
-            </div>
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="direccion_evento">Dirección del evento</label>
-            <input id="direccion_evento" value={form.direccion_evento} onChange={(e) => actualizar('direccion_evento', e.target.value)} required />
-            {errores.direccion_evento && <span className="form-error">{errores.direccion_evento}</span>}
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="estado_reserva">Estado</label>
-            <select id="estado_reserva" value={form.estado_reserva} onChange={(e) => actualizar('estado_reserva', e.target.value)}>
-              {ESTADOS.map((e) => (
-                <option key={e.value} value={e.value}>{e.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-field">
-            <label>Servicios</label>
-            <div className="checkbox-list">
-              {servicios.length === 0 && <p className="form-hint">No hay servicios cargados todavía.</p>}
-              {servicios.map((s) => (
-                <label key={s.id_servicio}>
-                  <span>
-                    <input type="checkbox" checked={serviciosSel.has(s.id_servicio)} onChange={() => toggleServicio(s.id_servicio)} />{' '}
-                    {s.tipo_servicio}
-                  </span>
-                  <span style={{ color: 'var(--text-muted)' }}>${Number(s.precio_servicio).toLocaleString('es-AR')}</span>
-                </label>
-              ))}
-            </div>
-            <span className="form-hint">Total estimado: <strong>${total.toLocaleString('es-AR')}</strong></span>
-          </div>
-
-          <div className="form-field">
-            <label>Personal asignado</label>
-            <div className="checkbox-list">
-              {empleados.length === 0 && <p className="form-hint">No hay empleados cargados todavía.</p>}
-              {empleados.map((e) => (
-                <label key={e.id_empleado}>
-                  <span>
-                    <input type="checkbox" checked={empleadosSel.has(e.id_empleado)} onChange={() => toggleEmpleado(e.id_empleado)} />{' '}
-                    {e.nombre_emp} {e.apellido_emp}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <button type="submit" className="btn btn-primary" disabled={guardando}>
-            {guardando ? 'Guardando...' : 'Guardar'}
-          </button>{' '}
-          <button type="button" className="btn btn-secondary" onClick={() => navigate('/reservas')}>
-            Cancelar
-          </button>
-        </form>
+        {formulario}
       </div>
     </div>
   );

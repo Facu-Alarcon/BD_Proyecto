@@ -8,6 +8,7 @@ from .models import (
     Permisos, Permisos_x_Perfiles,
     Clientes, Empleados, Servicios,
     Reservas, Reservas_x_Servicios, Detalles_Reservas,
+    Sueldos, Puestos,
 )
 
 
@@ -221,3 +222,27 @@ class ReservasSerializer(serializers.ModelSerializer):
             for empleado in empleados:
                 Detalles_Reservas.objects.create(id_reserva=instance, id_empleado=empleado)
         return instance
+
+
+class SueldosSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sueldos
+        fields = ['id_sueldo', 'monto_sueldo']
+
+
+class PuestosSerializer(serializers.ModelSerializer):
+    sueldo_monto = serializers.FloatField(source='id_sueldo.monto_sueldo', read_only=True)
+
+    class Meta:
+        model = Puestos
+        fields = ['id_puesto', 'nombre_puesto', 'id_sueldo', 'sueldo_monto']
+
+
+class PuestoConEstadoSerializer(serializers.ModelSerializer):
+    """Usado en la pantalla de Asignar Puestos: cada puesto + si está asignado al empleado."""
+    asignado = serializers.BooleanField(read_only=True)
+    sueldo_monto = serializers.FloatField(source='id_sueldo.monto_sueldo', read_only=True)
+
+    class Meta:
+        model = Puestos
+        fields = ['id_puesto', 'nombre_puesto', 'sueldo_monto', 'asignado']

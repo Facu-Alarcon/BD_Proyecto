@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import { IconEditar, IconEliminar } from '../../components/icons';
+import ConfirmModal from '../../components/ConfirmModal';
 
 const BADGE_BY_ESTADO = {
   PENDIENTE: 'badge-amber',
@@ -31,6 +33,8 @@ export default function ReservasList() {
   const [reservas, setReservas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [aEliminar, setAEliminar] = useState(null);
+  const [eliminando, setEliminando] = useState(false);
 
   function cargar() {
     setCargando(true);
@@ -43,13 +47,16 @@ export default function ReservasList() {
 
   useEffect(cargar, []);
 
-  async function eliminar(reserva) {
-    if (!window.confirm(`¿Eliminar la reserva de "${reserva.cliente_nombre}"?`)) return;
+  async function confirmarEliminar() {
+    setEliminando(true);
     try {
-      await api.delete(`/reservas/${reserva.id_reserva}/`);
+      await api.delete(`/reservas/${aEliminar.id_reserva}/`);
+      setAEliminar(null);
       cargar();
     } catch (err) {
       alert(err.response?.data?.detail || 'No se pudo eliminar la reserva.');
+    } finally {
+      setEliminando(false);
     }
   }
 
@@ -99,10 +106,10 @@ export default function ReservasList() {
                 <td><span className={`badge ${BADGE_BY_ESTADO[reserva.estado_reserva] || 'badge-gray'}`}>{reserva.estado_display}</span></td>
                 <td>
                   {puedeGestionar ? (
-                    <>
-                      <Link to={`/reservas/${reserva.id_reserva}/editar`} className="btn btn-secondary btn-sm">Editar</Link>{' '}
-                      <button type="button" className="btn btn-danger btn-sm" onClick={() => eliminar(reserva)}>Eliminar</button>
-                    </>
+                    <div className="actions-cell">
+                      <Link to={`/reservas/${reserva.id_reserva}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(reserva)} title="Eliminar"><IconEliminar /></button>
+                    </div>
                   ) : (
                     <span className="form-hint">Solo lectura</span>
                   )}
@@ -112,6 +119,16 @@ export default function ReservasList() {
           </tbody>
         </table>
       </div>
+
+      {aEliminar && (
+        <ConfirmModal
+          titulo="Eliminar reserva"
+          mensaje={`¿Eliminar la reserva de "${aEliminar.cliente_nombre}"?`}
+          confirmando={eliminando}
+          onCancelar={() => setAEliminar(null)}
+          onConfirmar={confirmarEliminar}
+        />
+      )}
     </div>
   );
 }

@@ -14,6 +14,8 @@ router.register('clientes', api.ClientesViewSet, basename='api-clientes')
 router.register('empleados', api.EmpleadosViewSet, basename='api-empleados')
 router.register('servicios', api.ServiciosViewSet, basename='api-servicios')
 router.register('reservas', api.ReservasViewSet, basename='api-reservas')
+router.register('sueldos', api.SueldosViewSet, basename='api-sueldos')
+router.register('puestos', api.PuestosViewSet, basename='api-puestos')
 
 urlpatterns = [
     path('login/', api.LoginView.as_view(), name='api_login'),

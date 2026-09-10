@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import { IconEditar, IconEliminar } from '../../components/icons';
+import ConfirmModal from '../../components/ConfirmModal';
 
 export default function PermisosList() {
   const { puedeGestionar } = usePermiso('permisos');
   const [permisos, setPermisos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [aEliminar, setAEliminar] = useState(null);
+  const [eliminando, setEliminando] = useState(false);
 
   function cargar() {
     setCargando(true);
@@ -20,13 +24,16 @@ export default function PermisosList() {
 
   useEffect(cargar, []);
 
-  async function eliminar(permiso) {
-    if (!window.confirm(`¿Eliminar el permiso "${permiso.nombre_permiso}"? Se quitará de todos los perfiles que lo tengan asignado.`)) return;
+  async function confirmarEliminar() {
+    setEliminando(true);
     try {
-      await api.delete(`/permisos/${permiso.id_permiso}/`);
+      await api.delete(`/permisos/${aEliminar.id_permiso}/`);
+      setAEliminar(null);
       cargar();
     } catch (err) {
       alert(err.response?.data?.detail || 'No se pudo eliminar el permiso.');
+    } finally {
+      setEliminando(false);
     }
   }
 
@@ -72,10 +79,10 @@ export default function PermisosList() {
                 </td>
                 <td>
                   {puedeGestionar ? (
-                    <>
-                      <Link to={`/permisos/${permiso.id_permiso}/editar`} className="btn btn-secondary btn-sm">Editar</Link>{' '}
-                      <button type="button" className="btn btn-danger btn-sm" onClick={() => eliminar(permiso)}>Eliminar</button>
-                    </>
+                    <div className="actions-cell">
+                      <Link to={`/permisos/${permiso.id_permiso}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(permiso)} title="Eliminar"><IconEliminar /></button>
+                    </div>
                   ) : (
                     <span className="form-hint">Solo lectura</span>
                   )}
@@ -85,6 +92,16 @@ export default function PermisosList() {
           </tbody>
         </table>
       </div>
+
+      {aEliminar && (
+        <ConfirmModal
+          titulo="Eliminar permiso"
+          mensaje={`¿Eliminar el permiso "${aEliminar.nombre_permiso}"? Se quitará de todos los perfiles que lo tengan asignado.`}
+          confirmando={eliminando}
+          onCancelar={() => setAEliminar(null)}
+          onConfirmar={confirmarEliminar}
+        />
+      )}
     </div>
   );
 }

@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import { IconEditar, IconEliminar } from '../../components/icons';
+import ConfirmModal from '../../components/ConfirmModal';
 
 export default function ServiciosList() {
   const { puedeGestionar } = usePermiso('servicios');
   const [servicios, setServicios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [aEliminar, setAEliminar] = useState(null);
+  const [eliminando, setEliminando] = useState(false);
 
   function cargar() {
     setCargando(true);
@@ -20,13 +24,16 @@ export default function ServiciosList() {
 
   useEffect(cargar, []);
 
-  async function eliminar(servicio) {
-    if (!window.confirm(`¿Eliminar el servicio "${servicio.tipo_servicio}"?`)) return;
+  async function confirmarEliminar() {
+    setEliminando(true);
     try {
-      await api.delete(`/servicios/${servicio.id_servicio}/`);
+      await api.delete(`/servicios/${aEliminar.id_servicio}/`);
+      setAEliminar(null);
       cargar();
     } catch (err) {
       alert(err.response?.data?.detail || 'No se pudo eliminar el servicio.');
+    } finally {
+      setEliminando(false);
     }
   }
 
@@ -63,10 +70,10 @@ export default function ServiciosList() {
                 <td>${Number(servicio.precio_servicio).toLocaleString('es-AR')}</td>
                 <td>
                   {puedeGestionar ? (
-                    <>
-                      <Link to={`/servicios/${servicio.id_servicio}/editar`} className="btn btn-secondary btn-sm">Editar</Link>{' '}
-                      <button type="button" className="btn btn-danger btn-sm" onClick={() => eliminar(servicio)}>Eliminar</button>
-                    </>
+                    <div className="actions-cell">
+                      <Link to={`/servicios/${servicio.id_servicio}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(servicio)} title="Eliminar"><IconEliminar /></button>
+                    </div>
                   ) : (
                     <span className="form-hint">Solo lectura</span>
                   )}
@@ -76,6 +83,16 @@ export default function ServiciosList() {
           </tbody>
         </table>
       </div>
+
+      {aEliminar && (
+        <ConfirmModal
+          titulo="Eliminar servicio"
+          mensaje={`¿Eliminar el servicio "${aEliminar.tipo_servicio}"?`}
+          confirmando={eliminando}
+          onCancelar={() => setAEliminar(null)}
+          onConfirmar={confirmarEliminar}
+        />
+      )}
     </div>
   );
 }

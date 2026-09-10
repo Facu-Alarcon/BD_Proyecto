@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import { IconEditar, IconEliminar } from '../../components/icons';
+import ConfirmModal from '../../components/ConfirmModal';
 
 export default function PerfilesList() {
   const { puedeGestionar } = usePermiso('perfiles');
   const [perfiles, setPerfiles] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [aEliminar, setAEliminar] = useState(null);
+  const [eliminando, setEliminando] = useState(false);
 
   function cargar() {
     setCargando(true);
@@ -20,13 +24,16 @@ export default function PerfilesList() {
 
   useEffect(cargar, []);
 
-  async function eliminar(perfil) {
-    if (!window.confirm(`¿Eliminar el perfil "${perfil.tipo_perfil}"?`)) return;
+  async function confirmarEliminar() {
+    setEliminando(true);
     try {
-      await api.delete(`/perfiles/${perfil.id_perfil}/`);
+      await api.delete(`/perfiles/${aEliminar.id_perfil}/`);
+      setAEliminar(null);
       cargar();
     } catch (err) {
       alert(err.response?.data?.detail || 'No se pudo eliminar el perfil.');
+    } finally {
+      setEliminando(false);
     }
   }
 
@@ -61,11 +68,10 @@ export default function PerfilesList() {
                 <td>{perfil.tipo_perfil}</td>
                 <td>
                   {puedeGestionar ? (
-                    <>
-                      <Link to={`/perfiles/${perfil.id_perfil}/permisos`} className="btn btn-secondary btn-sm">Permisos</Link>{' '}
-                      <Link to={`/perfiles/${perfil.id_perfil}/editar`} className="btn btn-secondary btn-sm">Editar</Link>{' '}
-                      <button type="button" className="btn btn-danger btn-sm" onClick={() => eliminar(perfil)}>Eliminar</button>
-                    </>
+                    <div className="actions-cell">
+                      <Link to={`/perfiles/${perfil.id_perfil}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(perfil)} title="Eliminar"><IconEliminar /></button>
+                    </div>
                   ) : (
                     <span className="form-hint">Solo lectura</span>
                   )}
@@ -75,6 +81,16 @@ export default function PerfilesList() {
           </tbody>
         </table>
       </div>
+
+      {aEliminar && (
+        <ConfirmModal
+          titulo="Eliminar perfil"
+          mensaje={`¿Eliminar el perfil "${aEliminar.tipo_perfil}"?`}
+          confirmando={eliminando}
+          onCancelar={() => setAEliminar(null)}
+          onConfirmar={confirmarEliminar}
+        />
+      )}
     </div>
   );
 }

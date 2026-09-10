@@ -12,7 +12,6 @@ import EquipoForm from './pages/equipos/EquipoForm';
 
 import PerfilesList from './pages/perfiles/PerfilesList';
 import PerfilForm from './pages/perfiles/PerfilForm';
-import PerfilPermisos from './pages/perfiles/PerfilPermisos';
 
 import PermisosList from './pages/permisos/PermisosList';
 import PermisoForm from './pages/permisos/PermisoForm';
@@ -26,6 +25,12 @@ import ClienteForm from './pages/clientes/ClienteForm';
 import EmpleadosList from './pages/empleados/EmpleadosList';
 import EmpleadoForm from './pages/empleados/EmpleadoForm';
 
+import SueldosList from './pages/sueldos/SueldosList';
+import SueldoForm from './pages/sueldos/SueldoForm';
+
+import PuestosList from './pages/puestos/PuestosList';
+import PuestoForm from './pages/puestos/PuestoForm';
+
 import ServiciosList from './pages/servicios/ServiciosList';
 import ServicioForm from './pages/servicios/ServicioForm';
 
@@ -34,9 +39,7 @@ import ReservaForm from './pages/reservas/ReservaForm';
 
 const PROXIMAMENTE = [
   { path: 'tipos-equipo', titulo: 'Tipos de equipo' },
-  { path: 'puestos', titulo: 'Puestos' },
   { path: 'horarios', titulo: 'Horarios' },
-  { path: 'sueldos', titulo: 'Sueldos' },
   { path: 'metodos-pago', titulo: 'Métodos de pago' },
   { path: 'pagos', titulo: 'Pagos' },
 ];
@@ -68,7 +71,6 @@ export default function App() {
               <Route index element={<PerfilesList />} />
               <Route path="nuevo" element={<PerfilForm />} />
               <Route path=":id/editar" element={<PerfilForm />} />
-              <Route path=":id/permisos" element={<PerfilPermisos />} />
             </Route>
 
             <Route path="permisos" element={<RequierePermiso modulo="permisos"><Outlet /></RequierePermiso>}>
@@ -93,6 +95,18 @@ export default function App() {
               <Route index element={<EmpleadosList />} />
               <Route path="nuevo" element={<EmpleadoForm />} />
               <Route path=":id/editar" element={<EmpleadoForm />} />
+            </Route>
+
+            <Route path="sueldos" element={<RequierePermiso modulo="sueldos"><Outlet /></RequierePermiso>}>
+              <Route index element={<SueldosList />} />
+              <Route path="nuevo" element={<SueldoForm />} />
+              <Route path=":id/editar" element={<SueldoForm />} />
+            </Route>
+
+            <Route path="puestos" element={<RequierePermiso modulo="puestos"><Outlet /></RequierePermiso>}>
+              <Route index element={<PuestosList />} />
+              <Route path="nuevo" element={<PuestoForm />} />
+              <Route path=":id/editar" element={<PuestoForm />} />
             </Route>
 
             <Route path="servicios" element={<RequierePermiso modulo="servicios"><Outlet /></RequierePermiso>}>

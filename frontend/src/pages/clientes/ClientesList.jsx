@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import { IconEditar, IconEliminar } from '../../components/icons';
+import ConfirmModal from '../../components/ConfirmModal';
 
 export default function ClientesList() {
   const { puedeGestionar } = usePermiso('clientes');
   const [clientes, setClientes] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [aEliminar, setAEliminar] = useState(null);
+  const [eliminando, setEliminando] = useState(false);
 
   function cargar() {
     setCargando(true);
@@ -20,13 +24,16 @@ export default function ClientesList() {
 
   useEffect(cargar, []);
 
-  async function eliminar(cliente) {
-    if (!window.confirm(`¿Eliminar al cliente "${cliente.nombre_cliente} ${cliente.apellido_cliente}"?`)) return;
+  async function confirmarEliminar() {
+    setEliminando(true);
     try {
-      await api.delete(`/clientes/${cliente.id_cliente}/`);
+      await api.delete(`/clientes/${aEliminar.id_cliente}/`);
+      setAEliminar(null);
       cargar();
     } catch (err) {
       alert(err.response?.data?.detail || 'No se pudo eliminar el cliente.');
+    } finally {
+      setEliminando(false);
     }
   }
 
@@ -67,10 +74,10 @@ export default function ClientesList() {
                 <td>{cliente.email_cliente}</td>
                 <td>
                   {puedeGestionar ? (
-                    <>
-                      <Link to={`/clientes/${cliente.id_cliente}/editar`} className="btn btn-secondary btn-sm">Editar</Link>{' '}
-                      <button type="button" className="btn btn-danger btn-sm" onClick={() => eliminar(cliente)}>Eliminar</button>
-                    </>
+                    <div className="actions-cell">
+                      <Link to={`/clientes/${cliente.id_cliente}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(cliente)} title="Eliminar"><IconEliminar /></button>
+                    </div>
                   ) : (
                     <span className="form-hint">Solo lectura</span>
                   )}
@@ -80,6 +87,16 @@ export default function ClientesList() {
           </tbody>
         </table>
       </div>
+
+      {aEliminar && (
+        <ConfirmModal
+          titulo="Eliminar cliente"
+          mensaje={`¿Eliminar al cliente "${aEliminar.nombre_cliente} ${aEliminar.apellido_cliente}"?`}
+          confirmando={eliminando}
+          onCancelar={() => setAEliminar(null)}
+          onConfirmar={confirmarEliminar}
+        />
+      )}
     </div>
   );
 }

@@ -14,9 +14,9 @@ const NAV_ITEMS = [
   { to: '/equipos', label: 'Equipos', modulo: 'equipos' },
   { to: '/tipos-equipo', label: 'Tipos de equipo' },
   { to: '/empleados', label: 'Empleados', modulo: 'empleados' },
-  { to: '/puestos', label: 'Puestos' },
+  { to: '/puestos', label: 'Puestos', modulo: 'puestos' },
   { to: '/horarios', label: 'Horarios' },
-  { to: '/sueldos', label: 'Sueldos' },
+  { to: '/sueldos', label: 'Sueldos', modulo: 'sueldos' },
   { to: '/usuarios', label: 'Usuarios', modulo: 'usuarios' },
   { to: '/perfiles', label: 'Perfiles', modulo: 'perfiles' },
   { to: '/permisos', label: 'Permisos', modulo: 'permisos' },
@@ -25,7 +25,7 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar() {
-  const { usuario, logout } = useAuth();
+  const { usuario } = useAuth();
   const permisos = usuario?.permisos || [];
 
   const puedeVer = (modulo) =>
@@ -52,15 +52,6 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-
-      <div className="sidebar-footer">
-        <div className="sidebar-user">
-          {usuario?.usuario} · {usuario?.perfil_nombre}
-        </div>
-        <button type="button" className="sidebar-logout" onClick={logout}>
-          Cerrar sesión
-        </button>
-      </div>
     </aside>
   );
 }

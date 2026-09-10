@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import { IconEditar, IconEliminar } from '../../components/icons';
+import ConfirmModal from '../../components/ConfirmModal';
 
 export default function EmpleadosList() {
   const { puedeGestionar } = usePermiso('empleados');
   const [empleados, setEmpleados] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [aEliminar, setAEliminar] = useState(null);
+  const [eliminando, setEliminando] = useState(false);
 
   function cargar() {
     setCargando(true);
@@ -20,13 +24,16 @@ export default function EmpleadosList() {
 
   useEffect(cargar, []);
 
-  async function eliminar(empleado) {
-    if (!window.confirm(`¿Eliminar al empleado "${empleado.nombre_emp} ${empleado.apellido_emp}"?`)) return;
+  async function confirmarEliminar() {
+    setEliminando(true);
     try {
-      await api.delete(`/empleados/${empleado.id_empleado}/`);
+      await api.delete(`/empleados/${aEliminar.id_empleado}/`);
+      setAEliminar(null);
       cargar();
     } catch (err) {
       alert(err.response?.data?.detail || 'No se pudo eliminar el empleado.');
+    } finally {
+      setEliminando(false);
     }
   }
 
@@ -65,10 +72,10 @@ export default function EmpleadosList() {
                 <td>{empleado.email_emp}</td>
                 <td>
                   {puedeGestionar ? (
-                    <>
-                      <Link to={`/empleados/${empleado.id_empleado}/editar`} className="btn btn-secondary btn-sm">Editar</Link>{' '}
-                      <button type="button" className="btn btn-danger btn-sm" onClick={() => eliminar(empleado)}>Eliminar</button>
-                    </>
+                    <div className="actions-cell">
+                      <Link to={`/empleados/${empleado.id_empleado}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(empleado)} title="Eliminar"><IconEliminar /></button>
+                    </div>
                   ) : (
                     <span className="form-hint">Solo lectura</span>
                   )}
@@ -78,6 +85,16 @@ export default function EmpleadosList() {
           </tbody>
         </table>
       </div>
+
+      {aEliminar && (
+        <ConfirmModal
+          titulo="Eliminar empleado"
+          mensaje={`¿Eliminar al empleado "${aEliminar.nombre_emp} ${aEliminar.apellido_emp}"?`}
+          confirmando={eliminando}
+          onCancelar={() => setAEliminar(null)}
+          onConfirmar={confirmarEliminar}
+        />
+      )}
     </div>
   );
 }
