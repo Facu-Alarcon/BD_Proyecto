@@ -17,6 +17,7 @@ from .models import (
     Permisos, Permisos_x_Perfiles,
     SesionToken,
     Clientes, Empleados, Servicios, Reservas,
+    Sueldos, Puestos, Puestos_x_Empleados,
 )
 from .serializers import (
     TipoEquiposSerializer, EstadoEquiposSerializer, EquiposSerializer,
@@ -24,6 +25,7 @@ from .serializers import (
     PermisosSerializer, PermisoConEstadoSerializer,
     ClientesSerializer, EmpleadosSerializer, ServiciosSerializer,
     ReservasSerializer,
+    SueldosSerializer, PuestosSerializer, PuestoConEstadoSerializer,
 )
 from .permissions import permiso_modulo, permisos_del_usuario
 
@@ -216,6 +218,68 @@ class EmpleadosViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_409_CONFLICT,
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['get', 'put'], url_path='puestos')
+    def puestos(self, request, pk=None):
+        """Asignar Puestos: qué puestos tiene un empleado (tabla Puestos_x_Empleados)."""
+        empleado = self.get_object()
+
+        if request.method == 'GET':
+            asignados = set(
+                Puestos_x_Empleados.objects.filter(id_empleado=empleado).values_list('id_puesto_id', flat=True)
+            )
+            puestos_qs = Puestos.objects.select_related('id_sueldo').all().order_by('nombre_puesto')
+            for puesto in puestos_qs:
+                puesto.asignado = puesto.pk in asignados
+            serializer = PuestoConEstadoSerializer(puestos_qs, many=True)
+            return Response(serializer.data)
+
+        # PUT: sincroniza la lista completa de puestos seleccionados
+        ids_seleccionados = request.data.get('puestos', [])
+        if not isinstance(ids_seleccionados, list):
+            raise ValidationError({'puestos': 'Debe ser una lista de ids de puestos.'})
+        ids_seleccionados = {int(pk) for pk in ids_seleccionados}
+
+        ids_asignados = set(
+            Puestos_x_Empleados.objects.filter(id_empleado=empleado).values_list('id_puesto_id', flat=True)
+        )
+
+        with transaction.atomic():
+            nuevos = ids_seleccionados - ids_asignados
+            for id_puesto in nuevos:
+                Puestos_x_Empleados.objects.create(id_empleado=empleado, id_puesto_id=id_puesto)
+
+            quitados = ids_asignados - ids_seleccionados
+            if quitados:
+                Puestos_x_Empleados.objects.filter(id_empleado=empleado, id_puesto_id__in=quitados).delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SueldosViewSet(viewsets.ModelViewSet):
+    queryset = Sueldos.objects.all().order_by('monto_sueldo')
+    serializer_class = SueldosSerializer
+    permission_classes = [permiso_modulo('sueldos')]
+
+    def destroy(self, request, *args, **kwargs):
+        sueldo = self.get_object()
+        try:
+            sueldo.delete()
+        except ProtectedError:
+            return Response(
+                {'detail': f'No se puede eliminar el sueldo "${sueldo.monto_sueldo}" porque hay puestos que lo usan.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PuestosViewSet(viewsets.ModelViewSet):
+    # Puestos_x_Empleados usa CASCADE sobre id_puesto: si se borra un puesto,
+    # sus asignaciones a empleados se limpian solas (no hay ProtectedError
+    # que atajar acá, a diferencia de Sueldos que sí usa PROTECT).
+    queryset = Puestos.objects.select_related('id_sueldo').all().order_by('nombre_puesto')
+    serializer_class = PuestosSerializer
+    permission_classes = [permiso_modulo('puestos')]
 
 
 class ServiciosViewSet(viewsets.ModelViewSet):

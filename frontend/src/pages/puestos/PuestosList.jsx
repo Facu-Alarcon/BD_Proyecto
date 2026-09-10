@@ -5,9 +5,9 @@ import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 
-export default function UsuariosList() {
-  const { puedeGestionar } = usePermiso('usuarios');
-  const [usuarios, setUsuarios] = useState([]);
+export default function PuestosList() {
+  const { puedeGestionar } = usePermiso('puestos');
+  const [puestos, setPuestos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);
@@ -16,9 +16,9 @@ export default function UsuariosList() {
   function cargar() {
     setCargando(true);
     api
-      .get('/usuarios/')
-      .then(({ data }) => setUsuarios(data))
-      .catch(() => setError('No se pudieron cargar los usuarios.'))
+      .get('/puestos/')
+      .then(({ data }) => setPuestos(data))
+      .catch(() => setError('No se pudieron cargar los puestos.'))
       .finally(() => setCargando(false));
   }
 
@@ -27,11 +27,11 @@ export default function UsuariosList() {
   async function confirmarEliminar() {
     setEliminando(true);
     try {
-      await api.delete(`/usuarios/${aEliminar.id_usuario}/`);
+      await api.delete(`/puestos/${aEliminar.id_puesto}/`);
       setAEliminar(null);
       cargar();
     } catch (err) {
-      alert(err.response?.data?.detail || 'No se pudo eliminar el usuario.');
+      alert(err.response?.data?.detail || 'No se pudo eliminar el puesto.');
     } finally {
       setEliminando(false);
     }
@@ -41,9 +41,9 @@ export default function UsuariosList() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Usuarios</h1>
+          <h1>Puestos</h1>
         </div>
-        {puedeGestionar && <Link to="/usuarios/nuevo" className="btn btn-primary">+ Nuevo Usuario</Link>}
+        {puedeGestionar && <Link to="/puestos/nuevo" className="btn btn-primary">+ Nuevo Puesto</Link>}
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -52,8 +52,8 @@ export default function UsuariosList() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Usuario</th>
-              <th>Perfil</th>
+              <th>Puesto</th>
+              <th>Sueldo</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -61,18 +61,18 @@ export default function UsuariosList() {
             {cargando && (
               <tr><td colSpan={3} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             )}
-            {!cargando && usuarios.length === 0 && (
-              <tr><td colSpan={3} style={{ textAlign: 'center' }}>No hay usuarios cargados.</td></tr>
+            {!cargando && puestos.length === 0 && (
+              <tr><td colSpan={3} style={{ textAlign: 'center' }}>No hay puestos cargados.</td></tr>
             )}
-            {usuarios.map((usuario) => (
-              <tr key={usuario.id_usuario}>
-                <td>{usuario.usuario}</td>
-                <td>{usuario.perfil_nombre}</td>
+            {puestos.map((puesto) => (
+              <tr key={puesto.id_puesto}>
+                <td>{puesto.nombre_puesto}</td>
+                <td>${Number(puesto.sueldo_monto).toLocaleString('es-AR')}</td>
                 <td>
                   {puedeGestionar ? (
                     <div className="actions-cell">
-                      <Link to={`/usuarios/${usuario.id_usuario}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
-                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(usuario)} title="Eliminar"><IconEliminar /></button>
+                      <Link to={`/puestos/${puesto.id_puesto}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(puesto)} title="Eliminar"><IconEliminar /></button>
                     </div>
                   ) : (
                     <span className="form-hint">Solo lectura</span>
@@ -86,8 +86,8 @@ export default function UsuariosList() {
 
       {aEliminar && (
         <ConfirmModal
-          titulo="Eliminar usuario"
-          mensaje={`¿Eliminar al usuario "${aEliminar.usuario}"?`}
+          titulo="Eliminar puesto"
+          mensaje={`¿Eliminar el puesto "${aEliminar.nombre_puesto}"?`}
           confirmando={eliminando}
           onCancelar={() => setAEliminar(null)}
           onConfirmar={confirmarEliminar}

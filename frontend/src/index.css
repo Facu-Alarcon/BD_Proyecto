@@ -127,6 +127,14 @@ button {
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tr:hover td { background: #fafbfd; }
 
+.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
 .form-field {
   display: flex;
   flex-direction: column;
@@ -188,7 +196,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 220px;
+  max-height: 60vh;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;

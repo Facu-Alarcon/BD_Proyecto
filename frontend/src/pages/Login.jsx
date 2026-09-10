@@ -1,13 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import FondoBarras from '../components/FondoBarras';
 import './Login.css';
-
-// Alturas pseudo-aleatorias pero estables para las barras decorativas del fondo.
-const BAR_HEIGHTS = Array.from({ length: 46 }, (_, i) => {
-  const wave = Math.sin(i * 0.7) * 0.5 + Math.sin(i * 1.9) * 0.3;
-  return 18 + Math.abs(wave) * 55;
-});
 
 export default function Login() {
   const [usuario, setUsuario] = useState('');
@@ -39,11 +34,7 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <div className="login-bars" aria-hidden="true">
-        {BAR_HEIGHTS.map((h, i) => (
-          <span key={i} style={{ height: `${h}%` }} />
-        ))}
-      </div>
+      <FondoBarras className="login-bars" />
 
       <form className="login-card" onSubmit={handleSubmit}>
         <h1>Iniciar sesión</h1>

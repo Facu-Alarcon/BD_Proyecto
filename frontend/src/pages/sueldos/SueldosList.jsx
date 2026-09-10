@@ -5,9 +5,9 @@ import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 
-export default function UsuariosList() {
-  const { puedeGestionar } = usePermiso('usuarios');
-  const [usuarios, setUsuarios] = useState([]);
+export default function SueldosList() {
+  const { puedeGestionar } = usePermiso('sueldos');
+  const [sueldos, setSueldos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);
@@ -16,9 +16,9 @@ export default function UsuariosList() {
   function cargar() {
     setCargando(true);
     api
-      .get('/usuarios/')
-      .then(({ data }) => setUsuarios(data))
-      .catch(() => setError('No se pudieron cargar los usuarios.'))
+      .get('/sueldos/')
+      .then(({ data }) => setSueldos(data))
+      .catch(() => setError('No se pudieron cargar los sueldos.'))
       .finally(() => setCargando(false));
   }
 
@@ -27,11 +27,11 @@ export default function UsuariosList() {
   async function confirmarEliminar() {
     setEliminando(true);
     try {
-      await api.delete(`/usuarios/${aEliminar.id_usuario}/`);
+      await api.delete(`/sueldos/${aEliminar.id_sueldo}/`);
       setAEliminar(null);
       cargar();
     } catch (err) {
-      alert(err.response?.data?.detail || 'No se pudo eliminar el usuario.');
+      alert(err.response?.data?.detail || 'No se pudo eliminar el sueldo.');
     } finally {
       setEliminando(false);
     }
@@ -41,9 +41,9 @@ export default function UsuariosList() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Usuarios</h1>
+          <h1>Sueldos</h1>
         </div>
-        {puedeGestionar && <Link to="/usuarios/nuevo" className="btn btn-primary">+ Nuevo Usuario</Link>}
+        {puedeGestionar && <Link to="/sueldos/nuevo" className="btn btn-primary">+ Nuevo Sueldo</Link>}
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -52,27 +52,25 @@ export default function UsuariosList() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Usuario</th>
-              <th>Perfil</th>
+              <th>Monto</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cargando && (
-              <tr><td colSpan={3} style={{ textAlign: 'center' }}>Cargando...</td></tr>
+              <tr><td colSpan={2} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             )}
-            {!cargando && usuarios.length === 0 && (
-              <tr><td colSpan={3} style={{ textAlign: 'center' }}>No hay usuarios cargados.</td></tr>
+            {!cargando && sueldos.length === 0 && (
+              <tr><td colSpan={2} style={{ textAlign: 'center' }}>No hay sueldos cargados.</td></tr>
             )}
-            {usuarios.map((usuario) => (
-              <tr key={usuario.id_usuario}>
-                <td>{usuario.usuario}</td>
-                <td>{usuario.perfil_nombre}</td>
+            {sueldos.map((sueldo) => (
+              <tr key={sueldo.id_sueldo}>
+                <td>${Number(sueldo.monto_sueldo).toLocaleString('es-AR')}</td>
                 <td>
                   {puedeGestionar ? (
                     <div className="actions-cell">
-                      <Link to={`/usuarios/${usuario.id_usuario}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
-                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(usuario)} title="Eliminar"><IconEliminar /></button>
+                      <Link to={`/sueldos/${sueldo.id_sueldo}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(sueldo)} title="Eliminar"><IconEliminar /></button>
                     </div>
                   ) : (
                     <span className="form-hint">Solo lectura</span>
@@ -86,8 +84,8 @@ export default function UsuariosList() {
 
       {aEliminar && (
         <ConfirmModal
-          titulo="Eliminar usuario"
-          mensaje={`¿Eliminar al usuario "${aEliminar.usuario}"?`}
+          titulo="Eliminar sueldo"
+          mensaje={`¿Eliminar el sueldo de $${Number(aEliminar.monto_sueldo).toLocaleString('es-AR')}?`}
           confirmando={eliminando}
           onCancelar={() => setAEliminar(null)}
           onConfirmar={confirmarEliminar}

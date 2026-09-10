@@ -1,6 +1,21 @@
 from django.db import models
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MinLengthValidator, RegexValidator
 from decimal import Decimal
+
+# Los teléfonos se guardan como texto, no como número: nunca se operan
+# matemáticamente y un IntegerField normal tiene tope en 2.147.483.647,
+# que un celular con característica (ej: 3878551132) supera fácilmente.
+validar_telefono = [
+    MinLengthValidator(10, message='El teléfono debe tener al menos 10 dígitos.'),
+    RegexValidator(r'^\d+$', message='El teléfono solo puede tener números.'),
+]
+
+# Nombres y apellidos: solo letras (con acentos y ñ), espacios, guiones y
+# apóstrofes (para nombres compuestos tipo "María José" o "O'Connor").
+# Nada de números ni símbolos raros.
+validar_nombre_propio = [
+    RegexValidator(r"^[A-Za-zÁÉÍÓÚáéíóúÑñÜü' -]+$", message='Solo se permiten letras.'),
+]
 
 '''
 Van los modelos de la base datos === TABLAS DE LA BD 
@@ -33,9 +48,9 @@ class Puestos(models.Model):
 
 class Empleados(models.Model):
     id_empleado = models.AutoField(primary_key=True)
-    nombre_emp = models.CharField(max_length=50)
-    apellido_emp = models.CharField(max_length=50)
-    telefono_emp = models.IntegerField()
+    nombre_emp = models.CharField(max_length=30, validators=validar_nombre_propio)
+    apellido_emp = models.CharField(max_length=30, validators=validar_nombre_propio)
+    telefono_emp = models.CharField(max_length=12, validators=validar_telefono)
     email_emp = models.EmailField()
 
     class Meta:
@@ -221,10 +236,10 @@ class Equipos_x_Servicios(models.Model):
 
 class Clientes(models.Model):
     id_cliente = models.AutoField(primary_key=True)
-    nombre_cliente = models.CharField(max_length=50)
-    apellido_cliente = models.CharField(max_length=50)
-    domicilio_cliente = models.CharField(max_length=100)
-    telefono_cliente = models.IntegerField()
+    nombre_cliente = models.CharField(max_length=30, validators=validar_nombre_propio)
+    apellido_cliente = models.CharField(max_length=30, validators=validar_nombre_propio)
+    domicilio_cliente = models.CharField(max_length=60)
+    telefono_cliente = models.CharField(max_length=12, validators=validar_telefono)
     email_cliente = models.EmailField(max_length=100)
 
     class Meta:
