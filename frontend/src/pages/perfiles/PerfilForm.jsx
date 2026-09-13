@@ -129,8 +129,7 @@ export default function PerfilForm() {
           {permisos.map((permiso) => (
             <label key={permiso.id_permiso} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '6px 0' }}>
               <span>
-                {permiso.nombre_permiso}{' '}
-                <code style={{ fontSize: 11, color: 'var(--text-muted)' }}>({permiso.codigo})</code>
+                {permiso.nombre_permiso}
                 {!permiso.estado_permiso && <span className="badge badge-gray" style={{ marginLeft: 8 }}>Inactivo</span>}
               </span>
               <input

@@ -3,25 +3,23 @@ import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
 
 // 'modulo' es el código que usa el backend para decidir el acceso
-// (ver_<modulo> / gestionar_<modulo>). Los ítems sin 'modulo' son
-// módulos que todavía no tienen backend, así que se muestran siempre
-// como "próximamente" (no hay nada real que proteger ahí todavía).
+// (ver_<modulo> / gestionar_<modulo>).
 const NAV_ITEMS = [
   { to: '/', label: 'Inicio', end: true },
   { to: '/clientes', label: 'Clientes', modulo: 'clientes' },
   { to: '/reservas', label: 'Reservas', modulo: 'reservas' },
   { to: '/servicios', label: 'Servicios', modulo: 'servicios' },
   { to: '/equipos', label: 'Equipos', modulo: 'equipos' },
-  { to: '/tipos-equipo', label: 'Tipos de equipo' },
+  { to: '/tipos-equipo', label: 'Tipos de equipo', modulo: 'tipos_equipo' },
   { to: '/empleados', label: 'Empleados', modulo: 'empleados' },
   { to: '/puestos', label: 'Puestos', modulo: 'puestos' },
-  { to: '/horarios', label: 'Horarios' },
+  { to: '/horarios', label: 'Horarios', modulo: 'horarios' },
   { to: '/sueldos', label: 'Sueldos', modulo: 'sueldos' },
   { to: '/usuarios', label: 'Usuarios', modulo: 'usuarios' },
   { to: '/perfiles', label: 'Perfiles', modulo: 'perfiles' },
   { to: '/permisos', label: 'Permisos', modulo: 'permisos' },
-  { to: '/metodos-pago', label: 'Métodos de pago' },
-  { to: '/pagos', label: 'Pagos' },
+  { to: '/metodos-pago', label: 'Métodos de pago', modulo: 'metodos_pago' },
+  { to: '/pagos', label: 'Pagos', modulo: 'pagos' },
 ];
 
 export default function Sidebar() {
@@ -33,13 +31,6 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-logo">
-        <span className="sidebar-logo-text">
-          INFINITO
-          <small>SONIDO E ILUMINACIÓN</small>
-        </span>
-      </div>
-
       <nav className="sidebar-nav">
         {NAV_ITEMS.filter((item) => puedeVer(item.modulo)).map((item) => (
           <NavLink

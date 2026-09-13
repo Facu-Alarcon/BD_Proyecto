@@ -1,7 +1,7 @@
 .topbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;;
   height: 60px;
   min-height: 60px;
   padding: 0 24px;
@@ -94,4 +94,20 @@
 }
 .topbar-dropdown-item:hover {
   background: var(--red-bg);
+}
+.topbar-logo {
+  display: flex;
+  flex-direction: column;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  color: var(--navy-950);
+}
+
+.topbar-logo small {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  color: var(--text-muted);
+  margin-top: 1px;
 }

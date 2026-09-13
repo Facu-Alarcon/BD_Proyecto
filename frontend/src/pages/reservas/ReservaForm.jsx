@@ -165,7 +165,14 @@ export default function ReservaForm() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div className="form-field">
           <label htmlFor="fecha_evento">Fecha</label>
-          <input id="fecha_evento" type="date" value={form.fecha_evento} onChange={(e) => actualizar('fecha_evento', e.target.value)} required />
+          <input
+            id="fecha_evento"
+            type="date"
+            min={new Date().toISOString().slice(0, 10)}
+            value={form.fecha_evento}
+            onChange={(e) => actualizar('fecha_evento', e.target.value)}
+            required
+          />
           {errores.fecha_evento && <span className="form-error">{errores.fecha_evento}</span>}
         </div>
         <div className="form-field">

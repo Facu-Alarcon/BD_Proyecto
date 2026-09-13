@@ -10,7 +10,6 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from .models import (
     Tipo_Equipos, Estado_Equipos, Equipos,
     Perfiles, Usuarios,
@@ -18,14 +17,17 @@ from .models import (
     SesionToken,
     Clientes, Empleados, Servicios, Reservas,
     Sueldos, Puestos, Puestos_x_Empleados,
+    Horarios, Metodo_Pagos, Pagos,
 )
 from .serializers import (
     TipoEquiposSerializer, EstadoEquiposSerializer, EquiposSerializer,
     PerfilesSerializer, UsuariosSerializer,
+    UsuarioRestablecerClaveSerializer, CambiarClaveSerializer,
     PermisosSerializer, PermisoConEstadoSerializer,
     ClientesSerializer, EmpleadosSerializer, ServiciosSerializer,
     ReservasSerializer,
     SueldosSerializer, PuestosSerializer, PuestoConEstadoSerializer,
+    HorariosSerializer, MetodoPagosSerializer, PagosSerializer,
 )
 from .permissions import permiso_modulo, permisos_del_usuario
 
@@ -34,8 +36,11 @@ def _usuario_repr(usuario):
     return {
         'id_usuario': usuario.pk,
         'usuario': usuario.usuario,
+        'nombre': usuario.nombre,
+        'apellido': usuario.apellido,
         'id_perfil': usuario.id_perfil_id,
         'perfil_nombre': usuario.id_perfil.tipo_perfil,
+        'debe_cambiar_clave': usuario.debe_cambiar_clave,
         'permisos': sorted(permisos_del_usuario(usuario)),
     }
 
@@ -60,8 +65,26 @@ class LoginView(APIView):
         if not check_password(contraseña, usuario.contraseña):
             return Response(error, status=status.HTTP_401_UNAUTHORIZED)
 
+        if not usuario.activo:
+            return Response({'detail': 'Este usuario está dado de baja.'}, status=status.HTTP_403_FORBIDDEN)
+
         sesion = SesionToken.objects.create(token=secrets.token_hex(32), id_usuario=usuario)
         return Response({'token': sesion.token, 'usuario': _usuario_repr(usuario)})
+
+
+class CambiarClaveView(APIView):
+    """
+    Cambio de clave por el propio usuario logueado. Se usa, en particular,
+    después de un "Restablecer clave" hecho por un admin: el login sigue
+    funcionando con la clave provisoria, pero 'debe_cambiar_clave' queda
+    en true hasta que el usuario pase por acá y defina la suya.
+    """
+
+    def post(self, request):
+        serializer = CambiarClaveSerializer(data=request.data, context={'usuario': request.user})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class LogoutView(APIView):
@@ -77,10 +100,44 @@ class MeView(APIView):
         return Response(_usuario_repr(request.user))
 
 
-class TipoEquiposViewSet(viewsets.ReadOnlyModelViewSet):
+class TipoEquiposViewSet(viewsets.ModelViewSet):
     queryset = Tipo_Equipos.objects.all().order_by('nombre_tipoeq')
     serializer_class = TipoEquiposSerializer
-    permission_classes = [permiso_modulo('equipos')]
+    permission_classes = [permiso_modulo('tipos_equipo')]
+
+    def destroy(self, request, *args, **kwargs):
+        tipo = self.get_object()
+        try:
+            tipo.delete()
+        except ProtectedError:
+            return Response(
+                {'detail': f'No se puede eliminar "{tipo.nombre_tipoeq}" porque hay equipos de ese tipo.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class HorariosViewSet(viewsets.ModelViewSet):
+    queryset = Horarios.objects.all().order_by('cantidad_horas')
+    serializer_class = HorariosSerializer
+    permission_classes = [permiso_modulo('horarios')]
+
+
+class MetodoPagosViewSet(viewsets.ModelViewSet):
+    queryset = Metodo_Pagos.objects.all().order_by('metodo_pago')
+    serializer_class = MetodoPagosSerializer
+    permission_classes = [permiso_modulo('metodos_pago')]
+
+    def destroy(self, request, *args, **kwargs):
+        metodo = self.get_object()
+        try:
+            metodo.delete()
+        except ProtectedError:
+            return Response(
+                {'detail': f'No se puede eliminar "{metodo.metodo_pago}" porque hay pagos que lo usan.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class EstadoEquiposViewSet(viewsets.ModelViewSet):
@@ -181,9 +238,42 @@ class PermisosViewSet(viewsets.ModelViewSet):
 
 
 class UsuariosViewSet(viewsets.ModelViewSet):
-    queryset = Usuarios.objects.select_related('id_perfil').all().order_by('usuario')
+    queryset = Usuarios.objects.select_related('id_perfil').all().order_by('apellido', 'nombre')
     serializer_class = UsuariosSerializer
     permission_classes = [permiso_modulo('usuarios')]
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Baja lógica: no se borra la fila (rompería el historial de
+        reservas/pagos si el usuario quedó vinculado a algo). Se marca
+        activo=False + fecha_baja y se cierran sus sesiones activas para
+        que un token ya emitido deje de servir.
+        """
+        usuario = self.get_object()
+        usuario.activo = False
+        usuario.fecha_baja = timezone.localdate()
+        usuario.save()
+        SesionToken.objects.filter(id_usuario=usuario).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post'], url_path='restablecer-clave')
+    def restablecer_clave(self, request, pk=None):
+        """Define una contraseña provisoria y fuerza a cambiarla en el próximo login."""
+        usuario = self.get_object()
+        serializer = UsuarioRestablecerClaveSerializer(data=request.data, context={'usuario': usuario})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        SesionToken.objects.filter(id_usuario=usuario).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post'], url_path='reactivar')
+    def reactivar(self, request, pk=None):
+        """Contraparte de la baja lógica: reactiva a un usuario dado de baja."""
+        usuario = self.get_object()
+        usuario.activo = True
+        usuario.fecha_baja = None
+        usuario.save()
+        return Response(UsuariosSerializer(usuario).data)
 
 
 class ClientesViewSet(viewsets.ModelViewSet):
@@ -305,6 +395,12 @@ class ReservasViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class PagosViewSet(viewsets.ModelViewSet):
+    queryset = Pagos.objects.select_related('id_reserva', 'id_reserva__id_cliente').all().order_by('-id_pago')
+    serializer_class = PagosSerializer
+    permission_classes = [permiso_modulo('pagos')]
+
+
 class DashboardResumenView(APIView):
     """
     Datos reales para las cards de la pantalla de Inicio.
@@ -363,3 +459,4 @@ class DashboardResumenView(APIView):
             'reservas_hoy_pendientes': reservas_hoy_qs.filter(estado_reserva='PENDIENTE').count(),
             'proximas_reservas': proximas,
         })
+ 

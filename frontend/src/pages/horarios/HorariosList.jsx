@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
-import { colorEstadoEquipo } from '../../utils/estadoEquipo';
 import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 
-export default function EquiposList() {
-  const { puedeGestionar } = usePermiso('equipos');
-  const [equipos, setEquipos] = useState([]);
+export default function HorariosList() {
+  const { puedeGestionar } = usePermiso('horarios');
+  const [horarios, setHorarios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);
@@ -17,9 +16,9 @@ export default function EquiposList() {
   function cargar() {
     setCargando(true);
     api
-      .get('/equipos/')
-      .then(({ data }) => setEquipos(data))
-      .catch(() => setError('No se pudieron cargar los equipos.'))
+      .get('/horarios/')
+      .then(({ data }) => setHorarios(data))
+      .catch(() => setError('No se pudieron cargar los horarios.'))
       .finally(() => setCargando(false));
   }
 
@@ -28,11 +27,11 @@ export default function EquiposList() {
   async function confirmarEliminar() {
     setEliminando(true);
     try {
-      await api.delete(`/equipos/${aEliminar.id_equipo}/`);
+      await api.delete(`/horarios/${aEliminar.id_horario}/`);
       setAEliminar(null);
       cargar();
     } catch (err) {
-      alert(err.response?.data?.detail || 'No se pudo eliminar el equipo.');
+      alert(err.response?.data?.detail || 'No se pudo eliminar el horario.');
     } finally {
       setEliminando(false);
     }
@@ -42,9 +41,9 @@ export default function EquiposList() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Equipos</h1>
+          <h1>Horarios</h1>
         </div>
-        {puedeGestionar && <Link to="/equipos/nuevo" className="btn btn-primary">+ Nuevo Equipo</Link>}
+        {puedeGestionar && <Link to="/horarios/nuevo" className="btn btn-primary">+ Nuevo Horario</Link>}
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -53,31 +52,25 @@ export default function EquiposList() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Nombre</th>
-              <th>Tipo</th>
-              <th>Estado</th>
-              <th>Cantidad</th>
+              <th>Cantidad de horas</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cargando && (
-              <tr><td colSpan={5} style={{ textAlign: 'center' }}>Cargando...</td></tr>
+              <tr><td colSpan={2} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             )}
-            {!cargando && equipos.length === 0 && (
-              <tr><td colSpan={5} style={{ textAlign: 'center' }}>No hay equipos cargados.</td></tr>
+            {!cargando && horarios.length === 0 && (
+              <tr><td colSpan={2} style={{ textAlign: 'center' }}>No hay horarios cargados.</td></tr>
             )}
-            {equipos.map((equipo) => (
-              <tr key={equipo.id_equipo}>
-                <td>{equipo.nombre_equipo}</td>
-                <td>{equipo.tipo_nombre}</td>
-                <td><span className={`badge ${colorEstadoEquipo(equipo.estado_nombre).badge}`}>{equipo.estado_nombre}</span></td>
-                <td>{equipo.cantidad_equipo}</td>
+            {horarios.map((horario) => (
+              <tr key={horario.id_horario}>
+                <td>{horario.cantidad_horas} hs</td>
                 <td>
                   {puedeGestionar ? (
                     <div className="actions-cell">
-                      <Link to={`/equipos/${equipo.id_equipo}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
-                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(equipo)} title="Eliminar"><IconEliminar /></button>
+                      <Link to={`/horarios/${horario.id_horario}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(horario)} title="Eliminar"><IconEliminar /></button>
                     </div>
                   ) : (
                     <span className="form-hint">Solo lectura</span>
@@ -91,8 +84,8 @@ export default function EquiposList() {
 
       {aEliminar && (
         <ConfirmModal
-          titulo="Eliminar equipo"
-          mensaje={`¿Eliminar el equipo "${aEliminar.nombre_equipo}"?`}
+          titulo="Eliminar horario"
+          mensaje={`¿Eliminar el horario de ${aEliminar.cantidad_horas} hs?`}
           confirmando={eliminando}
           onCancelar={() => setAEliminar(null)}
           onConfirmar={confirmarEliminar}

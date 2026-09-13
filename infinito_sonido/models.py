@@ -17,6 +17,13 @@ validar_nombre_propio = [
     RegexValidator(r"^[A-Za-zÁÉÍÓÚáéíóúÑñÜü' -]+$", message='Solo se permiten letras.'),
 ]
 
+# DNI argentino: solo dígitos, sin puntos. Se valida largo real (7 u 8
+# dígitos) en vez de dejarlo libre, para no aceptar cualquier número.
+validar_dni = [
+    MinLengthValidator(7, message='El DNI debe tener 7 u 8 dígitos.'),
+    RegexValidator(r'^\d+$', message='El DNI solo puede tener números, sin puntos ni espacios.'),
+]
+
 '''
 Van los modelos de la base datos === TABLAS DE LA BD 
 Se lo crea como objetos
@@ -103,8 +110,24 @@ class Perfiles(models.Model):
 class Usuarios(models.Model):
     id_usuario = models.AutoField(primary_key=True)
     id_perfil = models.ForeignKey(Perfiles, on_delete=models.PROTECT, db_column='id_perfil')
-    usuario = models.CharField(max_length=50)
+    dni = models.CharField(max_length=8, unique=True, validators=validar_dni)
+    nombre = models.CharField(max_length=30, validators=validar_nombre_propio)
+    apellido = models.CharField(max_length=30, validators=validar_nombre_propio)
+    correo = models.EmailField()
+    # Ya no se escribe a mano: se genera solo como apellido + inicial del
+    # nombre (ver generar_nombre_usuario en serializers.py) al crear el
+    # usuario, y queda fijo de ahí en más (no se edita ni al modificar).
+    usuario = models.CharField(max_length=50, unique=True)
     contraseña = models.CharField(max_length=128)
+    # Baja de usuario = activo=False + fecha_baja (no se borra la fila:
+    # ver UsuariosViewSet.destroy en api.py).
+    activo = models.BooleanField(default=True)
+    # Se prende solo al usar "Restablecer clave" (acción del admin) y
+    # obliga a definir una contraseña propia en el próximo login; se
+    # apaga cuando el usuario la cambia (ver CambiarClaveView en api.py).
+    debe_cambiar_clave = models.BooleanField(default=False)
+    fecha_ultima_modificacion = models.DateField(auto_now=True)
+    fecha_baja = models.DateField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Usuario"
@@ -313,11 +336,10 @@ class Metodo_Pagos(models.Model):
     def __str__(self):
         return self.metodo_pago
 
-
 class Pagos(models.Model):
     id_pago = models.AutoField(primary_key=True)
     id_reserva = models.ForeignKey(Reservas, on_delete=models.PROTECT, db_column='id_reserva')
-    monto = models.FloatField(default=0)
+    monto = models.FloatField(default=0, validators=[MinValueValidator(0.01)])
     saldo_pendiente = models.FloatField(default=0)
 
     class Meta:
@@ -357,6 +379,3 @@ class SesionToken(models.Model):
 
     def __str__(self):
         return f"Token de {self.id_usuario}"
-
-    def __str__(self):
-        return f"Detalle {self.id_detalle_pago} - Pago {self.id_pago_id}"

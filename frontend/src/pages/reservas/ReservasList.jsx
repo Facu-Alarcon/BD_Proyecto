@@ -65,7 +65,6 @@ export default function ReservasList() {
       <div className="page-header">
         <div>
           <h1>Reservas</h1>
-          <p>Agenda de eventos contratados.</p>
         </div>
         {puedeGestionar && <Link to="/reservas/nueva" className="btn btn-primary">+ Nueva Reserva</Link>}
       </div>

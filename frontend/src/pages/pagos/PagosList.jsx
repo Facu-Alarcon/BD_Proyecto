@@ -5,9 +5,9 @@ import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 
-export default function PermisosList() {
-  const { puedeGestionar } = usePermiso('permisos');
-  const [permisos, setPermisos] = useState([]);
+export default function PagosList() {
+  const { puedeGestionar } = usePermiso('pagos');
+  const [pagos, setPagos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);
@@ -16,9 +16,9 @@ export default function PermisosList() {
   function cargar() {
     setCargando(true);
     api
-      .get('/permisos/')
-      .then(({ data }) => setPermisos(data))
-      .catch(() => setError('No se pudieron cargar los permisos.'))
+      .get('/pagos/')
+      .then(({ data }) => setPagos(data))
+      .catch(() => setError('No se pudieron cargar los pagos.'))
       .finally(() => setCargando(false));
   }
 
@@ -27,11 +27,11 @@ export default function PermisosList() {
   async function confirmarEliminar() {
     setEliminando(true);
     try {
-      await api.delete(`/permisos/${aEliminar.id_permiso}/`);
+      await api.delete(`/pagos/${aEliminar.id_pago}/`);
       setAEliminar(null);
       cargar();
     } catch (err) {
-      alert(err.response?.data?.detail || 'No se pudo eliminar el permiso.');
+      alert(err.response?.data?.detail || 'No se pudo eliminar el pago.');
     } finally {
       setEliminando(false);
     }
@@ -41,9 +41,9 @@ export default function PermisosList() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Permisos</h1>
+          <h1>Pagos</h1>
         </div>
-        {puedeGestionar && <Link to="/permisos/nuevo" className="btn btn-primary">+ Nuevo Permiso</Link>}
+        {puedeGestionar && <Link to="/pagos/nuevo" className="btn btn-primary">+ Nuevo Pago</Link>}
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -52,10 +52,10 @@ export default function PermisosList() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Nombre</th>
-              <th>Código</th>
-              <th>Descripción</th>
-              <th>Estado</th>
+              <th>Reserva</th>
+              <th>Monto</th>
+              <th>Saldo pendiente</th>
+              <th>Método(s) de pago</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -63,24 +63,27 @@ export default function PermisosList() {
             {cargando && (
               <tr><td colSpan={5} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             )}
-            {!cargando && permisos.length === 0 && (
-              <tr><td colSpan={5} style={{ textAlign: 'center' }}>No hay permisos cargados.</td></tr>
+            {!cargando && pagos.length === 0 && (
+              <tr><td colSpan={5} style={{ textAlign: 'center' }}>No hay pagos registrados.</td></tr>
             )}
-            {permisos.map((permiso) => (
-              <tr key={permiso.id_permiso}>
-                <td>{permiso.nombre_permiso}</td>
-                <td><code style={{ fontSize: 12, color: 'var(--text-muted)' }}>{permiso.codigo}</code></td>
-                <td>{permiso.descripcion_permiso}</td>
+            {pagos.map((pago) => (
+              <tr key={pago.id_pago}>
                 <td>
-                  {permiso.estado_permiso
-                    ? <span className="badge badge-green">Activo</span>
-                    : <span className="badge badge-gray">Inactivo</span>}
+                  {pago.cliente_nombre}
+                  {pago.evento_nombre ? ` · ${pago.evento_nombre}` : ''}
+                </td>
+                <td>${Number(pago.monto).toLocaleString('es-AR')}</td>
+                <td>${Number(pago.saldo_pendiente).toLocaleString('es-AR')}</td>
+                <td>
+                  {pago.metodos_pago_detalle.length === 0
+                    ? <span className="form-hint">Sin especificar</span>
+                    : pago.metodos_pago_detalle.map((m) => m.metodo_pago).join(', ')}
                 </td>
                 <td>
                   {puedeGestionar ? (
                     <div className="actions-cell">
-                      <Link to={`/permisos/${permiso.id_permiso}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
-                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(permiso)} title="Eliminar"><IconEliminar /></button>
+                      <Link to={`/pagos/${pago.id_pago}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(pago)} title="Eliminar"><IconEliminar /></button>
                     </div>
                   ) : (
                     <span className="form-hint">Solo lectura</span>
@@ -94,8 +97,8 @@ export default function PermisosList() {
 
       {aEliminar && (
         <ConfirmModal
-          titulo="Eliminar permiso"
-          mensaje={`¿Eliminar el permiso "${aEliminar.nombre_permiso}"? Se quitará de todos los perfiles que lo tengan asignado.`}
+          titulo="Eliminar pago"
+          mensaje={`¿Eliminar el pago de $${Number(aEliminar.monto).toLocaleString('es-AR')} de ${aEliminar.cliente_nombre}?`}
           confirmando={eliminando}
           onCancelar={() => setAEliminar(null)}
           onConfirmar={confirmarEliminar}

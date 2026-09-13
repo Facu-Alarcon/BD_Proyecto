@@ -6,7 +6,7 @@ from .models import (
     Tipo_Equipos, Estado_Equipos, Equipos, Servicios, Equipos_x_Servicios,
     Clientes, Reservas, Detalles_Reservas, Reservas_x_Servicios,
     Metodo_Pagos, Pagos, Detalles_de_Pago,
-    Permisos, Permisos_x_Perfiles,
+    Permisos, Permisos_x_Perfiles
 )
 
 
@@ -46,10 +46,9 @@ class Perfiles_Admin(admin.ModelAdmin):
 
 @admin.register(Usuarios)
 class Usuarios_Admin(admin.ModelAdmin):
-    list_display = ('id_usuario', 'usuario', 'id_perfil')
-    list_filter = ('id_perfil',)
-    search_fields = ('usuario',)
-
+    list_display = ('id_usuario', 'usuario', 'dni', 'nombre', 'apellido', 'id_perfil', 'activo', 'debe_cambiar_clave')
+    list_filter = ('id_perfil', 'activo')
+    search_fields = ('usuario', 'dni', 'nombre', 'apellido', 'correo')
 
 @admin.register(Horarios_x_Empleados)
 class Horarios_x_Empleados_Admin(admin.ModelAdmin):
@@ -154,3 +153,4 @@ class Permisos_Admin(admin.ModelAdmin):
 class Permisos_x_Perfiles_Admin(admin.ModelAdmin):
     list_display = ('id_permiso_perfil', 'id_perfil', 'id_permiso')
     list_filter = ('id_perfil', 'id_permiso')
+

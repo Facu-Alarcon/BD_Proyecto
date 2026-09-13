@@ -5,7 +5,6 @@ import RequierePermiso from './components/RequierePermiso';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Inicio from './pages/Inicio';
-import Placeholder from './pages/Placeholder';
 
 import EquiposList from './pages/equipos/EquiposList';
 import EquipoForm from './pages/equipos/EquipoForm';
@@ -37,12 +36,19 @@ import ServicioForm from './pages/servicios/ServicioForm';
 import ReservasList from './pages/reservas/ReservasList';
 import ReservaForm from './pages/reservas/ReservaForm';
 
-const PROXIMAMENTE = [
-  { path: 'tipos-equipo', titulo: 'Tipos de equipo' },
-  { path: 'horarios', titulo: 'Horarios' },
-  { path: 'metodos-pago', titulo: 'Métodos de pago' },
-  { path: 'pagos', titulo: 'Pagos' },
-];
+import TiposEquipoList from './pages/tiposequipo/TiposEquipoList';
+import TipoEquipoForm from './pages/tiposequipo/TipoEquipoForm';
+
+import HorariosList from './pages/horarios/HorariosList';
+import HorarioForm from './pages/horarios/HorarioForm';
+
+import MetodosPagoList from './pages/metodospago/MetodosPagoList';
+import MetodoPagoForm from './pages/metodospago/MetodoPagoForm';
+
+import PagosList from './pages/pagos/PagosList';
+import PagoForm from './pages/pagos/PagoForm';
+
+import CambiarClave from './pages/CambiarClave';
 
 export default function App() {
   return (
@@ -65,6 +71,12 @@ export default function App() {
               <Route index element={<EquiposList />} />
               <Route path="nuevo" element={<EquipoForm />} />
               <Route path=":id/editar" element={<EquipoForm />} />
+            </Route>
+
+            <Route path="tipos-equipo" element={<RequierePermiso modulo="tipos_equipo"><Outlet /></RequierePermiso>}>
+              <Route index element={<TiposEquipoList />} />
+              <Route path="nuevo" element={<TipoEquipoForm />} />
+              <Route path=":id/editar" element={<TipoEquipoForm />} />
             </Route>
 
             <Route path="perfiles" element={<RequierePermiso modulo="perfiles"><Outlet /></RequierePermiso>}>
@@ -121,12 +133,27 @@ export default function App() {
               <Route path=":id/editar" element={<ReservaForm />} />
             </Route>
 
-            {PROXIMAMENTE.map((m) => (
-              <Route key={m.path} path={m.path} element={<Placeholder titulo={m.titulo} />} />
-            ))}
+            <Route path="horarios" element={<RequierePermiso modulo="horarios"><Outlet /></RequierePermiso>}>
+              <Route index element={<HorariosList />} />
+              <Route path="nuevo" element={<HorarioForm />} />
+              <Route path=":id/editar" element={<HorarioForm />} />
+            </Route>
+
+            <Route path="metodos-pago" element={<RequierePermiso modulo="metodos_pago"><Outlet /></RequierePermiso>}>
+              <Route index element={<MetodosPagoList />} />
+              <Route path="nuevo" element={<MetodoPagoForm />} />
+              <Route path=":id/editar" element={<MetodoPagoForm />} />
+            </Route>
+
+            <Route path="pagos" element={<RequierePermiso modulo="pagos"><Outlet /></RequierePermiso>}>
+              <Route index element={<PagosList />} />
+              <Route path="nuevo" element={<PagoForm />} />
+              <Route path=":id/editar" element={<PagoForm />} />
+            </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
+          <Route path="/cambiar-clave" element={<ProtectedRoute><CambiarClave /></ProtectedRoute>}/>
         </Routes>
       </AuthProvider>
     </BrowserRouter>

@@ -1,8 +1,11 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
+
+const FORM_VACIO = { id_perfil: '', dni: '', nombre: '', apellido: '', correo: '', contraseña: '' };
 
 export default function UsuarioForm() {
   const { id } = useParams();
@@ -10,7 +13,8 @@ export default function UsuarioForm() {
   const navigate = useNavigate();
 
   const [perfiles, setPerfiles] = useState([]);
-  const [form, setForm] = useState({ usuario: '', id_perfil: '', contraseña: '' });
+  const [form, setForm] = useState(FORM_VACIO);
+  const [datosUsuario, setDatosUsuario] = useState(null); // solo lectura: usuario/activo/fechas
   const [errores, setErrores] = useState({});
   const [cargando, setCargando] = useState(editando);
   const [guardando, setGuardando] = useState(false);
@@ -23,7 +27,15 @@ export default function UsuarioForm() {
   useEffect(() => {
     if (!editando) return;
     api.get(`/usuarios/${id}/`).then(({ data }) => {
-      setForm({ usuario: data.usuario, id_perfil: data.id_perfil, contraseña: '' });
+      setForm({
+        id_perfil: data.id_perfil,
+        dni: data.dni,
+        nombre: data.nombre,
+        apellido: data.apellido,
+        correo: data.correo,
+        contraseña: '',
+      });
+      setDatosUsuario(data);
       setCargando(false);
     });
   }, [id, editando]);
@@ -38,10 +50,25 @@ export default function UsuarioForm() {
     setErrores({});
     try {
       if (editando) {
-        await api.put(`/usuarios/${id}/`, form);
+        // Por consigna, un usuario ya creado solo puede modificar el Correo:
+        // el resto se manda igual (el backend lo ignora, ver UsuariosSerializer.update).
+        await api.put(`/usuarios/${id}/`, {
+          id_perfil: form.id_perfil,
+          dni: form.dni,
+          nombre: form.nombre,
+          apellido: form.apellido,
+          correo: form.correo,
+        });
         setGuardadoOk(true);
       } else {
-        await api.post('/usuarios/', form);
+        await api.post('/usuarios/', {
+          id_perfil: form.id_perfil,
+          dni: form.dni,
+          nombre: form.nombre,
+          apellido: form.apellido,
+          correo: form.correo,
+          contraseña: form.contraseña,
+        });
         navigate('/usuarios');
       }
     } catch (err) {
@@ -61,7 +88,7 @@ export default function UsuarioForm() {
     return (
       <SuccessModal
         titulo="Usuario modificado correctamente"
-        subtitulo={form.usuario}
+        subtitulo={datosUsuario?.usuario}
         textoBoton="Volver a usuarios"
         onContinuar={() => navigate('/usuarios')}
       />
@@ -78,6 +105,7 @@ export default function UsuarioForm() {
           id="id_perfil"
           value={form.id_perfil}
           onChange={(e) => actualizar('id_perfil', e.target.value)}
+          disabled={editando}
           required
         >
           <option value="">Seleccionar...</option>
@@ -89,31 +117,94 @@ export default function UsuarioForm() {
       </div>
 
       <div className="form-field">
-        <label htmlFor="usuario">Nombre de usuario</label>
+        <label htmlFor="dni">DNI</label>
         <input
-          id="usuario"
-          placeholder="Ej: nombre.apellido"
-          value={form.usuario}
-          onChange={(e) => actualizar('usuario', e.target.value)}
+          id="dni"
+          value={form.dni}
+          onChange={(e) => actualizar('dni', e.target.value)}
+          disabled={editando}
+          maxLength={8}
+          placeholder="Ej: 30123456"
           required
         />
-        {errores.usuario && <span className="form-error">{errores.usuario}</span>}
+        {errores.dni && <span className="form-error">{errores.dni}</span>}
       </div>
 
       <div className="form-field">
-        <label htmlFor="contraseña">Contraseña</label>
+        <label htmlFor="nombre">Nombre</label>
         <input
-          id="contraseña"
-          type="password"
-          value={form.contraseña}
-          onChange={(e) => actualizar('contraseña', e.target.value)}
-          required={!editando}
+          id="nombre"
+          value={form.nombre}
+          onChange={(e) => actualizar('nombre', e.target.value)}
+          disabled={editando}
+          maxLength={30}
+          required
         />
-        <span className="form-hint">
-          {editando ? 'Dejar en blanco para mantener la contraseña actual.' : 'Obligatoria para un usuario nuevo.'}
-        </span>
-        {errores.contraseña && <span className="form-error">{errores.contraseña}</span>}
+        {errores.nombre && <span className="form-error">{errores.nombre}</span>}
       </div>
+
+      <div className="form-field">
+        <label htmlFor="apellido">Apellido</label>
+        <input
+          id="apellido"
+          value={form.apellido}
+          onChange={(e) => actualizar('apellido', e.target.value)}
+          disabled={editando}
+          maxLength={30}
+          required
+        />
+        {errores.apellido && <span className="form-error">{errores.apellido}</span>}
+      </div>
+
+      {editando && (
+        <div className="form-field">
+          <label>Nombre de usuario</label>
+          <input value={datosUsuario?.usuario || ''} disabled />
+          <span className="form-hint">Se genera solo (apellido + inicial del nombre); no se puede editar.</span>
+        </div>
+      )}
+
+      <div className="form-field">
+        <label htmlFor="correo">Correo</label>
+        <input
+          id="correo"
+          type="email"
+          value={form.correo}
+          onChange={(e) => actualizar('correo', e.target.value)}
+          required
+        />
+        {errores.correo && <span className="form-error">{errores.correo}</span>}
+      </div>
+
+      {!editando && (
+        <div className="form-field">
+          <label htmlFor="contraseña">Contraseña</label>
+          <input
+            id="contraseña"
+            type="password"
+            value={form.contraseña}
+            onChange={(e) => actualizar('contraseña', e.target.value)}
+            required
+          />
+          <span className="form-hint">Obligatoria para un usuario nuevo.</span>
+          {errores.contraseña && <span className="form-error">{errores.contraseña}</span>}
+        </div>
+      )}
+
+      {editando && datosUsuario && (
+        <div className="form-field">
+          <label>Estado</label>
+          <div>
+            {datosUsuario.activo
+              ? <span className="badge badge-green">Activo</span>
+              : <span className="badge badge-red">Inactivo{datosUsuario.fecha_baja ? ` desde ${datosUsuario.fecha_baja}` : ''}</span>}
+            {datosUsuario.debe_cambiar_clave && (
+              <span className="badge badge-amber" style={{ marginLeft: 6 }}>Debe cambiar clave</span>
+            )}
+          </div>
+          <span className="form-hint">Última modificación: {datosUsuario.fecha_ultima_modificacion}</span>
+        </div>
+      )}
 
       <button type="submit" className="btn btn-primary" disabled={guardando}>
         {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear usuario'}
@@ -126,7 +217,7 @@ export default function UsuarioForm() {
 
   if (editando) {
     return (
-      <FormModal titulo="Editar usuario" subtitulo={form.usuario} onClose={() => navigate('/usuarios')}>
+      <FormModal titulo="Editar usuario" subtitulo={datosUsuario?.usuario} onClose={() => navigate('/usuarios')}>
         {formulario}
       </FormModal>
     );

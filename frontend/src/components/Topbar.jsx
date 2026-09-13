@@ -28,7 +28,12 @@ export default function Topbar() {
   }, []);
 
   return (
-    <header className="topbar">
+        <header className="topbar">
+      <span className="topbar-logo">
+        INFINITO
+        <small>SONIDO E ILUMINACIÓN</small>
+      </span>
+
       <div className="topbar-menu" ref={menuRef}>
         <button type="button" className="topbar-avatar-btn" onClick={() => setAbierto((v) => !v)}>
           <span className="topbar-avatar">{iniciales(usuario?.usuario)}</span>
