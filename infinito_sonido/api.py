@@ -15,7 +15,7 @@ from .models import (
     Perfiles, Usuarios,
     Permisos, Permisos_x_Perfiles,
     SesionToken,
-    Clientes, Empleados, Servicios, Reservas,
+    Clientes, Empleados, Servicios, Reservas, Reservas_x_Servicios,
     Sueldos, Puestos, Puestos_x_Empleados,
     Horarios, Metodo_Pagos, Pagos,
 )
@@ -28,6 +28,7 @@ from .serializers import (
     ReservasSerializer,
     SueldosSerializer, PuestosSerializer, PuestoConEstadoSerializer,
     HorariosSerializer, MetodoPagosSerializer, PagosSerializer,
+    recalcular_saldos,
 )
 from .permissions import permiso_modulo, permisos_del_usuario
 
@@ -377,9 +378,21 @@ class ServiciosViewSet(viewsets.ModelViewSet):
     serializer_class = ServiciosSerializer
     permission_classes = [permiso_modulo('servicios')]
 
+    # No deja borrar un servicio que está cargado en alguna reserva: si se borrara,
+    # la reserva lo perdería pero su monto total seguiría sumando ese precio.
+    def destroy(self, request, *args, **kwargs):
+        servicio = self.get_object()
+        if Reservas_x_Servicios.objects.filter(id_servicio=servicio).exists():
+            return Response(
+                {'detail': f'No se puede eliminar "{servicio.tipo_servicio}" porque está cargado en reservas.'},
+                status=status.HTTP_409_CONFLICT,
+            )
+        servicio.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class ReservasViewSet(viewsets.ModelViewSet):
-    queryset = Reservas.objects.select_related('id_cliente').all().order_by('-fecha_evento', '-duracion_evento')
+    queryset = Reservas.objects.select_related('id_cliente').all().order_by('-fecha_evento', '-hora_evento')
     serializer_class = ReservasSerializer
     permission_classes = [permiso_modulo('reservas')]
 
@@ -399,6 +412,15 @@ class PagosViewSet(viewsets.ModelViewSet):
     queryset = Pagos.objects.select_related('id_reserva', 'id_reserva__id_cliente').all().order_by('-id_pago')
     serializer_class = PagosSerializer
     permission_classes = [permiso_modulo('pagos')]
+
+    # Al borrar un pago, los saldos de los otros pagos de la misma reserva
+    # quedan viejos, así que se vuelven a calcular
+    def destroy(self, request, *args, **kwargs):
+        pago = self.get_object()
+        reserva = pago.id_reserva
+        pago.delete()
+        recalcular_saldos(reserva)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class DashboardResumenView(APIView):
@@ -432,7 +454,7 @@ class DashboardResumenView(APIView):
             Reservas.objects.select_related('id_cliente')
             .filter(fecha_evento__gte=hoy)
             .exclude(estado_reserva='CANCELADA')
-            .order_by('fecha_evento', 'duracion_evento')[:5]
+            .order_by('fecha_evento', 'hora_evento')[:5]
         )
         proximas = [
             {
@@ -440,7 +462,7 @@ class DashboardResumenView(APIView):
                 'cliente_nombre': str(r.id_cliente),
                 'nombre_evento': r.nombre_evento,
                 'fecha_evento': r.fecha_evento,
-                'hora_evento': r.duracion_evento,
+                'hora_evento': r.hora_evento,
                 'estado_reserva': r.estado_reserva,
                 'estado_display': r.get_estado_reserva_display(),
             }

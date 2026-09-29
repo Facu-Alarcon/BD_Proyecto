@@ -11,11 +11,22 @@ const ESTADOS = [
   { value: 'CANCELADA', label: 'Cancelada' },
 ];
 
+// Devuelve la fecha de hoy como 'AAAA-MM-DD' usando la hora de la compu.
+// No se usa toISOString() porque ese toma la hora UTC y después de las 21 hs
+// (en Argentina) ya daría el día siguiente.
+function hoyLocal() {
+  const d = new Date();
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mes}-${dia}`;
+}
+
 const VACIO = {
   id_cliente: '',
   nombre_evento: '',
   fecha_evento: '',
   hora_evento: '',
+  duracion_evento: '',
   direccion_evento: '',
   estado_reserva: 'PENDIENTE',
 };
@@ -35,6 +46,8 @@ export default function ReservaForm() {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [guardadoOk, setGuardadoOk] = useState(false);
+  // Fecha que tenía la reserva al abrirla para editar (sirve para no trabar las reservas que ya pasaron)
+  const [fechaOriginal, setFechaOriginal] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -54,15 +67,23 @@ export default function ReservaForm() {
           nombre_evento: r.nombre_evento || '',
           fecha_evento: r.fecha_evento,
           hora_evento: r.hora_evento?.slice(0, 5) || '',
+          duracion_evento: r.duracion_evento?.slice(0, 5) || '',
           direccion_evento: r.direccion_evento,
           estado_reserva: r.estado_reserva,
         });
+        setFechaOriginal(r.fecha_evento);
         setServiciosSel(new Set(r.servicios_detalle.map((s) => Number(s.id_servicio))));
         setEmpleadosSel(new Set(r.empleados_detalle.map((e) => Number(e.id_empleado))));
       }
       setCargando(false);
     });
   }, [id, editando]);
+
+  // En el calendario no se pueden elegir días anteriores a hoy.
+  // Si estamos editando una reserva que ya pasó, el mínimo pasa a ser su propia fecha,
+  // así se puede guardar (por ejemplo para marcarla como Finalizada) sin que el navegador la rechace.
+  const hoy = hoyLocal();
+  const fechaMinima = fechaOriginal && fechaOriginal < hoy ? fechaOriginal : hoy;
 
   function actualizar(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -86,6 +107,8 @@ export default function ReservaForm() {
     });
   }
 
+  // El monto total se calcula solo sumando el precio de los servicios tildados
+  // (el backend hace la misma cuenta al guardar, acá es para que se vea)
   const total = servicios
     .filter((s) => serviciosSel.has(Number(s.id_servicio)))
     .reduce((acc, s) => acc + Number(s.precio_servicio), 0);
@@ -162,13 +185,14 @@ export default function ReservaForm() {
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      {/* Fecha, hora de inicio y duración van en la misma fila */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
         <div className="form-field">
           <label htmlFor="fecha_evento">Fecha</label>
           <input
             id="fecha_evento"
             type="date"
-            min={new Date().toISOString().slice(0, 10)}
+            min={fechaMinima}
             value={form.fecha_evento}
             onChange={(e) => actualizar('fecha_evento', e.target.value)}
             required
@@ -179,6 +203,18 @@ export default function ReservaForm() {
           <label htmlFor="hora_evento">Hora</label>
           <input id="hora_evento" type="time" value={form.hora_evento} onChange={(e) => actualizar('hora_evento', e.target.value)} required />
           {errores.hora_evento && <span className="form-error">{errores.hora_evento}</span>}
+        </div>
+        <div className="form-field">
+          <label htmlFor="duracion_evento">Duración</label>
+          <input
+            id="duracion_evento"
+            type="time"
+            value={form.duracion_evento}
+            onChange={(e) => actualizar('duracion_evento', e.target.value)}
+            required
+          />
+          <span className="form-hint">Horas:minutos (ej: 04:30)</span>
+          {errores.duracion_evento && <span className="form-error">{errores.duracion_evento}</span>}
         </div>
       </div>
 
@@ -211,7 +247,13 @@ export default function ReservaForm() {
             </label>
           ))}
         </div>
-        <span className="form-hint">Total estimado: <strong>${total.toLocaleString('es-AR')}</strong></span>
+      </div>
+
+      {/* Solo se muestra, no se puede escribir: cambia al tildar o destildar servicios */}
+      <div className="form-field">
+        <label htmlFor="monto_total">Monto total</label>
+        <input id="monto_total" value={`$${total.toLocaleString('es-AR')}`} readOnly disabled />
+        <span className="form-hint">Se calcula solo con la suma de los servicios elegidos.</span>
       </div>
 
       <div className="form-field">

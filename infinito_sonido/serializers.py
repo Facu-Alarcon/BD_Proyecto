@@ -196,6 +196,21 @@ class ServiciosSerializer(serializers.ModelSerializer):
         fields = ['id_servicio', 'tipo_servicio', 'precio_servicio']
 
 
+# Vuelve a calcular el saldo pendiente de todos los pagos de una reserva.
+# Los recorre en el orden en que se cargaron: cada pago muestra lo que faltaba
+# pagar después de él (total de la reserva menos lo pagado hasta ese pago).
+# Se llama cada vez que algo puede dejar los saldos viejos: crear, editar o
+# borrar un pago, o cambiar los servicios (y con eso el total) de la reserva.
+def recalcular_saldos(reserva):
+    pagado = 0
+    for pago in Pagos.objects.filter(id_reserva=reserva).order_by('id_pago'):
+        pagado += pago.monto
+        nuevo_saldo = max(reserva.monto_total - pagado, 0)
+        if pago.saldo_pendiente != nuevo_saldo:
+            pago.saldo_pendiente = nuevo_saldo
+            pago.save(update_fields=['saldo_pendiente'])
+
+
 class ReservasSerializer(serializers.ModelSerializer):
     """
     Reservas_x_Servicios y Detalles_Reservas son tablas intermedias propias
@@ -207,7 +222,6 @@ class ReservasSerializer(serializers.ModelSerializer):
     """
     cliente_nombre = serializers.CharField(source='id_cliente.__str__', read_only=True)
     estado_display = serializers.CharField(source='get_estado_reserva_display', read_only=True)
-    hora_evento = serializers.TimeField(source='duracion_evento')
     servicios = serializers.PrimaryKeyRelatedField(
         queryset=Servicios.objects.all(), many=True, write_only=True, required=False
     )
@@ -221,11 +235,14 @@ class ReservasSerializer(serializers.ModelSerializer):
         model = Reservas
         fields = [
             'id_reserva', 'id_cliente', 'cliente_nombre', 'nombre_evento',
-            'fecha_evento', 'hora_evento', 'direccion_evento',
+            'fecha_evento', 'hora_evento', 'duracion_evento', 'direccion_evento',
             'monto_total', 'estado_reserva', 'estado_display',
             'servicios', 'empleados', 'servicios_detalle', 'empleados_detalle',
         ]
         read_only_fields = ['monto_total']
+        # En la base la duración puede estar vacía (reservas viejas), pero al crear
+        # o editar desde el formulario la pedimos siempre.
+        extra_kwargs = {'duracion_evento': {'required': True, 'allow_null': False}}
 
     def get_servicios_detalle(self, obj):
         rels = Reservas_x_Servicios.objects.filter(id_reserva=obj).select_related('id_servicio')
@@ -249,9 +266,20 @@ class ReservasSerializer(serializers.ModelSerializer):
             for r in rels
         ]
 
+    # No deja cargar reservas con fecha anterior a hoy.
+    # Al editar solo se controla si se cambió la fecha: si la reserva ya pasó y se deja
+    # la misma fecha (por ejemplo para pasarla a Finalizada), se permite guardar.
     def validate_fecha_evento(self, valor):
+        if self.instance is not None and valor == self.instance.fecha_evento:
+            return valor
         if valor < timezone.localdate():
             raise serializers.ValidationError('No se puede registrar una reserva en una fecha anterior a hoy.')
+        return valor
+
+    # La duración tiene que ser de al menos un minuto, 00:00 no tiene sentido
+    def validate_duracion_evento(self, valor):
+        if valor.hour == 0 and valor.minute == 0:
+            raise serializers.ValidationError('La duración del evento tiene que ser mayor a 00:00.')
         return valor
 
     def _validar_empleados(self, empleados, fecha_evento, excluir_reserva=None):
@@ -298,6 +326,8 @@ class ReservasSerializer(serializers.ModelSerializer):
             Reservas_x_Servicios.objects.filter(id_reserva=instance).delete()
             for servicio in servicios:
                 Reservas_x_Servicios.objects.create(id_reserva=instance, id_servicio=servicio)
+            # Si cambiaron los servicios cambió el total, así que los saldos de los pagos también
+            recalcular_saldos(instance)
         if empleados is not None:
             Detalles_Reservas.objects.filter(id_reserva=instance).delete()
             for empleado in empleados:
@@ -346,8 +376,8 @@ class PagosSerializer(serializers.ModelSerializer):
     Detalles_de_Pago es una tabla intermedia propia (no ManyToManyField),
     así que 'metodos_pago' se recibe como lista de ids y se sincroniza a
     mano, igual que 'servicios'/'empleados' en ReservasSerializer.
-    El saldo_pendiente se calcula solo: monto_total de la reserva menos
-    todos los pagos ya registrados para esa reserva (este incluido), así
+    El saldo_pendiente se calcula solo con recalcular_saldos(): monto_total
+    de la reserva menos lo pagado hasta este pago (este incluido), así
     que nunca se manda a mano desde el frontend.
     """
     cliente_nombre = serializers.CharField(source='id_reserva.id_cliente.__str__', read_only=True)
@@ -372,30 +402,19 @@ class PagosSerializer(serializers.ModelSerializer):
             for r in rels
         ]
 
-    def _saldo_antes_de_este_pago(self, reserva, excluir_pago=None):
-        pagos_previos = Pagos.objects.filter(id_reserva=reserva)
-        if excluir_pago is not None:
-            pagos_previos = pagos_previos.exclude(pk=excluir_pago.pk)
-        total_pagado = sum(p.monto for p in pagos_previos)
-        return reserva.monto_total - total_pagado
-
     def create(self, validated_data):
         metodos = validated_data.pop('metodos_pago', [])
-        reserva = validated_data['id_reserva']
-        saldo_previo = self._saldo_antes_de_este_pago(reserva)
-        validated_data['saldo_pendiente'] = max(saldo_previo - validated_data['monto'], 0)
-
         pago = Pagos.objects.create(**validated_data)
         for metodo in metodos:
             Detalles_de_Pago.objects.create(id_pago=pago, id_metodo_pago=metodo)
+        # El saldo de este pago (y el de los demás de la reserva) se calcula acá
+        recalcular_saldos(pago.id_reserva)
+        pago.refresh_from_db()
         return pago
 
     def update(self, instance, validated_data):
         metodos = validated_data.pop('metodos_pago', None)
-        reserva = validated_data.get('id_reserva', instance.id_reserva)
-        monto = validated_data.get('monto', instance.monto)
-        saldo_previo = self._saldo_antes_de_este_pago(reserva, excluir_pago=instance)
-        validated_data['saldo_pendiente'] = max(saldo_previo - monto, 0)
+        reserva_anterior = instance.id_reserva
 
         instance = super().update(instance, validated_data)
 
@@ -403,4 +422,11 @@ class PagosSerializer(serializers.ModelSerializer):
             Detalles_de_Pago.objects.filter(id_pago=instance).delete()
             for metodo in metodos:
                 Detalles_de_Pago.objects.create(id_pago=instance, id_metodo_pago=metodo)
+
+        # Si se cambió el monto, cambian los saldos de este pago y de los que vinieron después.
+        # Si se lo pasó a otra reserva, hay que recalcular las dos.
+        recalcular_saldos(instance.id_reserva)
+        if reserva_anterior.pk != instance.id_reserva_id:
+            recalcular_saldos(reserva_anterior)
+        instance.refresh_from_db()
         return instance

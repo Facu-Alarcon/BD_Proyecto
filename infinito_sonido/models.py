@@ -285,8 +285,12 @@ class Reservas(models.Model):
     id_cliente = models.ForeignKey(Clientes, on_delete=models.PROTECT, db_column='id_cliente')
     nombre_evento = models.CharField(max_length=100, blank=True)
     fecha_evento = models.DateField()
+    # Hora a la que arranca el evento
+    hora_evento = models.TimeField()
     direccion_evento = models.CharField(max_length=100)
-    duracion_evento = models.TimeField()
+    # Cuánto dura el evento en horas:minutos (ej: 04:30 = cuatro horas y media).
+    # Puede quedar vacía solo en las reservas viejas, de antes de separar hora y duración.
+    duracion_evento = models.TimeField(null=True, blank=True)
     monto_total = models.FloatField(default=0)
     estado_reserva = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE')
 

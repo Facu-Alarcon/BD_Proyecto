@@ -211,3 +211,28 @@ button {
   padding: 6px 2px;
   font-size: 14px;
 }
+
+/* Barra de búsqueda y filtros que va arriba de las tablas (Reservas, y después las demás) */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.filtros .form-field {
+  margin-bottom: 0;
+}
+
+/* El buscador de texto ocupa el espacio que sobra */
+.filtros-buscar {
+  flex: 1 1 220px;
+}
+
+.filtros-resultado {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
