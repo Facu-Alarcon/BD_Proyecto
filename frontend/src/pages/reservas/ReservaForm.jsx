@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
+import SelectBuscable from '../../components/SelectBuscable';
 
 const ESTADOS = [
   { value: 'PENDIENTE', label: 'Pendiente' },
@@ -166,12 +167,16 @@ export default function ReservaForm() {
 
       <div className="form-field">
         <label htmlFor="id_cliente">Cliente</label>
-        <select id="id_cliente" value={form.id_cliente} onChange={(e) => actualizar('id_cliente', e.target.value)} required>
-          <option value="">Seleccionar...</option>
-          {clientes.map((c) => (
-            <option key={c.id_cliente} value={c.id_cliente}>{c.nombre_cliente} {c.apellido_cliente}</option>
-          ))}
-        </select>
+        {/* Se puede escribir el nombre o apellido para filtrar, o abrir la lista con la flechita */}
+        <SelectBuscable
+          id="id_cliente"
+          opciones={clientes.map((c) => ({ value: c.id_cliente, label: `${c.nombre_cliente} ${c.apellido_cliente}` }))}
+          value={form.id_cliente}
+          onChange={(valor) => actualizar('id_cliente', valor)}
+          placeholder="Buscar cliente por nombre o apellido..."
+          sinResultados="No hay clientes con ese nombre."
+          required
+        />
         {errores.id_cliente && <span className="form-error">{errores.id_cliente}</span>}
       </div>
 

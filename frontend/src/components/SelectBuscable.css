@@ -1,0 +1,64 @@
+/* Contenedor: la lista se posiciona respecto a este div */
+.select-buscable {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Deja lugar a la derecha para la flechita */
+.select-buscable input {
+  padding-right: 34px;
+}
+
+.select-buscable-flecha {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+/* Lista desplegable con las opciones */
+.select-buscable-lista {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.select-buscable-opcion {
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.select-buscable-opcion.resaltada {
+  background: var(--gray-bg);
+}
+
+.select-buscable-opcion.elegida {
+  font-weight: 700;
+  color: var(--navy-accent);
+}
+
+.select-buscable-vacio {
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
