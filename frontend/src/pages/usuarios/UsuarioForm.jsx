@@ -50,7 +50,7 @@ export default function UsuarioForm() {
     setErrores({});
     try {
       if (editando) {
-        // Por consigna, un usuario ya creado solo puede modificar el Correo:
+        // Por consigna, un usuario ya creado solo puede modificar el Correo y el Perfil:
         // el resto se manda igual (el backend lo ignora, ver UsuariosSerializer.update).
         await api.put(`/usuarios/${id}/`, {
           id_perfil: form.id_perfil,
@@ -105,7 +105,6 @@ export default function UsuarioForm() {
           id="id_perfil"
           value={form.id_perfil}
           onChange={(e) => actualizar('id_perfil', e.target.value)}
-          disabled={editando}
           required
         >
           <option value="">Seleccionar...</option>

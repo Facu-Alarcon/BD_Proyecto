@@ -105,8 +105,8 @@ class UsuariosSerializer(serializers.ModelSerializer):
     """
     Alta: se cargan dni/nombre/apellido/correo/id_perfil/contraseña y el
     'usuario' se genera solo (generar_nombre_usuario). Modificación: por
-    consigna, un usuario ya creado solo puede editar su Correo (el resto
-    de los datos de identidad quedan fijos); la contraseña se cambia
+    consigna, un usuario ya creado solo puede editar su Correo y su
+    Perfil (el resto de los datos de identidad quedan fijos); la contraseña se cambia
     aparte con "Restablecer clave" (ver UsuarioRestablecerClaveSerializer
     y la acción 'restablecer_clave' en UsuariosViewSet). 'activo' y
     'fecha_baja' tampoco se tocan acá: los maneja el destroy() del
@@ -139,6 +139,7 @@ class UsuariosSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         instance.correo = validated_data.get('correo', instance.correo)
+        instance.id_perfil = validated_data.get('id_perfil', instance.id_perfil)
         instance.save()  # fecha_ultima_modificacion se actualiza sola (auto_now)
         return instance
 
