@@ -39,6 +39,9 @@
 }
 
 .sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 14px;
@@ -56,6 +59,63 @@
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
   font-weight: 700;
+}
+
+.sidebar-icon {
+  flex-shrink: 0;
+}
+
+.sidebar-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Cartelito con el nombre de la sección (solo en modo compacto). */
+.sidebar-tooltip {
+  position: fixed;
+  z-index: 1000;
+  transform: translateY(-50%);
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--navy-950);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+}
+
+.sidebar-tooltip::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -5px;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left: 0;
+  border-right-color: var(--navy-950);
+}
+
+/* Pantallas medianas/chicas: solo íconos. Mismo corte que MEDIA_COMPACTO en Sidebar.jsx. */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 72px;
+    min-width: 72px;
+    padding: 20px 12px;
+  }
+
+  .sidebar-link {
+    justify-content: center;
+    padding: 10px;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  .sidebar-label {
+    display: none;
+  }
 }
 
 .sidebar-footer {
