@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { IconChevronDown, IconSalir } from './icons';
+import logo from '../assets/img/logonuevo.png';
 import './Topbar.css';
 
 function iniciales(texto) {
@@ -29,10 +30,7 @@ export default function Topbar() {
 
   return (
         <header className="topbar">
-      <span className="topbar-logo">
-        INFINITO
-        <small>SONIDO E ILUMINACIÓN</small>
-      </span>
+      <img src={logo} alt="Infinito Sonido e Iluminación" className="topbar-logo" />
 
       <div className="topbar-menu" ref={menuRef}>
         <button type="button" className="topbar-avatar-btn" onClick={() => setAbierto((v) => !v)}>

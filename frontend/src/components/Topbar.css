@@ -96,18 +96,7 @@
   background: var(--red-bg);
 }
 .topbar-logo {
-  display: flex;
-  flex-direction: column;
-  font-weight: 800;
-  font-size: 16px;
-  letter-spacing: 0.5px;
-  color: var(--navy-950);
-}
-
-.topbar-logo small {
-  font-size: 8px;
-  font-weight: 600;
-  letter-spacing: 1.2px;
-  color: var(--text-muted);
-  margin-top: 1px;
+  display: block;
+  height: 40px;
+  width: auto;
 }
