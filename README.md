@@ -1,7 +1,7 @@
 # Django + MySQL + phpMyAdmin sobre Docker
 
 Proyecto de ejemplo para el taller: un stack de 3 contenedores con
-**instalacion manual** de Django dentro del contenedor de Python.
+Django corriendo en el contenedor de Python, que instala todo y migra solo al levantarse.
 
 ## Arquitectura
 
@@ -34,7 +34,7 @@ Django_MySQL_Docker/
     └── templates/infinito_sonidos.html
 ```
 
-## Puesta en marcha (instalacion manual)
+## Puesta en marcha
 
 ### 1. Levantar los contenedores
 En la carpeta del `docker-compose.yml`:
@@ -43,39 +43,32 @@ En la carpeta del `docker-compose.yml`:
 docker-compose up -d
 ```
 
-### 2. Entrar al contenedor de Django
+El contenedor `web` hace todo solo, en este orden:
+
+1. `pip install -r requirements.txt` (instala Django y las librerias)
+2. `python manage.py migrate` (crea o actualiza las tablas en MySQL)
+3. `python manage.py runserver 0.0.0.0:8000` (arranca el servidor)
+
+Para ver como va (y si algun paso dio error):
 
 ```bash
-docker exec -i -t Infinito_Sonido_web bash
+docker-compose logs -f web
 ```
 
-### 3. Instalar Django y el conector MySQL (dentro del contenedor)
+### 2. Cuando se cambia `models.py`
+
+Las migraciones nuevas se generan a mano, y despues se reinicia el contenedor
+para que las aplique:
 
 ```bash
-pip install -r requirements.txt
-```
-### 4-1. Aplicar makemigrations (carga las tablas)
-
-```bash
-python manage.py makemigrations infinito_sonido
-```
-
-### 4-2. Aplicar las migraciones (crea las tablas en MySQL)
-
-```bash
-python manage.py migrate
+docker exec -i -t Infinito_Sonido_web python manage.py makemigrations infinito_sonido
+docker-compose restart web
 ```
 
-### 5. Crear un superusuario para el panel /admin
+### 3. Crear un superusuario para el panel /admin (opcional)
 
 ```bash
-python manage.py createsuperuser
-```
-
-### 6. Iniciar el servidor de desarrollo
-
-```bash
-python manage.py runserver 0.0.0.0:8000
+docker exec -i -t Infinito_Sonido_web python manage.py createsuperuser
 ```
 
 ## Acceso

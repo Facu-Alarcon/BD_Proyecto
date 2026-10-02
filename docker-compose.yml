@@ -1,9 +1,10 @@
 # docker-compose.yml
 # Orquesta tres contenedores: MySQL, phpMyAdmin y el entorno de Django.
 #
-# El contenedor "web" usa la imagen oficial de Python SIN Dockerfile:
-# Django y las librerias se instalan MANUALMENTE entrando al contenedor
-# con  ->  docker exec -i -t escuela_web bash
+# El contenedor "web" usa la imagen oficial de Python SIN Dockerfile.
+# Al levantarlo instala las librerias, aplica las migraciones y arranca
+# el servidor de Django solo (ver "command" en el servicio web).
+# Para entrar igual al contenedor  ->  docker exec -i -t Infinito_Sonido_web bash
 
 services:
 
@@ -60,9 +61,18 @@ services:
       DB_PASSWORD: ${MYSQL_PASSWORD}
       DB_HOST: db
       DB_PORT: 3306
-    # Mantiene el contenedor encendido para poder entrar con docker exec
+    # Lo que corre al levantar el contenedor, en este orden:
+    # instala las librerias, aplica las migraciones que falten y arranca el servidor.
+    # Con && si un paso falla no se ejecutan los siguientes.
+    # makemigrations NO va aca: se corre a mano cuando se cambia models.py,
+    # asi no se generan migraciones distintas en cada compu.
+    command: >
+      sh -c "pip install -r requirements.txt &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
     stdin_open: true
     tty: true
+    # Espera a que MySQL este listo antes de arrancar (si no, migrate falla al conectarse)
     depends_on:
       db:
         condition: service_healthy
