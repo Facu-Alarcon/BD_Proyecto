@@ -571,3 +571,72 @@ button {
 .aside-ultimo strong {
   font-size: 15px;
 }
+
+/* ---------- Usuarios y contraseñas ---------- */
+
+/* Requisitos de la contraseña que se tildan en verde mientras se escribe (ver ReglasContraseña.jsx) */
+.reglas-contraseña {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.reglas-contraseña li.cumple {
+  color: var(--verde);
+  font-weight: 600;
+}
+
+/* Datos del empleado elegido al crear un usuario (DNI y correo), para revisarlos */
+.datos-empleado {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  background: var(--verde-claro-bg);
+  font-size: 13px;
+}
+
+.datos-empleado span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.datos-empleado strong {
+  overflow-wrap: anywhere;
+}
+
+/* Recuadro con la contraseña temporal cuando el mail no se pudo enviar */
+.aviso-contraseña {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--amber-bg);
+  color: var(--text-main);
+  font-size: 14px;
+}
+
+.aviso-contraseña p {
+  margin: 0 0 10px;
+}
+
+.aviso-contraseña-valor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.aviso-contraseña-valor code {
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  font-size: 16px;
+  letter-spacing: 1px;
+}

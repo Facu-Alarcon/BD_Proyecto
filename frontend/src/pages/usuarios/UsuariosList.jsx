@@ -56,8 +56,15 @@ export default function UsuariosList() {
     }
   }
 
-  async function confirmarRestablecer(contraseña) {
-    await api.post(`/usuarios/${aRestablecer.id_usuario}/restablecer-clave/`, { contraseña });
+  // Pide a la API una contraseña temporal nueva; la API se la manda por mail al empleado.
+  // Se devuelve la respuesta para que la ventana muestre si el mail salió o no.
+  async function confirmarRestablecer() {
+    const { data } = await api.post(`/usuarios/${aRestablecer.id_usuario}/restablecer-clave/`);
+    return data;
+  }
+
+  // Al cerrar la ventana después de restablecer, se recarga la lista (cambia "Debe cambiar clave")
+  function terminarRestablecer() {
     setARestablecer(null);
     cargar();
   }
@@ -177,6 +184,7 @@ export default function UsuariosList() {
           usuario={aRestablecer}
           onCancelar={() => setARestablecer(null)}
           onConfirmar={confirmarRestablecer}
+          onTerminar={terminarRestablecer}
         />
       )}
     </div>

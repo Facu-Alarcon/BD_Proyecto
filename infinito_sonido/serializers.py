@@ -1,9 +1,9 @@
-import unicodedata
-
 from django.contrib.auth.hashers import check_password, make_password
 from django.utils import timezone
 from django.utils.text import slugify
 from rest_framework import serializers
+
+from .seguridad import generar_contraseña_temporal, validar_contraseña_segura
 
 from .models import (
     Tipo_Equipos, Estado_Equipos, Equipos,
@@ -79,92 +79,84 @@ class PermisoConEstadoSerializer(serializers.ModelSerializer):
         fields = ['id_permiso', 'nombre_permiso', 'descripcion_permiso', 'estado_permiso', 'codigo', 'asignado']
 
 
-def _normalizar_para_usuario(texto):
-    """Quita acentos/ñ y cualquier caracter que no sea letra o número, en minúscula."""
-    sin_acentos = unicodedata.normalize('NFKD', texto or '').encode('ascii', 'ignore').decode('ascii')
-    return ''.join(ch for ch in sin_acentos if ch.isalnum()).lower()
-
-
-def generar_nombre_usuario(nombre, apellido):
-    """
-    Nombre de usuario = apellido + inicial del nombre (ej: "Pérez" + "Juan"
-    -> "perezj"), todo en minúscula y sin acentos/espacios. Si ya existe,
-    se le agrega un número al final hasta encontrar uno libre.
-    """
-    base = _normalizar_para_usuario(apellido) + _normalizar_para_usuario(nombre)[:1]
-    base = base or 'usuario'
-    candidato = base
-    i = 2
-    while Usuarios.objects.filter(usuario=candidato).exists():
-        candidato = f'{base}{i}'
-        i += 1
-    return candidato
-
-
 class UsuariosSerializer(serializers.ModelSerializer):
     """
-    Alta: se cargan dni/nombre/apellido/correo/id_perfil/contraseña y el
-    'usuario' se genera solo (generar_nombre_usuario). Modificación: por
-    consigna, un usuario ya creado solo puede editar su Correo y su
-    Perfil (el resto de los datos de identidad quedan fijos); la contraseña se cambia
-    aparte con "Restablecer clave" (ver UsuarioRestablecerClaveSerializer
-    y la acción 'restablecer_clave' en UsuariosViewSet). 'activo' y
-    'fecha_baja' tampoco se tocan acá: los maneja el destroy() del
-    ViewSet (baja lógica) para no borrar la fila.
+    Los usuarios se crean a partir de un empleado ya registrado (uno a uno).
+    Alta: solo se elige el empleado y el perfil. El nombre de usuario es el DNI
+    del empleado y la contraseña es temporal: la arma el sistema al azar, se le
+    manda por mail al empleado (ver correos.py) y en el primer ingreso tiene que
+    cambiarla (debe_cambiar_clave=True).
+    Modificación: solo se puede cambiar el perfil. Los datos de la persona se
+    editan desde Empleados. 'activo' y 'fecha_baja' los maneja el destroy() del
+    ViewSet (baja lógica).
     """
     perfil_nombre = serializers.CharField(source='id_perfil.tipo_perfil', read_only=True)
     usuario = serializers.CharField(read_only=True)
-    contraseña = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    # Datos del empleado, solo para mostrar (la lista y los filtros los siguen usando con estos nombres)
+    dni = serializers.CharField(source='id_empleado.dni', read_only=True)
+    nombre = serializers.CharField(source='id_empleado.nombre_emp', read_only=True)
+    apellido = serializers.CharField(source='id_empleado.apellido_emp', read_only=True)
+    correo = serializers.CharField(source='id_empleado.email_emp', read_only=True)
 
     class Meta:
         model = Usuarios
         fields = [
-            'id_usuario', 'id_perfil', 'perfil_nombre', 'dni', 'nombre', 'apellido',
-            'correo', 'usuario', 'contraseña', 'activo', 'debe_cambiar_clave',
+            'id_usuario', 'id_empleado', 'dni', 'nombre', 'apellido', 'correo',
+            'id_perfil', 'perfil_nombre', 'usuario', 'activo', 'debe_cambiar_clave',
             'fecha_ultima_modificacion', 'fecha_baja',
         ]
         read_only_fields = ['activo', 'debe_cambiar_clave', 'fecha_ultima_modificacion', 'fecha_baja']
+        # Sin el validador automático de "uno a uno": el mensaje lo damos nosotros en validate_id_empleado
+        extra_kwargs = {'id_empleado': {'validators': []}}
 
-    def validate_contraseña(self, value):
-        if not value and self.instance is None:
-            raise serializers.ValidationError('La contraseña es obligatoria.')
-        return value
+    # El empleado elegido no puede tener ya un usuario, y necesita DNI (es el usuario)
+    # y correo (ahí le llega la contraseña temporal)
+    def validate_id_empleado(self, empleado):
+        if self.instance is not None:
+            if empleado != self.instance.id_empleado:
+                raise serializers.ValidationError('No se puede cambiar el empleado de un usuario ya creado.')
+            return empleado
+        if Usuarios.objects.filter(id_empleado=empleado).exists():
+            raise serializers.ValidationError(f'{empleado} ya tiene un usuario creado.')
+        if not empleado.dni:
+            raise serializers.ValidationError(f'{empleado} no tiene DNI cargado. Cargalo desde Empleados.')
+        if not empleado.email_emp:
+            raise serializers.ValidationError(f'{empleado} no tiene correo cargado. Cargalo desde Empleados.')
+        if Usuarios.objects.filter(usuario=empleado.dni).exists():
+            raise serializers.ValidationError(f'Ya existe un usuario con el DNI {empleado.dni}.')
+        return empleado
 
+    # Crea el usuario con el DNI como nombre de usuario y una contraseña temporal.
+    # La contraseña en texto plano se guarda en self.contraseña_temporal solo para que
+    # la vista pueda mandarla por mail; en la base queda hasheada.
     def create(self, validated_data):
-        validated_data['usuario'] = generar_nombre_usuario(
-            validated_data.get('nombre', ''), validated_data.get('apellido', '')
-        )
-        validated_data['contraseña'] = make_password(validated_data['contraseña'])
+        empleado = validated_data['id_empleado']
+        self.contraseña_temporal = generar_contraseña_temporal()
+        validated_data['usuario'] = empleado.dni
+        validated_data['contraseña'] = make_password(self.contraseña_temporal)
+        validated_data['debe_cambiar_clave'] = True
         return super().create(validated_data)
 
+    # Al editar solo cambia el perfil
     def update(self, instance, validated_data):
-        instance.correo = validated_data.get('correo', instance.correo)
         instance.id_perfil = validated_data.get('id_perfil', instance.id_perfil)
         instance.save()  # fecha_ultima_modificacion se actualiza sola (auto_now)
         return instance
 
 
-class UsuarioRestablecerClaveSerializer(serializers.Serializer):
-    """Restablecer clave (admin): define una contraseña nueva y obliga a cambiarla en el próximo login."""
-    contraseña = serializers.CharField(write_only=True, min_length=4)
-
-    def save(self, **kwargs):
-        usuario = self.context['usuario']
-        usuario.contraseña = make_password(self.validated_data['contraseña'])
-        usuario.debe_cambiar_clave = True
-        usuario.save()
-        return usuario
-
-
 class CambiarClaveSerializer(serializers.Serializer):
     """Cambio de clave por el propio usuario (por ejemplo, tras un restablecimiento forzado)."""
     contraseña_actual = serializers.CharField(write_only=True)
-    contraseña_nueva = serializers.CharField(write_only=True, min_length=4)
+    # La clave nueva tiene que cumplir las reglas de seguridad (ver seguridad.py)
+    contraseña_nueva = serializers.CharField(write_only=True, validators=[validar_contraseña_segura])
 
     def validate(self, attrs):
         usuario = self.context['usuario']
         if not check_password(attrs['contraseña_actual'], usuario.contraseña):
             raise serializers.ValidationError({'contraseña_actual': 'La contraseña actual no es correcta.'})
+        # No tiene sentido "cambiarla" por la misma (sobre todo si era la temporal)
+        if attrs['contraseña_actual'] == attrs['contraseña_nueva']:
+            raise serializers.ValidationError({'contraseña_nueva': 'La contraseña nueva tiene que ser distinta de la actual.'})
         return attrs
 
     def save(self, **kwargs):
@@ -187,7 +179,15 @@ class ClientesSerializer(serializers.ModelSerializer):
 class EmpleadosSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empleados
-        fields = ['id_empleado', 'nombre_emp', 'apellido_emp', 'telefono_emp', 'email_emp']
+        fields = ['id_empleado', 'dni', 'nombre_emp', 'apellido_emp', 'telefono_emp', 'email_emp', 'tiene_usuario']
+        # En la base el DNI puede estar vacío (empleados viejos), pero desde el formulario se pide siempre
+        extra_kwargs = {'dni': {'required': True, 'allow_null': False, 'allow_blank': False}}
+
+    # Para la pantalla de Usuarios: así se sabe qué empleados todavía no tienen cuenta
+    tiene_usuario = serializers.SerializerMethodField()
+
+    def get_tiene_usuario(self, obj):
+        return hasattr(obj, 'usuario')
 
 
 class ServiciosSerializer(serializers.ModelSerializer):

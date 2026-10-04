@@ -22,7 +22,7 @@ class TokenUsuarioAuthentication(BaseAuthentication):
 
         token_str = partes[1]
         try:
-            sesion = SesionToken.objects.select_related('id_usuario', 'id_usuario__id_perfil').get(token=token_str)
+            sesion = SesionToken.objects.select_related('id_usuario', 'id_usuario__id_perfil', 'id_usuario__id_empleado').get(token=token_str)
         except SesionToken.DoesNotExist:
             raise AuthenticationFailed('Token inválido o sesión expirada.')
 

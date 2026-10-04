@@ -4,7 +4,7 @@ import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
 
-const VACIO = { nombre_emp: '', apellido_emp: '', telefono_emp: '', email_emp: '' };
+const VACIO = { dni: '', nombre_emp: '', apellido_emp: '', telefono_emp: '', email_emp: '' };
 
 export default function EmpleadoForm() {
   const { id } = useParams();
@@ -25,7 +25,8 @@ export default function EmpleadoForm() {
         api.get(`/empleados/${id}/`),
         api.get(`/empleados/${id}/puestos/`),
       ]).then(([empleadoRes, puestosRes]) => {
-        setForm(empleadoRes.data);
+        // Los empleados cargados antes de agregar el DNI lo tienen vacío (null): se muestra como ''
+        setForm({ ...empleadoRes.data, dni: empleadoRes.data.dni || '' });
         setPuestos(puestosRes.data);
         setSeleccionados(new Set(puestosRes.data.filter((p) => p.asignado).map((p) => p.id_puesto)));
         setCargando(false);
@@ -96,6 +97,14 @@ export default function EmpleadoForm() {
   const formulario = (
     <form onSubmit={handleSubmit}>
       {errores.detail && <div className="alert alert-error">{errores.detail}</div>}
+
+      {/* DNI: también es el nombre de usuario con el que el empleado entra al sistema */}
+      <div className="form-field">
+        <label htmlFor="dni">DNI <span className="requerido">*</span></label>
+        <input id="dni" placeholder="Ej: 30123456" inputMode="numeric" minLength={7} maxLength={8} pattern="[0-9]{7,8}" title="Solo números, 7 u 8 dígitos, sin puntos" value={form.dni} onChange={(e) => actualizar('dni', e.target.value)} required />
+        <span className="form-hint">Sin puntos. Si se le crea un usuario, es con lo que ingresa al sistema.</span>
+        {errores.dni && <span className="form-error">{errores.dni}</span>}
+      </div>
 
       <div className="form-field">
         <label htmlFor="nombre_emp">Nombre</label>

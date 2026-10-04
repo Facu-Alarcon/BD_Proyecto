@@ -23,8 +23,8 @@ class Puestos_Admin(admin.ModelAdmin):
 
 @admin.register(Empleados)
 class Empleados_Admin(admin.ModelAdmin):
-    list_display = ('id_empleado', 'nombre_emp', 'apellido_emp', 'email_emp')
-    search_fields = ('nombre_emp', 'apellido_emp')
+    list_display = ('id_empleado', 'dni', 'nombre_emp', 'apellido_emp', 'email_emp')
+    search_fields = ('dni', 'nombre_emp', 'apellido_emp')
 
 
 @admin.register(Puestos_x_Empleados)
@@ -46,9 +46,10 @@ class Perfiles_Admin(admin.ModelAdmin):
 
 @admin.register(Usuarios)
 class Usuarios_Admin(admin.ModelAdmin):
-    list_display = ('id_usuario', 'usuario', 'dni', 'nombre', 'apellido', 'id_perfil', 'activo', 'debe_cambiar_clave')
+    # Nombre y apellido salen del empleado vinculado
+    list_display = ('id_usuario', 'usuario', 'id_empleado', 'id_perfil', 'activo', 'debe_cambiar_clave')
     list_filter = ('id_perfil', 'activo')
-    search_fields = ('usuario', 'dni', 'nombre', 'apellido', 'correo')
+    search_fields = ('usuario', 'id_empleado__dni', 'id_empleado__nombre_emp', 'id_empleado__apellido_emp')
 
 @admin.register(Horarios_x_Empleados)
 class Horarios_x_Empleados_Admin(admin.ModelAdmin):

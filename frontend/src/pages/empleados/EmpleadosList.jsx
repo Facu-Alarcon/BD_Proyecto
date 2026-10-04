@@ -45,8 +45,8 @@ export default function EmpleadosList() {
   // Filtros de esta pantalla (ver hooks/useFiltros.js)
   const configFiltros = [
     {
-      tipo: 'texto', id: 'texto', placeholder: 'Nombre, apellido, teléfono o email',
-      campos: (e) => [`${e.nombre_emp} ${e.apellido_emp}`, e.telefono_emp, e.email_emp],
+      tipo: 'texto', id: 'texto', placeholder: 'Nombre, apellido, DNI, teléfono o email',
+      campos: (e) => [`${e.nombre_emp} ${e.apellido_emp}`, e.dni, e.telefono_emp, e.email_emp],
     },
   ];
   const filtros = useFiltros(empleados, configFiltros);
@@ -88,7 +88,8 @@ export default function EmpleadosList() {
             <FilaSinResultados filtros={filtros} total={empleados.length} cargando={cargando} columnas={4} nombreItems="empleados" />
             {paginacion.visibles.map((empleado) => (
               <tr key={empleado.id_empleado}>
-                <td><PersonaCelda nombre={empleado.nombre_emp} apellido={empleado.apellido_emp} /></td>
+                {/* Abajo del nombre va el DNI, o un aviso si todavía no lo tiene cargado */}
+                <td><PersonaCelda nombre={empleado.nombre_emp} apellido={empleado.apellido_emp} detalle={empleado.dni ? `DNI ${empleado.dni}` : 'Sin DNI cargado'} /></td>
                 <td>{empleado.telefono_emp}</td>
                 <td>{empleado.email_emp}</td>
                 <td>

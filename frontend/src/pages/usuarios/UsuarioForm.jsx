@@ -1,40 +1,41 @@
-
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
+import SelectBuscable from '../../components/SelectBuscable';
+import AvisoContraseñaTemporal from '../../components/AvisoContraseñaTemporal';
 
-const FORM_VACIO = { id_perfil: '', dni: '', nombre: '', apellido: '', correo: '', contraseña: '' };
-
+// Formulario de usuarios. Un usuario es la cuenta de un empleado ya registrado:
+// al crear solo se elige el empleado y el perfil. El nombre de usuario es el DNI del
+// empleado y la contraseña temporal la genera el sistema y se la manda por mail.
+// Al editar solo se puede cambiar el perfil (los datos de la persona se editan en Empleados).
 export default function UsuarioForm() {
   const { id } = useParams();
   const editando = Boolean(id);
   const navigate = useNavigate();
 
   const [perfiles, setPerfiles] = useState([]);
-  const [form, setForm] = useState(FORM_VACIO);
-  const [datosUsuario, setDatosUsuario] = useState(null); // solo lectura: usuario/activo/fechas
+  const [empleados, setEmpleados] = useState([]);
+  const [form, setForm] = useState({ id_empleado: '', id_perfil: '' });
+  const [datosUsuario, setDatosUsuario] = useState(null); // solo lectura al editar
   const [errores, setErrores] = useState({});
   const [cargando, setCargando] = useState(editando);
   const [guardando, setGuardando] = useState(false);
   const [guardadoOk, setGuardadoOk] = useState(false);
+  const [creado, setCreado] = useState(null); // respuesta de la API al crear (usuario + resultado del mail)
 
+  // Perfiles para el desplegable, y al crear también los empleados
   useEffect(() => {
     api.get('/perfiles/').then(({ data }) => setPerfiles(data));
-  }, []);
+    if (!editando) api.get('/empleados/').then(({ data }) => setEmpleados(data));
+  }, [editando]);
 
+  // Al editar se traen los datos del usuario
   useEffect(() => {
     if (!editando) return;
     api.get(`/usuarios/${id}/`).then(({ data }) => {
-      setForm({
-        id_perfil: data.id_perfil,
-        dni: data.dni,
-        nombre: data.nombre,
-        apellido: data.apellido,
-        correo: data.correo,
-        contraseña: '',
-      });
+      setForm({ id_empleado: data.id_empleado, id_perfil: data.id_perfil });
       setDatosUsuario(data);
       setCargando(false);
     });
@@ -44,32 +45,23 @@ export default function UsuarioForm() {
     setForm((f) => ({ ...f, [campo]: valor }));
   }
 
+  // Solo se pueden elegir empleados que todavía no tienen usuario
+  const disponibles = empleados.filter((e) => !e.tiene_usuario);
+  const empleadoElegido = empleados.find((e) => String(e.id_empleado) === String(form.id_empleado));
+  // Si al empleado le falta el DNI o el correo no se puede crear el usuario: se avisa antes de enviar
+  const faltanDatos = Boolean(empleadoElegido && (!empleadoElegido.dni || !empleadoElegido.email_emp));
+
   async function handleSubmit(e) {
     e.preventDefault();
     setGuardando(true);
     setErrores({});
     try {
       if (editando) {
-        // Por consigna, un usuario ya creado solo puede modificar el Correo y el Perfil:
-        // el resto se manda igual (el backend lo ignora, ver UsuariosSerializer.update).
-        await api.put(`/usuarios/${id}/`, {
-          id_perfil: form.id_perfil,
-          dni: form.dni,
-          nombre: form.nombre,
-          apellido: form.apellido,
-          correo: form.correo,
-        });
+        await api.put(`/usuarios/${id}/`, { id_empleado: form.id_empleado, id_perfil: form.id_perfil });
         setGuardadoOk(true);
       } else {
-        await api.post('/usuarios/', {
-          id_perfil: form.id_perfil,
-          dni: form.dni,
-          nombre: form.nombre,
-          apellido: form.apellido,
-          correo: form.correo,
-          contraseña: form.contraseña,
-        });
-        navigate('/usuarios');
+        const { data } = await api.post('/usuarios/', form);
+        setCreado(data);
       }
     } catch (err) {
       if (err.response?.status === 400) {
@@ -95,18 +87,80 @@ export default function UsuarioForm() {
     );
   }
 
+  // Después de crear: se muestra el usuario y qué pasó con el mail de la contraseña temporal
+  if (creado) {
+    return (
+      <div>
+        <div className="page-header">
+          <div>
+            <h1>Usuario creado</h1>
+          </div>
+        </div>
+        <div className="card" style={{ padding: 28, maxWidth: 560 }}>
+          <p style={{ marginTop: 0 }}>
+            Se creó el usuario de <strong>{creado.nombre} {creado.apellido}</strong> con el perfil{' '}
+            <strong>{creado.perfil_nombre}</strong>.
+          </p>
+          <p>Usuario para ingresar: <strong>{creado.usuario}</strong> (su DNI)</p>
+          <AvisoContraseñaTemporal resultado={creado} />
+          <div className="form-acciones">
+            <button type="button" className="btn btn-primary" onClick={() => navigate('/usuarios')}>
+              Volver a usuarios
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const formulario = (
     <form onSubmit={handleSubmit}>
       {errores.detail && <div className="alert alert-error">{errores.detail}</div>}
 
+      {/* Empleado: al crear se elige de la lista (con buscador); al editar ya no se puede cambiar */}
       <div className="form-field">
-        <label htmlFor="id_perfil">Perfil</label>
-        <select
-          id="id_perfil"
-          value={form.id_perfil}
-          onChange={(e) => actualizar('id_perfil', e.target.value)}
-          required
-        >
+        <label htmlFor="id_empleado">Empleado <span className="requerido">*</span></label>
+        {editando ? (
+          <input id="id_empleado" value={`${datosUsuario?.nombre} ${datosUsuario?.apellido}`} disabled />
+        ) : (
+          <SelectBuscable
+            id="id_empleado"
+            opciones={disponibles.map((e) => ({
+              value: e.id_empleado,
+              label: `${e.nombre_emp} ${e.apellido_emp}${e.dni ? ` · DNI ${e.dni}` : ' · sin DNI'}`,
+            }))}
+            value={form.id_empleado}
+            onChange={(valor) => actualizar('id_empleado', valor)}
+            placeholder="Buscar empleado por nombre o DNI..."
+            sinResultados="No hay empleados sin usuario con ese nombre."
+            required
+          />
+        )}
+        {!editando && empleados.length > 0 && disponibles.length === 0 && (
+          <span className="form-hint">
+            Todos los empleados ya tienen usuario. <Link to="/empleados/nuevo">Registrá un empleado nuevo</Link> primero.
+          </span>
+        )}
+        {errores.id_empleado && <span className="form-error">{errores.id_empleado}</span>}
+      </div>
+
+      {/* Datos que se toman del empleado elegido, para revisar antes de crear */}
+      {(empleadoElegido || editando) && (
+        <div className="datos-empleado">
+          <div><span>Usuario (DNI)</span><strong>{editando ? datosUsuario?.usuario : empleadoElegido.dni || '—'}</strong></div>
+          <div><span>Correo</span><strong>{editando ? datosUsuario?.correo : empleadoElegido.email_emp || '—'}</strong></div>
+        </div>
+      )}
+      {faltanDatos && (
+        <div className="alert alert-error">
+          A este empleado le falta el DNI o el correo.{' '}
+          <Link to={`/empleados/${empleadoElegido.id_empleado}/editar`}>Completalo en Empleados</Link> antes de crear el usuario.
+        </div>
+      )}
+
+      <div className="form-field">
+        <label htmlFor="id_perfil">Perfil <span className="requerido">*</span></label>
+        <select id="id_perfil" value={form.id_perfil} onChange={(e) => actualizar('id_perfil', e.target.value)} required>
           <option value="">Seleccionar...</option>
           {perfiles.map((p) => (
             <option key={p.id_perfil} value={p.id_perfil}>{p.tipo_perfil}</option>
@@ -115,79 +169,11 @@ export default function UsuarioForm() {
         {errores.id_perfil && <span className="form-error">{errores.id_perfil}</span>}
       </div>
 
-      <div className="form-field">
-        <label htmlFor="dni">DNI</label>
-        <input
-          id="dni"
-          value={form.dni}
-          onChange={(e) => actualizar('dni', e.target.value)}
-          disabled={editando}
-          maxLength={8}
-          placeholder="Ej: 30123456"
-          required
-        />
-        {errores.dni && <span className="form-error">{errores.dni}</span>}
-      </div>
-
-      <div className="form-field">
-        <label htmlFor="nombre">Nombre</label>
-        <input
-          id="nombre"
-          value={form.nombre}
-          onChange={(e) => actualizar('nombre', e.target.value)}
-          disabled={editando}
-          maxLength={30}
-          required
-        />
-        {errores.nombre && <span className="form-error">{errores.nombre}</span>}
-      </div>
-
-      <div className="form-field">
-        <label htmlFor="apellido">Apellido</label>
-        <input
-          id="apellido"
-          value={form.apellido}
-          onChange={(e) => actualizar('apellido', e.target.value)}
-          disabled={editando}
-          maxLength={30}
-          required
-        />
-        {errores.apellido && <span className="form-error">{errores.apellido}</span>}
-      </div>
-
-      {editando && (
-        <div className="form-field">
-          <label>Nombre de usuario</label>
-          <input value={datosUsuario?.usuario || ''} disabled />
-          <span className="form-hint">Se genera solo (apellido + inicial del nombre); no se puede editar.</span>
-        </div>
-      )}
-
-      <div className="form-field">
-        <label htmlFor="correo">Correo</label>
-        <input
-          id="correo"
-          type="email"
-          value={form.correo}
-          onChange={(e) => actualizar('correo', e.target.value)}
-          required
-        />
-        {errores.correo && <span className="form-error">{errores.correo}</span>}
-      </div>
-
       {!editando && (
-        <div className="form-field">
-          <label htmlFor="contraseña">Contraseña</label>
-          <input
-            id="contraseña"
-            type="password"
-            value={form.contraseña}
-            onChange={(e) => actualizar('contraseña', e.target.value)}
-            required
-          />
-          <span className="form-hint">Obligatoria para un usuario nuevo.</span>
-          {errores.contraseña && <span className="form-error">{errores.contraseña}</span>}
-        </div>
+        <p className="form-hint">
+          La contraseña la genera el sistema y se le envía por mail al empleado. En su primer
+          ingreso va a tener que cambiarla por una propia.
+        </p>
       )}
 
       {editando && datosUsuario && (
@@ -205,12 +191,14 @@ export default function UsuarioForm() {
         </div>
       )}
 
-      <button type="submit" className="btn btn-primary" disabled={guardando}>
-        {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear usuario'}
-      </button>{' '}
-      <button type="button" className="btn btn-secondary" onClick={() => navigate('/usuarios')}>
-        {editando ? 'Descartar cambios' : 'Cancelar'}
-      </button>
+      <div className="form-acciones">
+        <button type="submit" className="btn btn-primary" disabled={guardando || faltanDatos}>
+          {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear usuario y enviar mail'}
+        </button>
+        <button type="button" className="btn btn-outline" onClick={() => navigate('/usuarios')}>
+          {editando ? 'Descartar cambios' : 'Cancelar'}
+        </button>
+      </div>
     </form>
   );
 
@@ -229,7 +217,7 @@ export default function UsuarioForm() {
           <h1>Nuevo Usuario</h1>
         </div>
       </div>
-      <div className="card" style={{ padding: 28, maxWidth: 480 }}>
+      <div className="card" style={{ padding: 28, maxWidth: 560 }}>
         {formulario}
       </div>
     </div>

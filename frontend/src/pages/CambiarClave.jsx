@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import FondoBarras from '../components/FondoBarras';
+import ReglasContraseña from '../components/ReglasContraseña';
+import { contraseñaSegura } from '../utils/contraseña';
 import './Login.css';
 
 export default function CambiarClave() {
@@ -18,8 +20,13 @@ export default function CambiarClave() {
     e.preventDefault();
     setError('');
 
-    if (contraseñaNueva.length < 4) {
-      setError('La contraseña nueva debe tener al menos 4 caracteres.');
+    // Antes de mandarla se revisa que cumpla todas las reglas (el backend lo vuelve a controlar)
+    if (!contraseñaSegura(contraseñaNueva)) {
+      setError('La contraseña nueva no cumple todos los requisitos de seguridad.');
+      return;
+    }
+    if (contraseñaNueva === contraseñaActual) {
+      setError('La contraseña nueva tiene que ser distinta de la provisoria.');
       return;
     }
     if (contraseñaNueva !== confirmacion) {
@@ -36,9 +43,12 @@ export default function CambiarClave() {
       actualizarUsuario({ debe_cambiar_clave: false });
       navigate('/', { replace: true });
     } catch (err) {
+      // Si el backend rechaza la clave nueva, devuelve una lista con lo que falta: se muestra junta
+      const datos = err.response?.data;
       setError(
-        err.response?.data?.contraseña_actual?.[0] ||
-        err.response?.data?.detail ||
+        datos?.contraseña_actual?.[0] ||
+        (Array.isArray(datos?.contraseña_nueva) ? datos.contraseña_nueva.join(' ') : null) ||
+        datos?.detail ||
         'No se pudo cambiar la contraseña.'
       );
     } finally {
@@ -78,6 +88,8 @@ export default function CambiarClave() {
             onChange={(e) => setContraseñaNueva(e.target.value)}
             required
           />
+          {/* Requisitos que se van tildando mientras se escribe */}
+          <ReglasContraseña contraseña={contraseñaNueva} />
         </div>
 
         <div className="form-field">
@@ -89,6 +101,10 @@ export default function CambiarClave() {
             onChange={(e) => setConfirmacion(e.target.value)}
             required
           />
+          {/* Aviso en el momento si la repetición no coincide */}
+          {confirmacion && confirmacion !== contraseñaNueva && (
+            <span className="form-error">Las contraseñas no coinciden.</span>
+          )}
         </div>
 
         <button type="submit" className="btn btn-primary login-submit" disabled={enviando}>

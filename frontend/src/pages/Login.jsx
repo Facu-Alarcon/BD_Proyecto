@@ -47,7 +47,7 @@ export default function Login() {
           <input
             id="usuario"
             type="text"
-            placeholder="nombre.apellido"
+            placeholder="Tu DNI, sin puntos"
             value={usuario}
             onChange={(e) => setUsuario(e.target.value)}
             autoFocus

@@ -124,3 +124,29 @@ STATICFILES_DIRS = [
 ]
 # Tipo de clave primaria por defecto
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# --- Envío de mails (contraseña temporal de los usuarios nuevos) ---
+# Se manda desde una cuenta de Gmail usando una "contraseña de aplicación"
+# (no la contraseña normal de la cuenta). Los datos van en el archivo .env:
+#   EMAIL_HOST_USER=cuenta@gmail.com
+#   EMAIL_HOST_PASSWORD=la contraseña de aplicación de 16 letras
+# Si no están cargados, los mails no se envían: se escriben en la consola del
+# contenedor web (docker compose logs web) y el sistema le muestra la contraseña
+# temporal al administrador en pantalla. Así se puede probar sin configurar nada.
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '').replace(' ', '')
+
+if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_TIMEOUT = 15
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+DEFAULT_FROM_EMAIL = f'Infinito Sonido e Iluminación <{EMAIL_HOST_USER or "no-responder@infinito.local"}>'
+
+# Para saber desde el código si los mails salen de verdad o solo a la consola
+EMAIL_CONFIGURADO = bool(EMAIL_HOST_USER and EMAIL_HOST_PASSWORD)

@@ -1,6 +1,6 @@
 import secrets
 
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth.hashers import check_password, make_password
 from django.db import transaction
 from django.db.models import Count, ProtectedError
 from django.utils import timezone
@@ -21,8 +21,7 @@ from .models import (
 )
 from .serializers import (
     TipoEquiposSerializer, EstadoEquiposSerializer, EquiposSerializer,
-    PerfilesSerializer, UsuariosSerializer,
-    UsuarioRestablecerClaveSerializer, CambiarClaveSerializer,
+    PerfilesSerializer, UsuariosSerializer, CambiarClaveSerializer,
     PermisosSerializer, PermisoConEstadoSerializer,
     ClientesSerializer, EmpleadosSerializer, ServiciosSerializer,
     ReservasSerializer,
@@ -31,6 +30,8 @@ from .serializers import (
     recalcular_saldos,
 )
 from .permissions import permiso_modulo, permisos_del_usuario
+from .correos import enviar_contraseña_temporal
+from .seguridad import generar_contraseña_temporal
 
 
 def _usuario_repr(usuario):
@@ -59,7 +60,7 @@ class LoginView(APIView):
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            usuario = Usuarios.objects.select_related('id_perfil').get(usuario=usuario_nombre)
+            usuario = Usuarios.objects.select_related('id_perfil', 'id_empleado').get(usuario=usuario_nombre)
         except Usuarios.DoesNotExist:
             return Response(error, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -239,9 +240,31 @@ class PermisosViewSet(viewsets.ModelViewSet):
 
 
 class UsuariosViewSet(viewsets.ModelViewSet):
-    queryset = Usuarios.objects.select_related('id_perfil').all().order_by('apellido', 'nombre')
+    queryset = (
+        Usuarios.objects.select_related('id_perfil', 'id_empleado').all()
+        .order_by('id_empleado__apellido_emp', 'id_empleado__nombre_emp')
+    )
     serializer_class = UsuariosSerializer
     permission_classes = [permiso_modulo('usuarios')]
+
+    # Arma la respuesta después de generar una contraseña temporal: si el mail salió,
+    # solo se avisa a qué correo se mandó; si no salió, se devuelve la contraseña para que
+    # el administrador se la pase al empleado (es la única vez que se puede ver).
+    def _respuesta_contraseña(self, usuario, contraseña, enviado):
+        datos = {'mail_enviado': enviado, 'correo': usuario.correo}
+        if not enviado:
+            datos['contraseña_temporal'] = contraseña
+        return datos
+
+    def create(self, request, *args, **kwargs):
+        """Crea el usuario de un empleado y le manda la contraseña temporal por mail."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        usuario = serializer.save()
+        contraseña = serializer.contraseña_temporal
+        enviado = enviar_contraseña_temporal(usuario, contraseña, motivo='alta')
+        datos = {**serializer.data, **self._respuesta_contraseña(usuario, contraseña, enviado)}
+        return Response(datos, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
         """
@@ -259,13 +282,18 @@ class UsuariosViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='restablecer-clave')
     def restablecer_clave(self, request, pk=None):
-        """Define una contraseña provisoria y fuerza a cambiarla en el próximo login."""
+        """
+        Genera una contraseña temporal nueva, se la manda por mail al empleado y lo obliga
+        a cambiarla en el próximo ingreso. También cierra las sesiones que tenga abiertas.
+        """
         usuario = self.get_object()
-        serializer = UsuarioRestablecerClaveSerializer(data=request.data, context={'usuario': usuario})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        contraseña = generar_contraseña_temporal()
+        usuario.contraseña = make_password(contraseña)
+        usuario.debe_cambiar_clave = True
+        usuario.save()
         SesionToken.objects.filter(id_usuario=usuario).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        enviado = enviar_contraseña_temporal(usuario, contraseña, motivo='restablecer')
+        return Response(self._respuesta_contraseña(usuario, contraseña, enviado))
 
     @action(detail=True, methods=['post'], url_path='reactivar')
     def reactivar(self, request, pk=None):
@@ -301,6 +329,12 @@ class EmpleadosViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         empleado = self.get_object()
+        # Un empleado con usuario no se puede borrar: el usuario se da de baja desde Usuarios
+        if hasattr(empleado, 'usuario'):
+            return Response(
+                {'detail': f'No se puede eliminar a "{empleado}" porque tiene un usuario del sistema. Dalo de baja desde Usuarios.'},
+                status=status.HTTP_409_CONFLICT,
+            )
         try:
             empleado.delete()
         except ProtectedError:

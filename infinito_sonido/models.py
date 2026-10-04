@@ -55,6 +55,10 @@ class Puestos(models.Model):
 
 class Empleados(models.Model):
     id_empleado = models.AutoField(primary_key=True)
+    # El DNI ahora es dato del empleado (antes estaba en Usuarios). Es el nombre de usuario
+    # con el que entra al sistema. Puede quedar vacío solo en los empleados que se cargaron
+    # antes de este cambio; desde el formulario se pide siempre.
+    dni = models.CharField(max_length=8, unique=True, null=True, blank=True, validators=validar_dni)
     nombre_emp = models.CharField(max_length=30, validators=validar_nombre_propio)
     apellido_emp = models.CharField(max_length=30, validators=validar_nombre_propio)
     telefono_emp = models.CharField(max_length=12, validators=validar_telefono)
@@ -109,14 +113,14 @@ class Perfiles(models.Model):
 
 class Usuarios(models.Model):
     id_usuario = models.AutoField(primary_key=True)
+    # Cada usuario es la cuenta de un empleado: relación uno a uno, así un empleado
+    # no puede tener dos usuarios. Nombre, apellido, DNI y correo se toman del empleado.
+    # PROTECT: no se puede borrar un empleado que tiene usuario (primero se da de baja).
+    id_empleado = models.OneToOneField(
+        Empleados, on_delete=models.PROTECT, db_column='id_empleado', related_name='usuario'
+    )
     id_perfil = models.ForeignKey(Perfiles, on_delete=models.PROTECT, db_column='id_perfil')
-    dni = models.CharField(max_length=8, unique=True, validators=validar_dni)
-    nombre = models.CharField(max_length=30, validators=validar_nombre_propio)
-    apellido = models.CharField(max_length=30, validators=validar_nombre_propio)
-    correo = models.EmailField()
-    # Ya no se escribe a mano: se genera solo como apellido + inicial del
-    # nombre (ver generar_nombre_usuario en serializers.py) al crear el
-    # usuario, y queda fijo de ahí en más (no se edita ni al modificar).
+    # Se genera solo al crear el usuario: es el DNI del empleado. Queda fijo de ahí en más.
     usuario = models.CharField(max_length=50, unique=True)
     contraseña = models.CharField(max_length=128)
     # Baja de usuario = activo=False + fecha_baja (no se borra la fila:
@@ -135,6 +139,19 @@ class Usuarios(models.Model):
 
     def __str__(self):
         return self.usuario
+
+    # Accesos directos a los datos del empleado, para no escribir usuario.id_empleado.nombre_emp
+    @property
+    def nombre(self):
+        return self.id_empleado.nombre_emp
+
+    @property
+    def apellido(self):
+        return self.id_empleado.apellido_emp
+
+    @property
+    def correo(self):
+        return self.id_empleado.email_emp
 
     @property
     def is_authenticated(self):
