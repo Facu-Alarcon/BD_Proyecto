@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
+import { useFiltros } from '../../hooks/useFiltros';
+import Paginacion from '../../components/Paginacion';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import IconoCelda from '../../components/IconoCelda';
@@ -39,6 +43,24 @@ export default function PermisosList() {
     }
   }
 
+  // Filtros de esta pantalla (ver hooks/useFiltros.js)
+  const configFiltros = [
+    { tipo: 'texto', id: 'texto', placeholder: 'Nombre o descripción', campos: (p) => [p.nombre_permiso, p.descripcion_permiso] },
+    {
+      // Los permisos "ver_" son de solo lectura y los "gestionar_" dejan modificar
+      tipo: 'select', id: 'clase', label: 'Tipo',
+      valor: (p) => (p.codigo?.startsWith('ver_') ? 'ver' : p.codigo?.startsWith('gestionar_') ? 'gestionar' : 'otro'),
+      opciones: [{ value: 'ver', label: 'Ver' }, { value: 'gestionar', label: 'Gestionar' }, { value: 'otro', label: 'Otros' }],
+    },
+    {
+      tipo: 'select', id: 'estado', label: 'Estado', valor: (p) => (p.estado_permiso ? 'activo' : 'inactivo'),
+      opciones: [{ value: 'activo', label: 'Activos' }, { value: 'inactivo', label: 'Inactivos' }],
+    },
+  ];
+  const filtros = useFiltros(permisos, configFiltros);
+  // De las filas filtradas se muestran de a 10 (ver hooks/usePaginacion.js)
+  const paginacion = usePaginacion(filtros.filtradas, filtros.valores);
+
   return (
     <div>
       <div className="page-header">
@@ -50,7 +72,11 @@ export default function PermisosList() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
+      <BarraFiltros config={configFiltros} filtros={filtros} total={permisos.length} cargando={cargando} nombreItems="permisos" />
+
       <div className="card">
+        {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
+        <Paginacion paginacion={paginacion} posicion="arriba" />
         <table className="data-table">
           <thead>
             <tr>
@@ -68,7 +94,8 @@ export default function PermisosList() {
             {!cargando && permisos.length === 0 && (
               <tr><td colSpan={5} style={{ textAlign: 'center' }}>No hay permisos cargados.</td></tr>
             )}
-            {permisos.map((permiso) => (
+            <FilaSinResultados filtros={filtros} total={permisos.length} cargando={cargando} columnas={5} nombreItems="permisos" />
+            {paginacion.visibles.map((permiso) => (
               <tr key={permiso.id_permiso}>
                 <td><IconoCelda {...iconoPermiso(permiso.codigo)} nombre={permiso.nombre_permiso} /></td>
                 <td><code style={{ fontSize: 12, color: 'var(--text-muted)' }}>{permiso.codigo}</code></td>
@@ -92,6 +119,7 @@ export default function PermisosList() {
             ))}
           </tbody>
         </table>
+        <Paginacion paginacion={paginacion} />
       </div>
 
       {aEliminar && (

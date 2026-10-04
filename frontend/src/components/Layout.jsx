@@ -9,8 +9,11 @@ export default function Layout() {
       <Topbar />
       <div className="app-shell">
         <Sidebar />
-        <main className="app-content">
-          <Outlet />
+        {/* main es la única parte que scrollea; adentro, app-content centra el contenido */}
+        <main className="app-main">
+          <div className="app-content">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

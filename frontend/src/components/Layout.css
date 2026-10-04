@@ -1,19 +1,34 @@
+/* El sistema ocupa exactamente el alto de la pantalla: la página en sí no scrollea.
+   Arriba va la barra (60px) y abajo el menú lateral + el contenido. */
 .app-root {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
+/* Menú y contenido uno al lado del otro, ocupando todo el alto que deja la barra */
 .app-shell {
   display: flex;
   flex: 1;
   min-height: 0;
 }
 
-.app-content {
+/* Zona a la derecha del menú: si una pantalla tiene más contenido del que entra,
+   scrollea solo esta parte y el menú queda quieto */
+.app-main {
   flex: 1;
-  padding: 40px 48px;
+  min-width: 0;
+  overflow-y: auto;
+}
+
+/* Contenido con un ancho máximo, centrado en el espacio que deja el menú,
+   así las tablas no quedan pegadas a la izquierda. El mismo margen (32px) en los
+   cuatro lados para que quede parejo, y si sobra lugar abajo queda en blanco. */
+.app-content {
+  padding: 32px;
   max-width: 1200px;
+  margin-inline: auto;
 }
 
 .page-header {

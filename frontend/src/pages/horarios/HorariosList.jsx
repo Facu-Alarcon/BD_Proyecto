@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
+import { useFiltros } from '../../hooks/useFiltros';
+import Paginacion from '../../components/Paginacion';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 
@@ -37,6 +41,14 @@ export default function HorariosList() {
     }
   }
 
+  // Filtros de esta pantalla (ver hooks/useFiltros.js)
+  const configFiltros = [
+    { tipo: 'rango', id: 'horas', label: 'Horas', input: 'number', valor: (h) => h.cantidad_horas },
+  ];
+  const filtros = useFiltros(horarios, configFiltros);
+  // De las filas filtradas se muestran de a 10 (ver hooks/usePaginacion.js)
+  const paginacion = usePaginacion(filtros.filtradas, filtros.valores);
+
   return (
     <div>
       <div className="page-header">
@@ -48,7 +60,11 @@ export default function HorariosList() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
+      <BarraFiltros config={configFiltros} filtros={filtros} total={horarios.length} cargando={cargando} nombreItems="horarios" />
+
       <div className="card">
+        {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
+        <Paginacion paginacion={paginacion} posicion="arriba" />
         <table className="data-table">
           <thead>
             <tr>
@@ -63,7 +79,8 @@ export default function HorariosList() {
             {!cargando && horarios.length === 0 && (
               <tr><td colSpan={2} style={{ textAlign: 'center' }}>No hay horarios cargados.</td></tr>
             )}
-            {horarios.map((horario) => (
+            <FilaSinResultados filtros={filtros} total={horarios.length} cargando={cargando} columnas={2} nombreItems="horarios" />
+            {paginacion.visibles.map((horario) => (
               <tr key={horario.id_horario}>
                 <td>{horario.cantidad_horas} hs</td>
                 <td>
@@ -80,6 +97,7 @@ export default function HorariosList() {
             ))}
           </tbody>
         </table>
+        <Paginacion paginacion={paginacion} />
       </div>
 
       {aEliminar && (

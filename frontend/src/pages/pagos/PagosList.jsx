@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
+import { useFiltros, opcionesDe } from '../../hooks/useFiltros';
+import Paginacion from '../../components/Paginacion';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import { PersonaCelda } from '../../components/Avatar';
@@ -38,6 +42,24 @@ export default function PagosList() {
     }
   }
 
+  // Filtros de esta pantalla (ver hooks/useFiltros.js)
+  const configFiltros = [
+    { tipo: 'texto', id: 'texto', placeholder: 'Cliente o nombre del evento', campos: (p) => [p.cliente_nombre, p.evento_nombre] },
+    {
+      tipo: 'select', id: 'metodo', label: 'Método de pago',
+      valor: (p) => p.metodos_pago_detalle.map((m) => m.metodo_pago),
+      opciones: opcionesDe(pagos, (p) => p.metodos_pago_detalle.map((m) => m.metodo_pago)),
+    },
+    {
+      tipo: 'select', id: 'saldo', label: 'Saldo', valor: (p) => (p.saldo_pendiente > 0 ? 'pendiente' : 'saldado'),
+      opciones: [{ value: 'pendiente', label: 'Con saldo pendiente' }, { value: 'saldado', label: 'Saldados' }],
+    },
+    { tipo: 'rango', id: 'monto', label: 'Monto', input: 'number', valor: (p) => p.monto },
+  ];
+  const filtros = useFiltros(pagos, configFiltros);
+  // De las filas filtradas se muestran de a 10 (ver hooks/usePaginacion.js)
+  const paginacion = usePaginacion(filtros.filtradas, filtros.valores);
+
   return (
     <div>
       <div className="page-header">
@@ -49,7 +71,11 @@ export default function PagosList() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
+      <BarraFiltros config={configFiltros} filtros={filtros} total={pagos.length} cargando={cargando} nombreItems="pagos" />
+
       <div className="card">
+        {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
+        <Paginacion paginacion={paginacion} posicion="arriba" />
         <table className="data-table">
           <thead>
             <tr>
@@ -67,7 +93,8 @@ export default function PagosList() {
             {!cargando && pagos.length === 0 && (
               <tr><td colSpan={5} style={{ textAlign: 'center' }}>No hay pagos registrados.</td></tr>
             )}
-            {pagos.map((pago) => (
+            <FilaSinResultados filtros={filtros} total={pagos.length} cargando={cargando} columnas={5} nombreItems="pagos" />
+            {paginacion.visibles.map((pago) => (
               <tr key={pago.id_pago}>
                 <td><PersonaCelda nombre={pago.cliente_nombre} detalle={pago.evento_nombre} /></td>
                 <td>${Number(pago.monto).toLocaleString('es-AR')}</td>
@@ -91,6 +118,7 @@ export default function PagosList() {
             ))}
           </tbody>
         </table>
+        <Paginacion paginacion={paginacion} />
       </div>
 
       {aEliminar && (

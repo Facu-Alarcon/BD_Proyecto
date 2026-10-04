@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
+import { useFiltros } from '../../hooks/useFiltros';
+import Paginacion from '../../components/Paginacion';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import { PersonaCelda } from '../../components/Avatar';
@@ -38,6 +42,17 @@ export default function EmpleadosList() {
     }
   }
 
+  // Filtros de esta pantalla (ver hooks/useFiltros.js)
+  const configFiltros = [
+    {
+      tipo: 'texto', id: 'texto', placeholder: 'Nombre, apellido, teléfono o email',
+      campos: (e) => [`${e.nombre_emp} ${e.apellido_emp}`, e.telefono_emp, e.email_emp],
+    },
+  ];
+  const filtros = useFiltros(empleados, configFiltros);
+  // De las filas filtradas se muestran de a 10 (ver hooks/usePaginacion.js)
+  const paginacion = usePaginacion(filtros.filtradas, filtros.valores);
+
   return (
     <div>
       <div className="page-header">
@@ -49,7 +64,11 @@ export default function EmpleadosList() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
+      <BarraFiltros config={configFiltros} filtros={filtros} total={empleados.length} cargando={cargando} nombreItems="empleados" />
+
       <div className="card">
+        {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
+        <Paginacion paginacion={paginacion} posicion="arriba" />
         <table className="data-table">
           <thead>
             <tr>
@@ -66,7 +85,8 @@ export default function EmpleadosList() {
             {!cargando && empleados.length === 0 && (
               <tr><td colSpan={4} style={{ textAlign: 'center' }}>No hay empleados cargados.</td></tr>
             )}
-            {empleados.map((empleado) => (
+            <FilaSinResultados filtros={filtros} total={empleados.length} cargando={cargando} columnas={4} nombreItems="empleados" />
+            {paginacion.visibles.map((empleado) => (
               <tr key={empleado.id_empleado}>
                 <td><PersonaCelda nombre={empleado.nombre_emp} apellido={empleado.apellido_emp} /></td>
                 <td>{empleado.telefono_emp}</td>
@@ -85,6 +105,7 @@ export default function EmpleadosList() {
             ))}
           </tbody>
         </table>
+        <Paginacion paginacion={paginacion} />
       </div>
 
       {aEliminar && (

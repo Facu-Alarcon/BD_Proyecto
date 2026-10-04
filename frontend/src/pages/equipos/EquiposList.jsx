@@ -3,6 +3,10 @@ import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { colorEstadoEquipo } from '../../utils/estadoEquipo';
 import { usePermiso } from '../../hooks/usePermiso';
+import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
+import { useFiltros, opcionesDe } from '../../hooks/useFiltros';
+import Paginacion from '../../components/Paginacion';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import IconoCelda from '../../components/IconoCelda';
@@ -40,6 +44,16 @@ export default function EquiposList() {
     }
   }
 
+  // Filtros de esta pantalla (ver hooks/useFiltros.js)
+  const configFiltros = [
+    { tipo: 'texto', id: 'texto', placeholder: 'Nombre del equipo', campos: (e) => [e.nombre_equipo] },
+    { tipo: 'select', id: 'tipo', label: 'Tipo', valor: (e) => e.tipo_nombre, opciones: opcionesDe(equipos, (e) => e.tipo_nombre) },
+    { tipo: 'select', id: 'estado', label: 'Estado', valor: (e) => e.estado_nombre, opciones: opcionesDe(equipos, (e) => e.estado_nombre) },
+  ];
+  const filtros = useFiltros(equipos, configFiltros);
+  // De las filas filtradas se muestran de a 10 (ver hooks/usePaginacion.js)
+  const paginacion = usePaginacion(filtros.filtradas, filtros.valores);
+
   return (
     <div>
       <div className="page-header">
@@ -51,7 +65,11 @@ export default function EquiposList() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
+      <BarraFiltros config={configFiltros} filtros={filtros} total={equipos.length} cargando={cargando} nombreItems="equipos" />
+
       <div className="card">
+        {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
+        <Paginacion paginacion={paginacion} posicion="arriba" />
         <table className="data-table">
           <thead>
             <tr>
@@ -69,7 +87,8 @@ export default function EquiposList() {
             {!cargando && equipos.length === 0 && (
               <tr><td colSpan={5} style={{ textAlign: 'center' }}>No hay equipos cargados.</td></tr>
             )}
-            {equipos.map((equipo) => (
+            <FilaSinResultados filtros={filtros} total={equipos.length} cargando={cargando} columnas={5} nombreItems="equipos" />
+            {paginacion.visibles.map((equipo) => (
               <tr key={equipo.id_equipo}>
                 <td><IconoCelda {...iconoEquipo(equipo.nombre_equipo, equipo.tipo_nombre)} nombre={equipo.nombre_equipo} /></td>
                 <td>{equipo.tipo_nombre}</td>
@@ -89,6 +108,7 @@ export default function EquiposList() {
             ))}
           </tbody>
         </table>
+        <Paginacion paginacion={paginacion} />
       </div>
 
       {aEliminar && (

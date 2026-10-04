@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
+import { useFiltros } from '../../hooks/useFiltros';
+import Paginacion from '../../components/Paginacion';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import IconoCelda from '../../components/IconoCelda';
@@ -39,6 +43,15 @@ export default function PuestosList() {
     }
   }
 
+  // Filtros de esta pantalla (ver hooks/useFiltros.js)
+  const configFiltros = [
+    { tipo: 'texto', id: 'texto', placeholder: 'Nombre del puesto', campos: (p) => [p.nombre_puesto] },
+    { tipo: 'rango', id: 'sueldo', label: 'Sueldo', input: 'number', valor: (p) => p.sueldo_monto },
+  ];
+  const filtros = useFiltros(puestos, configFiltros);
+  // De las filas filtradas se muestran de a 10 (ver hooks/usePaginacion.js)
+  const paginacion = usePaginacion(filtros.filtradas, filtros.valores);
+
   return (
     <div>
       <div className="page-header">
@@ -50,7 +63,11 @@ export default function PuestosList() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
+      <BarraFiltros config={configFiltros} filtros={filtros} total={puestos.length} cargando={cargando} nombreItems="puestos" />
+
       <div className="card">
+        {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
+        <Paginacion paginacion={paginacion} posicion="arriba" />
         <table className="data-table">
           <thead>
             <tr>
@@ -66,7 +83,8 @@ export default function PuestosList() {
             {!cargando && puestos.length === 0 && (
               <tr><td colSpan={3} style={{ textAlign: 'center' }}>No hay puestos cargados.</td></tr>
             )}
-            {puestos.map((puesto) => (
+            <FilaSinResultados filtros={filtros} total={puestos.length} cargando={cargando} columnas={3} nombreItems="puestos" />
+            {paginacion.visibles.map((puesto) => (
               <tr key={puesto.id_puesto}>
                 <td><IconoCelda {...iconoPuesto(puesto.nombre_puesto)} nombre={puesto.nombre_puesto} /></td>
                 <td>${Number(puesto.sueldo_monto).toLocaleString('es-AR')}</td>
@@ -84,6 +102,7 @@ export default function PuestosList() {
             ))}
           </tbody>
         </table>
+        <Paginacion paginacion={paginacion} />
       </div>
 
       {aEliminar && (

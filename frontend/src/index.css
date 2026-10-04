@@ -1,16 +1,24 @@
 :root {
-  --navy-950: #0a1730;
-  --navy-900: #0d1f42;
-  --navy-800: #122a55;
-  --navy-700: #17346a;
+  /* Colores institucionales (manual de marca de Infinito):
+     Azul Institucional #05284C, Verde Claro #89B181 y Verde Institucional #4E7246.
+     Los tonos navy-* salen del azul institucional, un poco más oscuros o más claros. */
+  --navy-950: #041f3b;
+  --navy-900: #05284c;
+  --navy-800: #0a3563;
+  --navy-700: #10427a;
+  --verde: #4e7246;
+  --verde-hover: #42623b;
+  --verde-claro: #89b181;
+  --verde-claro-bg: #e8f1e4;
   --navy-accent: #1e4ed8;
   --bg-app: #f3f5fa;
   --card-bg: #ffffff;
   --border: #e4e8f1;
   --text-main: #142042;
   --text-muted: #6b7590;
-  --green: #1a9c5c;
-  --green-bg: #e3f7ec;
+  /* El verde de los estados (Disponible, Confirmada, Activo) también pasa al institucional */
+  --green: #4e7246;
+  --green-bg: #e6efe2;
   --amber: #a5720a;
   --amber-bg: #fdf1d8;
   --gray-bg: #eef0f5;
@@ -59,11 +67,20 @@ button {
   transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
+/* Botón principal (crear, guardar): verde institucional */
 .btn-primary {
-  background: var(--navy-900);
+  background: var(--verde);
   color: #fff;
 }
-.btn-primary:hover { background: var(--navy-800); }
+.btn-primary:hover { background: var(--verde-hover); }
+
+/* Botón con borde y fondo blanco, para "Cancelar" al lado del principal */
+.btn-outline {
+  background: #fff;
+  color: var(--navy-900);
+  border: 1px solid var(--navy-900);
+}
+.btn-outline:hover { background: var(--gray-bg); }
 
 .btn-secondary {
   background: var(--gray-bg);
@@ -119,8 +136,9 @@ button {
   padding: 12px 20px;
   border-bottom: 1px solid var(--border);
 }
+/* Filas un poco más bajas (12px arriba y abajo) para que 10 filas entren sin scrollear */
 .data-table td {
-  padding: 14px 20px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--border);
   font-size: 14px;
 }
@@ -186,7 +204,7 @@ button {
   height: 32px;
   min-width: 32px;
   border-radius: 999px;
-  background: var(--navy-900);
+  background: var(--verde); /* verde institucional, como en el diseño */
   color: #fff;
   font-size: 12px;
   font-weight: 700;
@@ -249,12 +267,8 @@ button {
   font-size: 14px;
 }
 
-/* Barra de búsqueda y filtros que va arriba de las tablas (Reservas, y después las demás) */
+/* Barra de búsqueda y filtros que va arriba de las tablas (ver components/BarraFiltros.jsx) */
 .filtros {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 12px 16px;
   padding: 16px 20px;
   margin-bottom: 16px;
 }
@@ -263,13 +277,297 @@ button {
   margin-bottom: 0;
 }
 
+/* Fila de arriba: buscador + botones "Filtros" y "Limpiar" alineados abajo */
+.filtros-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
 /* El buscador de texto ocupa el espacio que sobra */
 .filtros-buscar {
   flex: 1 1 220px;
+}
+
+/* Botón que abre y cierra el panel; la flechita gira cuando está abierto */
+.filtros-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filtros-flecha {
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+
+.filtros-boton.abierto .filtros-flecha {
+  transform: rotate(180deg);
+}
+
+/* Panel con el resto de los filtros (listas y rangos) */
+.filtros-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+}
+
+/* Si hay buscador arriba, el panel se separa con una línea */
+.filtros-panel.con-borde {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* Los dos campos de un rango (desde / hasta) van juntos */
+.filtros-rango {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filtros-rango input[type="number"] {
+  width: 120px;
 }
 
 .filtros-resultado {
   margin: 0 0 10px;
   font-size: 13px;
   color: var(--text-muted);
+}
+
+/* Paginación arriba y abajo de las tablas (ver components/Paginacion.jsx):
+   a la izquierda "Mostrando 1–10 de 34" y a la derecha los botones de página */
+.paginacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+}
+
+/* La de abajo se separa de la tabla con una línea arriba, y la de arriba con una línea abajo */
+.paginacion-abajo {
+  border-top: 1px solid var(--border);
+}
+
+.paginacion-arriba {
+  border-bottom: 1px solid var(--border);
+}
+
+.paginacion-info {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.paginacion-botones {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.paginacion-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.paginacion-btn:hover:not(:disabled) {
+  background: var(--gray-bg);
+}
+
+/* La página en la que estamos va en verde institucional */
+.paginacion-btn.activa {
+  background: var(--verde);
+  border-color: var(--verde);
+  color: #fff;
+}
+
+.paginacion-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.paginacion-puntos {
+  padding: 0 4px;
+  color: var(--text-muted);
+}
+
+/* ---------- Pantallas de alta ("Nuevo cliente" y las que vengan) ---------- */
+
+/* Asterisco rojo de los campos obligatorios */
+.requerido {
+  color: var(--red);
+}
+
+/* Campos de a dos por fila; en pantallas chicas pasan a uno debajo del otro */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 20px;
+}
+
+@media (max-width: 640px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Botones de guardar / cancelar separados del formulario por una línea */
+.form-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+/* Título con la ruta debajo ("Clientes / Nuevo cliente") y una línea que lo separa */
+.page-header-con-ruta {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ruta {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.ruta a:hover {
+  color: var(--navy-900);
+  text-decoration: underline;
+}
+
+.ruta strong {
+  color: var(--navy-900);
+}
+
+/* Formulario a la izquierda (más ancho) y panel de ayuda a la derecha */
+.alta-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .alta-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.alta-form {
+  padding: 24px 28px;
+}
+
+.alta-titulo {
+  margin: 0;
+  font-size: 18px;
+  color: var(--navy-900);
+}
+
+.alta-subtitulo {
+  margin: 4px 0 20px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.alta-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Tarjeta azul institucional con el recordatorio "Antes de guardar" */
+.aside-aviso {
+  background: var(--navy-900);
+  color: #fff;
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+
+.aside-aviso h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.aside-aviso p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #d6e0ef;
+}
+
+/* Tarjeta blanca con los números de clientes */
+.aside-resumen {
+  padding: 16px 20px 6px;
+}
+
+.aside-resumen h3 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.aside-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  border-top: 1px solid var(--border);
+}
+
+.aside-fila:first-of-type {
+  border-top: none;
+}
+
+/* Cantidades en una pastillita gris (o verde claro para la del mes) */
+.aside-numero {
+  min-width: 34px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--gray-bg);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.aside-numero-verde {
+  background: var(--verde-claro-bg);
+  color: var(--verde);
+}
+
+/* Tarjeta verde institucional con el último cliente cargado */
+.aside-ultimo {
+  background: var(--verde);
+  color: #fff;
+  border-radius: 14px;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aside-ultimo span {
+  font-size: 12px;
+  color: #e3eedf;
+}
+
+.aside-ultimo strong {
+  font-size: 15px;
 }

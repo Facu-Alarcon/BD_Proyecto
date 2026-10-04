@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
+import { useFiltros } from '../../hooks/useFiltros';
+import Paginacion from '../../components/Paginacion';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 
@@ -37,6 +41,14 @@ export default function SueldosList() {
     }
   }
 
+  // Filtros de esta pantalla (ver hooks/useFiltros.js)
+  const configFiltros = [
+    { tipo: 'rango', id: 'monto', label: 'Monto', input: 'number', valor: (s) => s.monto_sueldo },
+  ];
+  const filtros = useFiltros(sueldos, configFiltros);
+  // De las filas filtradas se muestran de a 10 (ver hooks/usePaginacion.js)
+  const paginacion = usePaginacion(filtros.filtradas, filtros.valores);
+
   return (
     <div>
       <div className="page-header">
@@ -48,7 +60,11 @@ export default function SueldosList() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
+      <BarraFiltros config={configFiltros} filtros={filtros} total={sueldos.length} cargando={cargando} nombreItems="sueldos" />
+
       <div className="card">
+        {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
+        <Paginacion paginacion={paginacion} posicion="arriba" />
         <table className="data-table">
           <thead>
             <tr>
@@ -63,7 +79,8 @@ export default function SueldosList() {
             {!cargando && sueldos.length === 0 && (
               <tr><td colSpan={2} style={{ textAlign: 'center' }}>No hay sueldos cargados.</td></tr>
             )}
-            {sueldos.map((sueldo) => (
+            <FilaSinResultados filtros={filtros} total={sueldos.length} cargando={cargando} columnas={2} nombreItems="sueldos" />
+            {paginacion.visibles.map((sueldo) => (
               <tr key={sueldo.id_sueldo}>
                 <td>${Number(sueldo.monto_sueldo).toLocaleString('es-AR')}</td>
                 <td>
@@ -80,6 +97,7 @@ export default function SueldosList() {
             ))}
           </tbody>
         </table>
+        <Paginacion paginacion={paginacion} />
       </div>
 
       {aEliminar && (

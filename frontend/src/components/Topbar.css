@@ -1,4 +1,9 @@
+/* La barra de arriba. La página no scrollea (ver .app-root en Layout.css), así que
+   siempre queda a la vista; el sticky es por si alguna pantalla queda fuera del layout */
 .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;;
@@ -35,7 +40,7 @@
   width: 34px;
   height: 34px;
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--navy-800), var(--navy-accent));
+  background: var(--verde); /* verde institucional, como en el diseño de Figma */
   color: #fff;
   font-size: 13px;
   font-weight: 700;

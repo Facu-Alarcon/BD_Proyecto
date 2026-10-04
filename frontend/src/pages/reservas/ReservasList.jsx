@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
+import { useFiltros } from '../../hooks/useFiltros';
+import Paginacion from '../../components/Paginacion';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import { PersonaCelda } from '../../components/Avatar';
@@ -20,17 +24,6 @@ function formatearFecha(fecha, hora) {
   return `${dia} ${meses[Number(mes) - 1]}, ${horaCorta}`;
 }
 
-// Pasa el texto a minúsculas y le saca los acentos, así "Ayelén" se encuentra buscando "ayelen"
-function normalizar(texto) {
-  return (texto || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
-}
-
-// Valores iniciales de los filtros (también se usan para el botón "Limpiar")
-const FILTROS_VACIOS = { texto: '', desde: '', hasta: '', estado: '' };
-
 export default function ReservasList() {
   const { puedeGestionar } = usePermiso('reservas');
   const [reservas, setReservas] = useState([]);
@@ -38,7 +31,6 @@ export default function ReservasList() {
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
-  const [filtros, setFiltros] = useState(FILTROS_VACIOS);
 
   function cargar() {
     setCargando(true);
@@ -51,29 +43,23 @@ export default function ReservasList() {
 
   useEffect(cargar, []);
 
-  // Cambia un solo filtro y deja los demás como estaban
-  function actualizarFiltro(campo, valor) {
-    setFiltros((f) => ({ ...f, [campo]: valor }));
-  }
-
-  // Si la fecha "desde" es posterior a "hasta" no tiene sentido filtrar, avisamos
-  const rangoInvalido = filtros.desde && filtros.hasta && filtros.desde > filtros.hasta;
-
-  const hayFiltros = Object.values(filtros).some(Boolean);
-
-  // Acá se arma la lista que se muestra en la tabla aplicando todos los filtros juntos.
-  // Las fechas vienen como 'AAAA-MM-DD', así que se pueden comparar directo como texto.
-  const reservasFiltradas = useMemo(() => {
-    if (rangoInvalido) return [];
-    const buscado = normalizar(filtros.texto.trim());
-    return reservas.filter((r) => {
-      if (buscado && !normalizar(`${r.cliente_nombre} ${r.nombre_evento}`).includes(buscado)) return false;
-      if (filtros.desde && r.fecha_evento < filtros.desde) return false;
-      if (filtros.hasta && r.fecha_evento > filtros.hasta) return false;
-      if (filtros.estado && r.estado_reserva !== filtros.estado) return false;
-      return true;
-    });
-  }, [reservas, filtros, rangoInvalido]);
+  // Filtros de esta pantalla (ver hooks/useFiltros.js)
+  const configFiltros = [
+    { tipo: 'texto', id: 'texto', placeholder: 'Cliente o nombre del evento', campos: (r) => [r.cliente_nombre, r.nombre_evento] },
+    { tipo: 'rango', id: 'fecha', label: 'Fecha', input: 'date', valor: (r) => r.fecha_evento },
+    {
+      tipo: 'select', id: 'estado', label: 'Estado', valor: (r) => r.estado_reserva,
+      opciones: [
+        { value: 'PENDIENTE', label: 'Pendiente' },
+        { value: 'CONFIRMADA', label: 'Confirmada' },
+        { value: 'FINALIZADA', label: 'Finalizada' },
+        { value: 'CANCELADA', label: 'Cancelada' },
+      ],
+    },
+  ];
+  const filtros = useFiltros(reservas, configFiltros);
+  // De las filas filtradas se muestran de a 10 (ver hooks/usePaginacion.js)
+  const paginacion = usePaginacion(filtros.filtradas, filtros.valores);
 
   async function confirmarEliminar() {
     setEliminando(true);
@@ -99,78 +85,11 @@ export default function ReservasList() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {/* Barra de búsqueda y filtros */}
-      <div className="card filtros">
-        <div className="form-field filtros-buscar">
-          <label htmlFor="filtro-texto">Buscar</label>
-          <input
-            id="filtro-texto"
-            type="search"
-            placeholder="Cliente o nombre del evento"
-            value={filtros.texto}
-            onChange={(e) => actualizarFiltro('texto', e.target.value)}
-          />
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="filtro-desde">Desde</label>
-          <input
-            id="filtro-desde"
-            type="date"
-            value={filtros.desde}
-            max={filtros.hasta || undefined}
-            onChange={(e) => actualizarFiltro('desde', e.target.value)}
-          />
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="filtro-hasta">Hasta</label>
-          <input
-            id="filtro-hasta"
-            type="date"
-            value={filtros.hasta}
-            min={filtros.desde || undefined}
-            onChange={(e) => actualizarFiltro('hasta', e.target.value)}
-          />
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="filtro-estado">Estado</label>
-          <select
-            id="filtro-estado"
-            value={filtros.estado}
-            onChange={(e) => actualizarFiltro('estado', e.target.value)}
-          >
-            <option value="">Todos</option>
-            <option value="PENDIENTE">Pendiente</option>
-            <option value="CONFIRMADA">Confirmada</option>
-            <option value="FINALIZADA">Finalizada</option>
-            <option value="CANCELADA">Cancelada</option>
-          </select>
-        </div>
-
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => setFiltros(FILTROS_VACIOS)}
-          disabled={!hayFiltros}
-        >
-          Limpiar
-        </button>
-      </div>
-
-      {rangoInvalido && (
-        <div className="alert alert-error">La fecha "Desde" no puede ser posterior a la fecha "Hasta".</div>
-      )}
-
-      {/* Contador para saber cuántas quedan después de filtrar */}
-      {!cargando && hayFiltros && !rangoInvalido && (
-        <p className="filtros-resultado">
-          Mostrando {reservasFiltradas.length} de {reservas.length} reservas
-        </p>
-      )}
+      <BarraFiltros config={configFiltros} filtros={filtros} total={reservas.length} cargando={cargando} nombreItems="reservas" />
 
       <div className="card">
+        {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
+        <Paginacion paginacion={paginacion} posicion="arriba" />
         <table className="data-table">
           <thead>
             <tr>
@@ -188,10 +107,8 @@ export default function ReservasList() {
             {!cargando && reservas.length === 0 && (
               <tr><td colSpan={5} style={{ textAlign: 'center' }}>No hay reservas cargadas.</td></tr>
             )}
-            {!cargando && reservas.length > 0 && reservasFiltradas.length === 0 && !rangoInvalido && (
-              <tr><td colSpan={5} style={{ textAlign: 'center' }}>No hay reservas que coincidan con la búsqueda.</td></tr>
-            )}
-            {reservasFiltradas.map((reserva) => (
+            <FilaSinResultados filtros={filtros} total={reservas.length} cargando={cargando} columnas={5} nombreItems="reservas" />
+            {paginacion.visibles.map((reserva) => (
               <tr key={reserva.id_reserva}>
                 <td>
                   <PersonaCelda nombre={reserva.cliente_nombre} detalle={reserva.nombre_evento} />
@@ -213,6 +130,7 @@ export default function ReservasList() {
             ))}
           </tbody>
         </table>
+        <Paginacion paginacion={paginacion} />
       </div>
 
       {aEliminar && (

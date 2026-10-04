@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
+import { useFiltros } from '../../hooks/useFiltros';
+import Paginacion from '../../components/Paginacion';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import IconoCelda from '../../components/IconoCelda';
@@ -39,6 +43,14 @@ export default function PerfilesList() {
     }
   }
 
+  // Filtros de esta pantalla (ver hooks/useFiltros.js)
+  const configFiltros = [
+    { tipo: 'texto', id: 'texto', placeholder: 'Nombre del perfil', campos: (p) => [p.tipo_perfil] },
+  ];
+  const filtros = useFiltros(perfiles, configFiltros);
+  // De las filas filtradas se muestran de a 10 (ver hooks/usePaginacion.js)
+  const paginacion = usePaginacion(filtros.filtradas, filtros.valores);
+
   return (
     <div>
       <div className="page-header">
@@ -50,7 +62,11 @@ export default function PerfilesList() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
+      <BarraFiltros config={configFiltros} filtros={filtros} total={perfiles.length} cargando={cargando} nombreItems="perfiles" />
+
       <div className="card">
+        {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
+        <Paginacion paginacion={paginacion} posicion="arriba" />
         <table className="data-table">
           <thead>
             <tr>
@@ -65,7 +81,8 @@ export default function PerfilesList() {
             {!cargando && perfiles.length === 0 && (
               <tr><td colSpan={2} style={{ textAlign: 'center' }}>No hay perfiles cargados.</td></tr>
             )}
-            {perfiles.map((perfil) => (
+            <FilaSinResultados filtros={filtros} total={perfiles.length} cargando={cargando} columnas={2} nombreItems="perfiles" />
+            {paginacion.visibles.map((perfil) => (
               <tr key={perfil.id_perfil}>
                 <td><IconoCelda {...iconoPerfil(perfil.tipo_perfil)} nombre={perfil.tipo_perfil} /></td>
                 <td>
@@ -82,6 +99,7 @@ export default function PerfilesList() {
             ))}
           </tbody>
         </table>
+        <Paginacion paginacion={paginacion} />
       </div>
 
       {aEliminar && (

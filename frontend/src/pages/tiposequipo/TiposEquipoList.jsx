@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
+import { useFiltros } from '../../hooks/useFiltros';
+import Paginacion from '../../components/Paginacion';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import IconoCelda from '../../components/IconoCelda';
@@ -39,6 +43,14 @@ export default function TiposEquipoList() {
     }
   }
 
+  // Filtros de esta pantalla (ver hooks/useFiltros.js)
+  const configFiltros = [
+    { tipo: 'texto', id: 'texto', placeholder: 'Nombre del tipo', campos: (t) => [t.nombre_tipoeq] },
+  ];
+  const filtros = useFiltros(tipos, configFiltros);
+  // De las filas filtradas se muestran de a 10 (ver hooks/usePaginacion.js)
+  const paginacion = usePaginacion(filtros.filtradas, filtros.valores);
+
   return (
     <div>
       <div className="page-header">
@@ -50,7 +62,11 @@ export default function TiposEquipoList() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
+      <BarraFiltros config={configFiltros} filtros={filtros} total={tipos.length} cargando={cargando} nombreItems="tipos de equipo" />
+
       <div className="card">
+        {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
+        <Paginacion paginacion={paginacion} posicion="arriba" />
         <table className="data-table">
           <thead>
             <tr>
@@ -65,7 +81,8 @@ export default function TiposEquipoList() {
             {!cargando && tipos.length === 0 && (
               <tr><td colSpan={2} style={{ textAlign: 'center' }}>No hay tipos de equipo cargados.</td></tr>
             )}
-            {tipos.map((tipo) => (
+            <FilaSinResultados filtros={filtros} total={tipos.length} cargando={cargando} columnas={2} nombreItems="tipos de equipo" />
+            {paginacion.visibles.map((tipo) => (
               <tr key={tipo.id_tipoeq}>
                 <td><IconoCelda {...iconoTipoEquipo(tipo.nombre_tipoeq)} nombre={tipo.nombre_tipoeq} /></td>
                 <td>
@@ -82,6 +99,7 @@ export default function TiposEquipoList() {
             ))}
           </tbody>
         </table>
+        <Paginacion paginacion={paginacion} />
       </div>
 
       {aEliminar && (

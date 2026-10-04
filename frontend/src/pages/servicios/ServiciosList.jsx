@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
+import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
+import { useFiltros } from '../../hooks/useFiltros';
+import Paginacion from '../../components/Paginacion';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import IconoCelda from '../../components/IconoCelda';
@@ -39,6 +43,15 @@ export default function ServiciosList() {
     }
   }
 
+  // Filtros de esta pantalla (ver hooks/useFiltros.js)
+  const configFiltros = [
+    { tipo: 'texto', id: 'texto', placeholder: 'Nombre del servicio', campos: (s) => [s.tipo_servicio] },
+    { tipo: 'rango', id: 'precio', label: 'Precio', input: 'number', valor: (s) => s.precio_servicio },
+  ];
+  const filtros = useFiltros(servicios, configFiltros);
+  // De las filas filtradas se muestran de a 10 (ver hooks/usePaginacion.js)
+  const paginacion = usePaginacion(filtros.filtradas, filtros.valores);
+
   return (
     <div>
       <div className="page-header">
@@ -50,7 +63,11 @@ export default function ServiciosList() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
+      <BarraFiltros config={configFiltros} filtros={filtros} total={servicios.length} cargando={cargando} nombreItems="servicios" />
+
       <div className="card">
+        {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
+        <Paginacion paginacion={paginacion} posicion="arriba" />
         <table className="data-table">
           <thead>
             <tr>
@@ -66,7 +83,8 @@ export default function ServiciosList() {
             {!cargando && servicios.length === 0 && (
               <tr><td colSpan={3} style={{ textAlign: 'center' }}>No hay servicios cargados.</td></tr>
             )}
-            {servicios.map((servicio) => (
+            <FilaSinResultados filtros={filtros} total={servicios.length} cargando={cargando} columnas={3} nombreItems="servicios" />
+            {paginacion.visibles.map((servicio) => (
               <tr key={servicio.id_servicio}>
                 <td><IconoCelda {...iconoServicio(servicio.tipo_servicio)} nombre={servicio.tipo_servicio} /></td>
                 <td>${Number(servicio.precio_servicio).toLocaleString('es-AR')}</td>
@@ -84,6 +102,7 @@ export default function ServiciosList() {
             ))}
           </tbody>
         </table>
+        <Paginacion paginacion={paginacion} />
       </div>
 
       {aEliminar && (
