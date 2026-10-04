@@ -4,6 +4,8 @@ import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import IconoCelda from '../../components/IconoCelda';
+import { iconoPuesto } from '../../utils/iconosModulos';
 
 export default function PuestosList() {
   const { puedeGestionar } = usePermiso('puestos');
@@ -66,7 +68,7 @@ export default function PuestosList() {
             )}
             {puestos.map((puesto) => (
               <tr key={puesto.id_puesto}>
-                <td>{puesto.nombre_puesto}</td>
+                <td><IconoCelda {...iconoPuesto(puesto.nombre_puesto)} nombre={puesto.nombre_puesto} /></td>
                 <td>${Number(puesto.sueldo_monto).toLocaleString('es-AR')}</td>
                 <td>
                   {puedeGestionar ? (

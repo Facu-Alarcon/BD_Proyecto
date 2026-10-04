@@ -5,6 +5,8 @@ import { colorEstadoEquipo } from '../../utils/estadoEquipo';
 import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import IconoCelda from '../../components/IconoCelda';
+import { iconoEquipo } from '../../utils/iconosModulos';
 
 export default function EquiposList() {
   const { puedeGestionar } = usePermiso('equipos');
@@ -69,7 +71,7 @@ export default function EquiposList() {
             )}
             {equipos.map((equipo) => (
               <tr key={equipo.id_equipo}>
-                <td>{equipo.nombre_equipo}</td>
+                <td><IconoCelda {...iconoEquipo(equipo.nombre_equipo, equipo.tipo_nombre)} nombre={equipo.nombre_equipo} /></td>
                 <td>{equipo.tipo_nombre}</td>
                 <td><span className={`badge ${colorEstadoEquipo(equipo.estado_nombre).badge}`}>{equipo.estado_nombre}</span></td>
                 <td>{equipo.cantidad_equipo}</td>

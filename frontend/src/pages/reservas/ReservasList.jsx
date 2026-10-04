@@ -4,6 +4,7 @@ import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import { PersonaCelda } from '../../components/Avatar';
 
 const BADGE_BY_ESTADO = {
   PENDIENTE: 'badge-amber',
@@ -29,15 +30,6 @@ function normalizar(texto) {
 
 // Valores iniciales de los filtros (también se usan para el botón "Limpiar")
 const FILTROS_VACIOS = { texto: '', desde: '', hasta: '', estado: '' };
-
-function iniciales(nombre) {
-  return nombre
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0].toUpperCase())
-    .join('');
-}
 
 export default function ReservasList() {
   const { puedeGestionar } = usePermiso('reservas');
@@ -202,13 +194,7 @@ export default function ReservasList() {
             {reservasFiltradas.map((reserva) => (
               <tr key={reserva.id_reserva}>
                 <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span className="avatar-badge">{iniciales(reserva.cliente_nombre)}</span>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{reserva.cliente_nombre}</div>
-                      {reserva.nombre_evento && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{reserva.nombre_evento}</div>}
-                    </div>
-                  </div>
+                  <PersonaCelda nombre={reserva.cliente_nombre} detalle={reserva.nombre_evento} />
                 </td>
                 <td>{formatearFecha(reserva.fecha_evento, reserva.hora_evento)}</td>
                 <td>${Number(reserva.monto_total).toLocaleString('es-AR')}</td>

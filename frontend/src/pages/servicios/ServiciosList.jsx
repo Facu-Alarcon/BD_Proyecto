@@ -4,6 +4,8 @@ import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import IconoCelda from '../../components/IconoCelda';
+import { iconoServicio } from '../../utils/iconosModulos';
 
 export default function ServiciosList() {
   const { puedeGestionar } = usePermiso('servicios');
@@ -66,7 +68,7 @@ export default function ServiciosList() {
             )}
             {servicios.map((servicio) => (
               <tr key={servicio.id_servicio}>
-                <td>{servicio.tipo_servicio}</td>
+                <td><IconoCelda {...iconoServicio(servicio.tipo_servicio)} nombre={servicio.tipo_servicio} /></td>
                 <td>${Number(servicio.precio_servicio).toLocaleString('es-AR')}</td>
                 <td>
                   {puedeGestionar ? (

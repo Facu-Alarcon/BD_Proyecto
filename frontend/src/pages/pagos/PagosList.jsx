@@ -4,6 +4,7 @@ import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import { PersonaCelda } from '../../components/Avatar';
 
 export default function PagosList() {
   const { puedeGestionar } = usePermiso('pagos');
@@ -68,10 +69,7 @@ export default function PagosList() {
             )}
             {pagos.map((pago) => (
               <tr key={pago.id_pago}>
-                <td>
-                  {pago.cliente_nombre}
-                  {pago.evento_nombre ? ` · ${pago.evento_nombre}` : ''}
-                </td>
+                <td><PersonaCelda nombre={pago.cliente_nombre} detalle={pago.evento_nombre} /></td>
                 <td>${Number(pago.monto).toLocaleString('es-AR')}</td>
                 <td>${Number(pago.saldo_pendiente).toLocaleString('es-AR')}</td>
                 <td>

@@ -4,13 +4,7 @@ import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
-
-function iniciales(nombre, apellido) {
-  return [nombre, apellido]
-    .filter(Boolean)
-    .map((p) => p[0].toUpperCase())
-    .join('');
-}
+import { PersonaCelda } from '../../components/Avatar';
 
 export default function ClientesList() {
   const { puedeGestionar } = usePermiso('clientes');
@@ -76,10 +70,7 @@ export default function ClientesList() {
             {clientes.map((cliente) => (
               <tr key={cliente.id_cliente}>
                 <td>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span className="avatar-badge">{iniciales(cliente.nombre_cliente, cliente.apellido_cliente)}</span>
-                    <div style={{ fontWeight: 600 }}>{cliente.nombre_cliente} {cliente.apellido_cliente}</div>
-                  </div>
+                  <PersonaCelda nombre={cliente.nombre_cliente} apellido={cliente.apellido_cliente} />
                 </td>
                 <td>{cliente.domicilio_cliente}</td>
                 <td>{cliente.telefono_cliente}</td>

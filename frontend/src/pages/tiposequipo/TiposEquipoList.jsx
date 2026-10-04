@@ -4,6 +4,8 @@ import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import IconoCelda from '../../components/IconoCelda';
+import { iconoTipoEquipo } from '../../utils/iconosModulos';
 
 export default function TiposEquipoList() {
   const { puedeGestionar } = usePermiso('tipos_equipo');
@@ -65,7 +67,7 @@ export default function TiposEquipoList() {
             )}
             {tipos.map((tipo) => (
               <tr key={tipo.id_tipoeq}>
-                <td>{tipo.nombre_tipoeq}</td>
+                <td><IconoCelda {...iconoTipoEquipo(tipo.nombre_tipoeq)} nombre={tipo.nombre_tipoeq} /></td>
                 <td>
                   {puedeGestionar ? (
                     <div className="actions-cell">

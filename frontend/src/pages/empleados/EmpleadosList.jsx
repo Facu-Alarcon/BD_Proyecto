@@ -4,6 +4,7 @@ import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import { PersonaCelda } from '../../components/Avatar';
 
 export default function EmpleadosList() {
   const { puedeGestionar } = usePermiso('empleados');
@@ -67,7 +68,7 @@ export default function EmpleadosList() {
             )}
             {empleados.map((empleado) => (
               <tr key={empleado.id_empleado}>
-                <td>{empleado.nombre_emp} {empleado.apellido_emp}</td>
+                <td><PersonaCelda nombre={empleado.nombre_emp} apellido={empleado.apellido_emp} /></td>
                 <td>{empleado.telefono_emp}</td>
                 <td>{empleado.email_emp}</td>
                 <td>

@@ -4,6 +4,8 @@ import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import IconoCelda from '../../components/IconoCelda';
+import { iconoPerfil } from '../../utils/iconosModulos';
 
 export default function PerfilesList() {
   const { puedeGestionar } = usePermiso('perfiles');
@@ -65,7 +67,7 @@ export default function PerfilesList() {
             )}
             {perfiles.map((perfil) => (
               <tr key={perfil.id_perfil}>
-                <td>{perfil.tipo_perfil}</td>
+                <td><IconoCelda {...iconoPerfil(perfil.tipo_perfil)} nombre={perfil.tipo_perfil} /></td>
                 <td>
                   {puedeGestionar ? (
                     <div className="actions-cell">

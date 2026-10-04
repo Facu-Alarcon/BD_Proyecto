@@ -4,6 +4,8 @@ import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import IconoCelda from '../../components/IconoCelda';
+import { iconoPermiso } from '../../utils/iconosModulos';
 
 export default function PermisosList() {
   const { puedeGestionar } = usePermiso('permisos');
@@ -68,7 +70,7 @@ export default function PermisosList() {
             )}
             {permisos.map((permiso) => (
               <tr key={permiso.id_permiso}>
-                <td>{permiso.nombre_permiso}</td>
+                <td><IconoCelda {...iconoPermiso(permiso.codigo)} nombre={permiso.nombre_permiso} /></td>
                 <td><code style={{ fontSize: 12, color: 'var(--text-muted)' }}>{permiso.codigo}</code></td>
                 <td>{permiso.descripcion_permiso}</td>
                 <td>

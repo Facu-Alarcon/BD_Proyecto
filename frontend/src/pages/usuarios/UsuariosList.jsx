@@ -4,6 +4,7 @@ import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar, IconLlave, IconReactivar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import { PersonaCelda } from '../../components/Avatar';
 import RestablecerClaveModal from '../../components/RestablecerClaveModal';
 
 export default function UsuariosList() {
@@ -91,7 +92,9 @@ export default function UsuariosList() {
             {usuarios.map((usuario) => (
               <tr key={usuario.id_usuario}>
                 <td>{usuario.dni}</td>
-                <td>{usuario.apellido}, {usuario.nombre}</td>
+                <td>
+                  <PersonaCelda nombre={usuario.nombre} apellido={usuario.apellido} texto={`${usuario.apellido}, ${usuario.nombre}`} />
+                </td>
                 <td>{usuario.correo}</td>
                 <td>{usuario.usuario}</td>
                 <td>{usuario.perfil_nombre}</td>

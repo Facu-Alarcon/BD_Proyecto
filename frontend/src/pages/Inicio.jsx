@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../api/client';
 import { colorEstadoEquipo } from '../utils/estadoEquipo';
 import './Inicio.css';
+import Avatar from '../components/Avatar';
 
 const BADGE_BY_ESTADO = {
   PENDIENTE: 'badge-amber',
@@ -87,9 +88,7 @@ export default function Inicio() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {resumen?.proximas_reservas.map((r) => (
               <div key={r.id_reserva} className="reserva-row">
-                <div className="avatar-badge">
-                  {r.cliente_nombre.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join('')}
-                </div>
+                <Avatar nombre={r.cliente_nombre} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600 }}>{r.cliente_nombre}</div>
                   {r.nombre_evento && <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.nombre_evento}</div>}

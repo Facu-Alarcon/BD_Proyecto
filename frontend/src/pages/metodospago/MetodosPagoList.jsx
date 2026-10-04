@@ -4,6 +4,8 @@ import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import IconoCelda from '../../components/IconoCelda';
+import { iconoMetodoPago } from '../../utils/iconosModulos';
 
 export default function MetodosPagoList() {
   const { puedeGestionar } = usePermiso('metodos_pago');
@@ -65,7 +67,7 @@ export default function MetodosPagoList() {
             )}
             {metodos.map((metodo) => (
               <tr key={metodo.id_metodo_pago}>
-                <td>{metodo.metodo_pago}</td>
+                <td><IconoCelda {...iconoMetodoPago(metodo.metodo_pago)} nombre={metodo.metodo_pago} /></td>
                 <td>
                   {puedeGestionar ? (
                     <div className="actions-cell">
