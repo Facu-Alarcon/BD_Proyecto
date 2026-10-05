@@ -210,6 +210,14 @@ button {
   font-weight: 700;
 }
 
+/* Los circulitos se intercalan entre verde y azul institucional: las filas impares
+   quedan en verde (el color de arriba) y las pares en azul. Vale para todas las tablas
+   y para la lista de "Próximas reservas" de Inicio. */
+.data-table tbody tr:nth-child(even) .avatar-badge,
+.reserva-row:nth-child(even) .avatar-badge {
+  background: var(--navy-900);
+}
+
 /* Cuadradito con ícono para las tablas que no son de personas (ver components/IconoCelda.jsx).
    Mismo estilo que la app móvil: fondo suave y el ícono del mismo color más fuerte. */
 .icono-cuadro {
@@ -709,4 +717,41 @@ button {
   line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* Celda "Contacto" de Empleados y Clientes (ver components/ContactoCelda.jsx):
+   el mail arriba y el teléfono abajo en gris, cada uno con su iconito */
+.contacto-celda {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+}
+
+.contacto-linea {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.contacto-linea svg {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+/* Los mails largos se cortan en cualquier parte en vez de ensanchar la tabla */
+.contacto-email {
+  overflow-wrap: anywhere;
+}
+
+/* El teléfono va en gris, igual que el DNI debajo del nombre */
+.contacto-secundaria {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Etiqueta más chica, para usarla como segundo renglón de una celda (ej: "Sin DNI") */
+.badge-chica {
+  padding: 1px 8px;
+  font-size: 11px;
 }

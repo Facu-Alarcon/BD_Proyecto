@@ -25,6 +25,9 @@ urlpatterns = [
     path('logout/', api.LogoutView.as_view(), name='api_logout'),
     path('me/', api.MeView.as_view(), name='api_me'),
     path('cambiar-clave/',api.CambiarClaveView.as_view(),name='api_cambiar_clave'),
+    # "Olvidé mi contraseña": pedir el link por mail y usarlo para elegir una clave nueva
+    path('recuperar-clave/', api.RecuperarClaveView.as_view(), name='api_recuperar_clave'),
+    path('restablecer-clave/<str:token>/', api.RestablecerConLinkView.as_view(), name='api_restablecer_con_link'),
     path('dashboard/resumen/', api.DashboardResumenView.as_view(), name='api_dashboard_resumen'),
     path('', include(router.urls)),
 ]

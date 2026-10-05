@@ -9,6 +9,8 @@ import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import { PersonaCelda } from '../../components/Avatar';
+import ContactoCelda from '../../components/ContactoCelda';
+import { formatearTelefono } from '../../utils/formato';
 
 export default function ClientesList() {
   const { puedeGestionar } = usePermiso('clientes');
@@ -46,7 +48,8 @@ export default function ClientesList() {
   const configFiltros = [
     {
       tipo: 'texto', id: 'texto', placeholder: 'Nombre, apellido, teléfono, email o domicilio',
-      campos: (c) => [`${c.nombre_cliente} ${c.apellido_cliente}`, c.telefono_cliente, c.email_cliente, c.domicilio_cliente],
+      // El teléfono va también con formato, así se encuentra escribiéndolo como se ve en la tabla
+      campos: (c) => [`${c.nombre_cliente} ${c.apellido_cliente}`, c.telefono_cliente, formatearTelefono(c.telefono_cliente), c.email_cliente, c.domicilio_cliente],
     },
   ];
   const filtros = useFiltros(clientes, configFiltros);
@@ -72,29 +75,28 @@ export default function ClientesList() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Nombre</th>
+              <th>Cliente</th>
+              <th>Contacto</th>
               <th>Domicilio</th>
-              <th>Teléfono</th>
-              <th>Email</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cargando && (
-              <tr><td colSpan={5} style={{ textAlign: 'center' }}>Cargando...</td></tr>
+              <tr><td colSpan={4} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             )}
             {!cargando && clientes.length === 0 && (
-              <tr><td colSpan={5} style={{ textAlign: 'center' }}>No hay clientes cargados.</td></tr>
+              <tr><td colSpan={4} style={{ textAlign: 'center' }}>No hay clientes cargados.</td></tr>
             )}
-            <FilaSinResultados filtros={filtros} total={clientes.length} cargando={cargando} columnas={5} nombreItems="clientes" />
+            <FilaSinResultados filtros={filtros} total={clientes.length} cargando={cargando} columnas={4} nombreItems="clientes" />
             {paginacion.visibles.map((cliente) => (
               <tr key={cliente.id_cliente}>
                 <td>
                   <PersonaCelda nombre={cliente.nombre_cliente} apellido={cliente.apellido_cliente} />
                 </td>
+                {/* Mail y teléfono juntos en una sola columna */}
+                <td><ContactoCelda email={cliente.email_cliente} telefono={cliente.telefono_cliente} /></td>
                 <td>{cliente.domicilio_cliente}</td>
-                <td>{cliente.telefono_cliente}</td>
-                <td>{cliente.email_cliente}</td>
                 <td>
                   {puedeGestionar ? (
                     <div className="actions-cell">

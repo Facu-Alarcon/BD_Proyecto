@@ -449,3 +449,28 @@ class Registro_Actividad(models.Model):
 
     def __str__(self):
         return f"{self.fecha:%d/%m/%Y %H:%M} - {self.usuario_texto} - {self.get_accion_display()}"
+
+
+class Token_Recuperacion(models.Model):
+    """
+    Link de "Olvidé mi contraseña". Cuando alguien pide recuperar su clave se crea uno
+    de estos y se le manda por mail un link con el token. El link vence a los 30 minutos
+    y se puede usar una sola vez (ver RecuperarClaveView en api.py).
+
+    No se guarda el token tal cual sino su "huella" (hash SHA-256): si alguien llegara a
+    ver la base de datos, con el hash no puede armar el link. Es la misma idea que con
+    las contraseñas.
+    """
+    id_token = models.AutoField(primary_key=True)
+    id_usuario = models.ForeignKey(Usuarios, on_delete=models.CASCADE, db_column='id_usuario')
+    token_hash = models.CharField(max_length=64, unique=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    expira = models.DateTimeField()
+    usado = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Token de recuperación"
+        verbose_name_plural = "Tokens de recuperación"
+
+    def __str__(self):
+        return f"Recuperación de {self.id_usuario} ({'usado' if self.usado else 'pendiente'})"

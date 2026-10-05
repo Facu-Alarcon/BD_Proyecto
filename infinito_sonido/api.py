@@ -1,5 +1,8 @@
+import hashlib
 import secrets
+from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import transaction
 from django.db.models import Count, ProtectedError
@@ -18,7 +21,7 @@ from .models import (
     Clientes, Empleados, Servicios, Reservas, Reservas_x_Servicios,
     Sueldos, Puestos, Puestos_x_Empleados,
     Horarios, Metodo_Pagos, Pagos,
-    Registro_Actividad,
+    Registro_Actividad, Token_Recuperacion,
 )
 from .serializers import (
     TipoEquiposSerializer, EstadoEquiposSerializer, EquiposSerializer,
@@ -32,9 +35,9 @@ from .serializers import (
     RegistroActividadSerializer,
 )
 from .permissions import permiso_modulo, permisos_del_usuario
-from .correos import enviar_contraseña_temporal
+from .correos import enviar_contraseña_temporal, enviar_link_recuperacion
 from .registro import RegistrarActividadMixin, registrar
-from .seguridad import generar_contraseña_temporal
+from .seguridad import generar_contraseña_temporal, validar_contraseña_segura
 
 
 def _usuario_repr(usuario):
@@ -96,6 +99,122 @@ class CambiarClaveView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         registrar(request, Registro_Actividad.CLAVE, 'Cambió su contraseña', 'Sesión')
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ---------------- "Olvidé mi contraseña" ----------------
+
+# Cuánto dura el link que se manda por mail, y cuánto hay que esperar para pedir otro
+MINUTOS_VALIDEZ_LINK = 30
+SEGUNDOS_ENTRE_PEDIDOS = 60
+
+
+# Huella (hash SHA-256) del token: es lo que se guarda en la base en vez del token real
+def _hash_token(token):
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+# Busca el link de recuperación que todavía sirve: que exista, no esté usado, no haya
+# vencido y que el usuario siga activo. Si no cumple algo, devuelve None.
+def _token_valido(token):
+    return (
+        Token_Recuperacion.objects.select_related('id_usuario__id_empleado')
+        .filter(token_hash=_hash_token(token), usado=False, expira__gt=timezone.now(), id_usuario__activo=True)
+        .first()
+    )
+
+
+class RecuperarClaveView(APIView):
+    """
+    Paso 1 de "Olvidé mi contraseña": el usuario escribe su DNI y, si existe y está activo,
+    se le manda por mail un link para elegir una contraseña nueva.
+
+    Siempre responde lo mismo, exista o no el usuario: así esta pantalla no sirve para
+    averiguar qué DNI tienen cuenta en el sistema. La contraseña actual NO se toca: sigue
+    funcionando hasta que el dueño del mail use el link.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        usuario_nombre = (request.data.get('usuario') or '').strip()
+        respuesta = Response({
+            'detail': 'Si el usuario existe, le enviamos un mail con un link para elegir una contraseña nueva. '
+                      f'El link vence en {MINUTOS_VALIDEZ_LINK} minutos.'
+        })
+        if not usuario_nombre:
+            return Response({'detail': 'Escribí tu usuario (tu DNI).'}, status=status.HTTP_400_BAD_REQUEST)
+
+        usuario = (
+            Usuarios.objects.select_related('id_empleado')
+            .filter(usuario=usuario_nombre, activo=True).first()
+        )
+        if usuario is None or not usuario.correo:
+            registrar(request, Registro_Actividad.CLAVE, 'Pidió recuperar la contraseña de un usuario inexistente o sin correo',
+                      'Sesión', usuario_texto=usuario_nombre)
+            return respuesta
+
+        # Para que no se pueda llenar la casilla de mails apretando el botón muchas veces
+        hace_poco = timezone.now() - timedelta(seconds=SEGUNDOS_ENTRE_PEDIDOS)
+        if Token_Recuperacion.objects.filter(id_usuario=usuario, creado__gt=hace_poco).exists():
+            return respuesta
+
+        # Si había links anteriores sin usar, dejan de servir: solo vale el último
+        Token_Recuperacion.objects.filter(id_usuario=usuario, usado=False).update(usado=True)
+
+        # Token largo y al azar (no se puede adivinar); en la base solo queda su hash
+        token = secrets.token_urlsafe(32)
+        Token_Recuperacion.objects.create(
+            id_usuario=usuario,
+            token_hash=_hash_token(token),
+            expira=timezone.now() + timedelta(minutes=MINUTOS_VALIDEZ_LINK),
+        )
+        link = f'{settings.FRONTEND_URL}/restablecer-clave/{token}'
+        enviar_link_recuperacion(usuario, link, MINUTOS_VALIDEZ_LINK)
+        registrar(request, Registro_Actividad.CLAVE, 'Pidió recuperar su contraseña (se envió el link por mail)',
+                  'Sesión', usuario=usuario)
+        return respuesta
+
+
+class RestablecerConLinkView(APIView):
+    """
+    Paso 2 de "Olvidé mi contraseña": la pantalla que abre el link del mail.
+    GET: revisa si el link todavía sirve (para mostrar el formulario o el aviso de vencido).
+    POST: guarda la contraseña nueva, que tiene que cumplir las reglas de seguridad.
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    VENCIDO = {'detail': 'El link venció o ya se usó. Pedí uno nuevo desde "Olvidé mi contraseña".'}
+
+    def get(self, request, token):
+        registro = _token_valido(token)
+        if registro is None:
+            return Response(self.VENCIDO, status=status.HTTP_400_BAD_REQUEST)
+        # Solo el nombre, para saludar ("Hola Facundo"); no se muestra nada más del usuario
+        return Response({'nombre': registro.id_usuario.nombre})
+
+    def post(self, request, token):
+        registro = _token_valido(token)
+        if registro is None:
+            return Response(self.VENCIDO, status=status.HTTP_400_BAD_REQUEST)
+
+        contraseña = request.data.get('contraseña_nueva') or ''
+        try:
+            validar_contraseña_segura(contraseña)
+        except ValidationError as e:
+            return Response({'contraseña_nueva': e.detail}, status=status.HTTP_400_BAD_REQUEST)
+
+        usuario = registro.id_usuario
+        usuario.contraseña = make_password(contraseña)
+        # La eligió él mismo, así que no hace falta pedirle que la cambie al entrar
+        usuario.debe_cambiar_clave = False
+        usuario.save()
+
+        # El link queda usado, y se cierran las sesiones que hubiera abiertas con la clave vieja
+        registro.usado = True
+        registro.save(update_fields=['usado'])
+        SesionToken.objects.filter(id_usuario=usuario).delete()
+        registrar(request, Registro_Actividad.CLAVE, 'Recuperó su contraseña con el link del mail', 'Sesión', usuario=usuario)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

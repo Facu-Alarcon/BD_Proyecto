@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import FondoBarras from '../components/FondoBarras';
 import './Login.css';
@@ -97,9 +97,10 @@ export default function Login() {
             />
             Recordarme
           </label>
-          <a href="#" onClick={(e) => e.preventDefault()} className="login-link">
+          {/* Lleva a la pantalla donde se pide el link de recuperación por mail */}
+          <Link to="/recuperar-clave" className="login-link">
             Olvidé mi contraseña
-          </a>
+          </Link>
         </div>
 
         <button type="submit" className="btn btn-primary login-submit" disabled={enviando}>

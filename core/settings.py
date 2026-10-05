@@ -153,6 +153,13 @@ DEFAULT_FROM_EMAIL = f'Infinito Sonido e Iluminación <{EMAIL_HOST_USER or "no-r
 # Para saber desde el código si los mails salen de verdad o solo a la consola
 EMAIL_CONFIGURADO = bool(EMAIL_HOST_USER and EMAIL_HOST_PASSWORD)
 
+# Dirección del frontend (React). Se usa para armar el link de "Olvidé mi contraseña"
+# que se manda por mail. En desarrollo Vite corre en el 5173; si se sube a un servidor
+# se cambia en el .env con FRONTEND_URL=https://...
+# Se usa "or" y no un valor por defecto en get(): docker-compose pasa la variable vacía
+# cuando no está en el .env, y en ese caso también queremos usar localhost:5173
+FRONTEND_URL = (os.environ.get('FRONTEND_URL') or 'http://localhost:5173').rstrip('/')
+
 
 # --- Logs para el programador ---
 # Los errores del servidor se escriben en logs/errores.log (además de guardarse en el

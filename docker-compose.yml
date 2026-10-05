@@ -65,6 +65,8 @@ services:
       # (si quedan vacías, los mails se escriben en la consola en vez de enviarse)
       EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
       EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      # Dirección del frontend, para el link de "Olvidé mi contraseña" (por defecto http://localhost:5173)
+      FRONTEND_URL: ${FRONTEND_URL:-}
     # Lo que corre al levantar el contenedor, en este orden:
     # instala las librerias, aplica las migraciones que falten y arranca el servidor.
     # Con && si un paso falla no se ejecutan los siguientes.

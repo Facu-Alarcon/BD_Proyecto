@@ -50,6 +50,8 @@ import PagoForm from './pages/pagos/PagoForm';
 
 import CambiarClave from './pages/CambiarClave';
 import RegistroActividad from './pages/registro/RegistroActividad';
+import RecuperarClave from './pages/RecuperarClave';
+import RestablecerConLink from './pages/RestablecerConLink';
 
 export default function App() {
   return (
@@ -57,6 +59,9 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          {/* "Olvidé mi contraseña": son públicas porque el usuario todavía no puede entrar */}
+          <Route path="/recuperar-clave" element={<RecuperarClave />} />
+          <Route path="/restablecer-clave/:token" element={<RestablecerConLink />} />
 
           <Route
             path="/"

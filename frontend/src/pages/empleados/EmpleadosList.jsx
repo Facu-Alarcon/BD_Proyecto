@@ -9,6 +9,8 @@ import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import { PersonaCelda } from '../../components/Avatar';
+import ContactoCelda from '../../components/ContactoCelda';
+import { formatearDni, formatearTelefono } from '../../utils/formato';
 
 export default function EmpleadosList() {
   const { puedeGestionar } = usePermiso('empleados');
@@ -46,7 +48,8 @@ export default function EmpleadosList() {
   const configFiltros = [
     {
       tipo: 'texto', id: 'texto', placeholder: 'Nombre, apellido, DNI, teléfono o email',
-      campos: (e) => [`${e.nombre_emp} ${e.apellido_emp}`, e.dni, e.telefono_emp, e.email_emp],
+      // DNI y teléfono van también con formato, así se encuentran escribiéndolos como se ven en la tabla
+      campos: (e) => [`${e.nombre_emp} ${e.apellido_emp}`, e.dni, formatearDni(e.dni), e.telefono_emp, formatearTelefono(e.telefono_emp), e.email_emp],
     },
   ];
   const filtros = useFiltros(empleados, configFiltros);
@@ -72,26 +75,31 @@ export default function EmpleadosList() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Nombre</th>
-              <th>Teléfono</th>
-              <th>Email</th>
+              <th>Empleado</th>
+              <th>Contacto</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cargando && (
-              <tr><td colSpan={4} style={{ textAlign: 'center' }}>Cargando...</td></tr>
+              <tr><td colSpan={3} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             )}
             {!cargando && empleados.length === 0 && (
-              <tr><td colSpan={4} style={{ textAlign: 'center' }}>No hay empleados cargados.</td></tr>
+              <tr><td colSpan={3} style={{ textAlign: 'center' }}>No hay empleados cargados.</td></tr>
             )}
-            <FilaSinResultados filtros={filtros} total={empleados.length} cargando={cargando} columnas={4} nombreItems="empleados" />
+            <FilaSinResultados filtros={filtros} total={empleados.length} cargando={cargando} columnas={3} nombreItems="empleados" />
             {paginacion.visibles.map((empleado) => (
               <tr key={empleado.id_empleado}>
-                {/* Abajo del nombre va el DNI, o un aviso si todavía no lo tiene cargado */}
-                <td><PersonaCelda nombre={empleado.nombre_emp} apellido={empleado.apellido_emp} detalle={empleado.dni ? `DNI ${empleado.dni}` : 'Sin DNI cargado'} /></td>
-                <td>{empleado.telefono_emp}</td>
-                <td>{empleado.email_emp}</td>
+                {/* Abajo del nombre va el DNI con puntos; si no lo tiene, una etiqueta ámbar para que se note */}
+                <td>
+                  <PersonaCelda
+                    nombre={empleado.nombre_emp}
+                    apellido={empleado.apellido_emp}
+                    detalle={empleado.dni ? `DNI ${formatearDni(empleado.dni)}` : <span className="badge badge-amber badge-chica">Sin DNI</span>}
+                  />
+                </td>
+                {/* Mail y teléfono juntos en una sola columna */}
+                <td><ContactoCelda email={empleado.email_emp} telefono={empleado.telefono_emp} /></td>
                 <td>
                   {puedeGestionar ? (
                     <div className="actions-cell">

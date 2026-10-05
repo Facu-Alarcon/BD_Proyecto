@@ -98,6 +98,14 @@
   text-decoration: underline;
 }
 
+/* Link "Volver al inicio de sesión" de las pantallas de recuperar contraseña */
+.login-volver {
+  display: block;
+  margin-top: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
 .login-submit {
   width: 100%;
   justify-content: center;
