@@ -18,6 +18,7 @@ from .models import (
     Clientes, Empleados, Servicios, Reservas, Reservas_x_Servicios,
     Sueldos, Puestos, Puestos_x_Empleados,
     Horarios, Metodo_Pagos, Pagos,
+    Registro_Actividad,
 )
 from .serializers import (
     TipoEquiposSerializer, EstadoEquiposSerializer, EquiposSerializer,
@@ -28,9 +29,11 @@ from .serializers import (
     SueldosSerializer, PuestosSerializer, PuestoConEstadoSerializer,
     HorariosSerializer, MetodoPagosSerializer, PagosSerializer,
     recalcular_saldos,
+    RegistroActividadSerializer,
 )
 from .permissions import permiso_modulo, permisos_del_usuario
 from .correos import enviar_contraseña_temporal
+from .registro import RegistrarActividadMixin, registrar
 from .seguridad import generar_contraseña_temporal
 
 
@@ -62,15 +65,21 @@ class LoginView(APIView):
         try:
             usuario = Usuarios.objects.select_related('id_perfil', 'id_empleado').get(usuario=usuario_nombre)
         except Usuarios.DoesNotExist:
+            # Queda registrado el intento con el usuario que escribieron (sirve para detectar ataques)
+            registrar(request, Registro_Actividad.LOGIN_FALLIDO, 'Usuario inexistente', 'Sesión',
+                      usuario_texto=usuario_nombre)
             return Response(error, status=status.HTTP_401_UNAUTHORIZED)
 
         if not check_password(contraseña, usuario.contraseña):
+            registrar(request, Registro_Actividad.LOGIN_FALLIDO, 'Contraseña incorrecta', 'Sesión', usuario=usuario)
             return Response(error, status=status.HTTP_401_UNAUTHORIZED)
 
         if not usuario.activo:
+            registrar(request, Registro_Actividad.LOGIN_FALLIDO, 'Usuario dado de baja', 'Sesión', usuario=usuario)
             return Response({'detail': 'Este usuario está dado de baja.'}, status=status.HTTP_403_FORBIDDEN)
 
         sesion = SesionToken.objects.create(token=secrets.token_hex(32), id_usuario=usuario)
+        registrar(request, Registro_Actividad.LOGIN, 'Inició sesión', 'Sesión', usuario=usuario)
         return Response({'token': sesion.token, 'usuario': _usuario_repr(usuario)})
 
 
@@ -86,6 +95,7 @@ class CambiarClaveView(APIView):
         serializer = CambiarClaveSerializer(data=request.data, context={'usuario': request.user})
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        registrar(request, Registro_Actividad.CLAVE, 'Cambió su contraseña', 'Sesión')
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -94,6 +104,7 @@ class LogoutView(APIView):
         # request.auth es la instancia de SesionToken usada para autenticar (ver authentication.py)
         if request.auth is not None:
             request.auth.delete()
+        registrar(request, Registro_Actividad.LOGOUT, 'Cerró sesión', 'Sesión')
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -102,7 +113,9 @@ class MeView(APIView):
         return Response(_usuario_repr(request.user))
 
 
-class TipoEquiposViewSet(viewsets.ModelViewSet):
+class TipoEquiposViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Tipos de equipo'
     queryset = Tipo_Equipos.objects.all().order_by('nombre_tipoeq')
     serializer_class = TipoEquiposSerializer
     permission_classes = [permiso_modulo('tipos_equipo')]
@@ -119,13 +132,17 @@ class TipoEquiposViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class HorariosViewSet(viewsets.ModelViewSet):
+class HorariosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Horarios'
     queryset = Horarios.objects.all().order_by('cantidad_horas')
     serializer_class = HorariosSerializer
     permission_classes = [permiso_modulo('horarios')]
 
 
-class MetodoPagosViewSet(viewsets.ModelViewSet):
+class MetodoPagosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Métodos de pago'
     queryset = Metodo_Pagos.objects.all().order_by('metodo_pago')
     serializer_class = MetodoPagosSerializer
     permission_classes = [permiso_modulo('metodos_pago')]
@@ -142,12 +159,14 @@ class MetodoPagosViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class EstadoEquiposViewSet(viewsets.ModelViewSet):
+class EstadoEquiposViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     """
     Catálogo editable de estados de equipo (antes era una lista fija
     DISPONIBLE/EN_USO/EN_REPARACION hardcodeada). Se puede crear un
     estado nuevo desde acá, incluido el botón "+" del formulario de Equipos.
     """
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Estados de equipo'
     queryset = Estado_Equipos.objects.all().order_by('nombre_estadoeq')
     serializer_class = EstadoEquiposSerializer
     permission_classes = [permiso_modulo('equipos')]
@@ -164,7 +183,9 @@ class EstadoEquiposViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class EquiposViewSet(viewsets.ModelViewSet):
+class EquiposViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Equipos'
     queryset = Equipos.objects.select_related('id_tipoeq', 'id_estadoeq').all().order_by('nombre_equipo')
     serializer_class = EquiposSerializer
     permission_classes = [permiso_modulo('equipos')]
@@ -181,7 +202,9 @@ class EquiposViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class PerfilesViewSet(viewsets.ModelViewSet):
+class PerfilesViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Perfiles'
     queryset = Perfiles.objects.all().order_by('tipo_perfil')
     serializer_class = PerfilesSerializer
     permission_classes = [permiso_modulo('perfiles')]
@@ -233,13 +256,17 @@ class PerfilesViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class PermisosViewSet(viewsets.ModelViewSet):
+class PermisosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Permisos'
     queryset = Permisos.objects.all().order_by('nombre_permiso')
     serializer_class = PermisosSerializer
     permission_classes = [permiso_modulo('permisos')]
 
 
-class UsuariosViewSet(viewsets.ModelViewSet):
+class UsuariosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Usuarios'
     queryset = (
         Usuarios.objects.select_related('id_perfil', 'id_empleado').all()
         .order_by('id_empleado__apellido_emp', 'id_empleado__nombre_emp')
@@ -305,7 +332,9 @@ class UsuariosViewSet(viewsets.ModelViewSet):
         return Response(UsuariosSerializer(usuario).data)
 
 
-class ClientesViewSet(viewsets.ModelViewSet):
+class ClientesViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Clientes'
     queryset = Clientes.objects.all().order_by('apellido_cliente', 'nombre_cliente')
     serializer_class = ClientesSerializer
     permission_classes = [permiso_modulo('clientes')]
@@ -322,7 +351,9 @@ class ClientesViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class EmpleadosViewSet(viewsets.ModelViewSet):
+class EmpleadosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Empleados'
     queryset = Empleados.objects.all().order_by('apellido_emp', 'nombre_emp')
     serializer_class = EmpleadosSerializer
     permission_classes = [permiso_modulo('empleados')]
@@ -381,7 +412,9 @@ class EmpleadosViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class SueldosViewSet(viewsets.ModelViewSet):
+class SueldosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Sueldos'
     queryset = Sueldos.objects.all().order_by('monto_sueldo')
     serializer_class = SueldosSerializer
     permission_classes = [permiso_modulo('sueldos')]
@@ -398,7 +431,9 @@ class SueldosViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class PuestosViewSet(viewsets.ModelViewSet):
+class PuestosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Puestos'
     # Puestos_x_Empleados usa CASCADE sobre id_puesto: si se borra un puesto,
     # sus asignaciones a empleados se limpian solas (no hay ProtectedError
     # que atajar acá, a diferencia de Sueldos que sí usa PROTECT).
@@ -407,7 +442,9 @@ class PuestosViewSet(viewsets.ModelViewSet):
     permission_classes = [permiso_modulo('puestos')]
 
 
-class ServiciosViewSet(viewsets.ModelViewSet):
+class ServiciosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Servicios'
     queryset = Servicios.objects.all().order_by('tipo_servicio')
     serializer_class = ServiciosSerializer
     permission_classes = [permiso_modulo('servicios')]
@@ -425,7 +462,9 @@ class ServiciosViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ReservasViewSet(viewsets.ModelViewSet):
+class ReservasViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Reservas'
     queryset = Reservas.objects.select_related('id_cliente').all().order_by('-fecha_evento', '-hora_evento')
     serializer_class = ReservasSerializer
     permission_classes = [permiso_modulo('reservas')]
@@ -442,7 +481,9 @@ class ReservasViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class PagosViewSet(viewsets.ModelViewSet):
+class PagosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+    # Nombre con el que aparece en el registro de actividad (ver registro.py)
+    modulo_registro = 'Pagos'
     queryset = Pagos.objects.select_related('id_reserva', 'id_reserva__id_cliente').all().order_by('-id_pago')
     serializer_class = PagosSerializer
     permission_classes = [permiso_modulo('pagos')]
@@ -455,6 +496,19 @@ class PagosViewSet(viewsets.ModelViewSet):
         pago.delete()
         recalcular_saldos(reserva)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class RegistroActividadViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Consulta del registro de actividad. Es de solo lectura: nadie puede editar ni borrar
+    lo que quedó registrado. Devuelve los últimos 2000 movimientos (los más nuevos primero),
+    que alcanzan para la pantalla; los filtros se aplican en el frontend como en los demás módulos.
+    """
+    serializer_class = RegistroActividadSerializer
+    permission_classes = [permiso_modulo('registro')]
+
+    def get_queryset(self):
+        return Registro_Actividad.objects.select_related('id_usuario__id_empleado').order_by('-fecha')[:2000]
 
 
 class DashboardResumenView(APIView):

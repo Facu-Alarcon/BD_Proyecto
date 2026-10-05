@@ -640,3 +640,73 @@ button {
   font-size: 16px;
   letter-spacing: 1px;
 }
+
+/* ---------- Registro de actividad (ver pages/registro/RegistroActividad.jsx) ---------- */
+
+/* Pestañas "Actividad" / "Errores" */
+.pestañas {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pestañas button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* La pestaña elegida se subraya con el verde institucional */
+.pestañas button.activa {
+  color: var(--navy-900);
+  border-bottom-color: var(--verde);
+}
+
+.pestaña-cantidad {
+  min-width: 24px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--gray-bg);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Si hay errores, el número se pone en rojo para que se note */
+.pestaña-cantidad.hay-errores {
+  background: var(--red-bg);
+  color: var(--red);
+}
+
+/* Ruta de la API donde pasó un error, en letra de código */
+.registro-ruta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Fila desplegada con el detalle (campos que cambiaron o el error completo) */
+.registro-detalle-fila td {
+  background: #fafbfd;
+}
+
+.registro-detalle {
+  margin: 0 0 6px;
+  padding: 12px 14px;
+  max-height: 320px;
+  overflow: auto;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

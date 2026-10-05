@@ -4,7 +4,7 @@
 -- Como usarlo:
 --   1. Levantar los contenedores (docker compose up -d). El contenedor web
 --      corre las migraciones solo, asi que las tablas ya estan creadas y
---      ya tienen cargados los 28 permisos y los 3 estados de equipo.
+--      ya tienen cargados los 29 permisos y los 3 estados de equipo.
 --   2. Entrar a phpMyAdmin (http://localhost:8080), elegir la base del
 --      proyecto, ir a la pestana SQL, pegar TODO este archivo y Continuar.
 --      Tiene que ejecutarse todo junto de una sola vez: los ids se van
@@ -21,7 +21,7 @@
 START TRANSACTION;
 
 -- ======================================================================
--- 1. PERFIL ADMINISTRADOR (con todos los permisos)
+-- 1. PERFIL ADMINISTRADOR (con todos los permisos, incluido Ver Registro de actividad)
 -- ======================================================================
 INSERT INTO infinito_sonido_perfiles (tipo_perfil) VALUES ('Administrador');
 SET @perfil_admin = LAST_INSERT_ID();
@@ -43,7 +43,7 @@ INSERT INTO infinito_sonido_usuarios (id_empleado, id_perfil, usuario, `contrase
 INSERT INTO infinito_sonido_perfiles (tipo_perfil) VALUES ('Encargado');
 SET @perfil_encargado = LAST_INSERT_ID();
 INSERT INTO infinito_sonido_permisos_x_perfiles (id_perfil, id_permiso)
-  SELECT @perfil_encargado, id_permiso FROM infinito_sonido_permisos WHERE codigo LIKE 'ver\_%' OR codigo IN ('gestionar_reservas','gestionar_clientes','gestionar_equipos','gestionar_servicios','gestionar_pagos','gestionar_tipos_equipo');
+  SELECT @perfil_encargado, id_permiso FROM infinito_sonido_permisos WHERE (codigo LIKE 'ver\_%' AND codigo <> 'ver_registro') OR codigo IN ('gestionar_reservas','gestionar_clientes','gestionar_equipos','gestionar_servicios','gestionar_pagos','gestionar_tipos_equipo');
 INSERT INTO infinito_sonido_perfiles (tipo_perfil) VALUES ('Empleado');
 SET @perfil_empleado = LAST_INSERT_ID();
 INSERT INTO infinito_sonido_permisos_x_perfiles (id_perfil, id_permiso)
@@ -51,7 +51,7 @@ INSERT INTO infinito_sonido_permisos_x_perfiles (id_perfil, id_permiso)
 INSERT INTO infinito_sonido_perfiles (tipo_perfil) VALUES ('Contador');
 SET @perfil_contador = LAST_INSERT_ID();
 INSERT INTO infinito_sonido_permisos_x_perfiles (id_perfil, id_permiso)
-  SELECT @perfil_contador, id_permiso FROM infinito_sonido_permisos WHERE codigo LIKE 'ver\_%' OR codigo IN ('gestionar_pagos','gestionar_metodos_pago','gestionar_sueldos');
+  SELECT @perfil_contador, id_permiso FROM infinito_sonido_permisos WHERE (codigo LIKE 'ver\_%' AND codigo <> 'ver_registro') OR codigo IN ('gestionar_pagos','gestionar_metodos_pago','gestionar_sueldos');
 
 -- ======================================================================
 -- 5. SUELDOS

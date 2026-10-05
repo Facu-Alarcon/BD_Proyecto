@@ -13,3 +13,6 @@ venv/
 # Editores
 .vscode/
 .idea/
+
+# Logs de errores del servidor (los genera Django en cada compu)
+logs/

@@ -13,6 +13,7 @@ from .models import (
     Reservas, Reservas_x_Servicios, Detalles_Reservas,
     Sueldos, Puestos,
     Horarios, Metodo_Pagos, Pagos, Detalles_de_Pago,
+    Registro_Actividad,
 )
 
 
@@ -430,3 +431,22 @@ class PagosSerializer(serializers.ModelSerializer):
             recalcular_saldos(reserva_anterior)
         instance.refresh_from_db()
         return instance
+
+
+class RegistroActividadSerializer(serializers.ModelSerializer):
+    """Una fila del registro de actividad, con el nombre de la acción y de la persona para mostrar."""
+    accion_display = serializers.CharField(source='get_accion_display', read_only=True)
+    # Nombre y apellido del empleado del usuario (vacío si fue un login con un usuario que no existe)
+    persona = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Registro_Actividad
+        fields = [
+            'id_registro', 'fecha', 'usuario_texto', 'persona', 'accion', 'accion_display',
+            'modulo', 'id_objeto', 'descripcion', 'detalle', 'ip',
+        ]
+
+    def get_persona(self, obj):
+        if obj.id_usuario and obj.id_usuario.id_empleado:
+            return f'{obj.id_usuario.nombre} {obj.id_usuario.apellido}'
+        return ''

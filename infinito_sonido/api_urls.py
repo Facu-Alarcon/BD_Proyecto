@@ -18,6 +18,7 @@ router.register('puestos', api.PuestosViewSet, basename='api-puestos')
 router.register('horarios', api.HorariosViewSet, basename='api-horarios')
 router.register('metodos-pago', api.MetodoPagosViewSet, basename='api-metodos-pago')
 router.register('pagos', api.PagosViewSet, basename='api-pagos')
+router.register('registro', api.RegistroActividadViewSet, basename='api-registro')
 
 urlpatterns = [
     path('login/', api.LoginView.as_view(), name='api_login'),

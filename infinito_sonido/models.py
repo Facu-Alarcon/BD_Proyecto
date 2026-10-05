@@ -400,3 +400,52 @@ class SesionToken(models.Model):
 
     def __str__(self):
         return f"Token de {self.id_usuario}"
+
+class Registro_Actividad(models.Model):
+    """
+    Registro de actividad (auditoría): guarda cada alta, modificación y baja que se
+    hace en el sistema, los inicios y cierres de sesión, los cambios de clave y los
+    errores del servidor. Lo arma solo el backend (ver registro.py) y no se puede
+    editar ni borrar desde la API: solo se consulta, con el permiso "Ver Registro de actividad".
+    """
+    ALTA = 'ALTA'
+    MODIFICACION = 'MODIFICACION'
+    BAJA = 'BAJA'
+    LOGIN = 'LOGIN'
+    LOGIN_FALLIDO = 'LOGIN_FALLIDO'
+    LOGOUT = 'LOGOUT'
+    CLAVE = 'CLAVE'
+    ERROR = 'ERROR'
+    ACCION_CHOICES = [
+        (ALTA, 'Alta'),
+        (MODIFICACION, 'Modificación'),
+        (BAJA, 'Baja'),
+        (LOGIN, 'Inicio de sesión'),
+        (LOGIN_FALLIDO, 'Inicio de sesión fallido'),
+        (LOGOUT, 'Cierre de sesión'),
+        (CLAVE, 'Contraseña'),
+        (ERROR, 'Error del sistema'),
+    ]
+
+    id_registro = models.AutoField(primary_key=True)
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
+    # Quién lo hizo. SET_NULL para no perder el registro si algún día se borra el usuario
+    id_usuario = models.ForeignKey(
+        Usuarios, on_delete=models.SET_NULL, null=True, blank=True, db_column='id_usuario'
+    )
+    # El nombre de usuario como texto: sirve para los intentos de login con un usuario que no existe
+    usuario_texto = models.CharField(max_length=50, blank=True)
+    accion = models.CharField(max_length=20, choices=ACCION_CHOICES, db_index=True)
+    modulo = models.CharField(max_length=50, blank=True)           # ej: "Clientes", "Sesión"
+    id_objeto = models.CharField(max_length=20, blank=True)        # id del registro afectado
+    descripcion = models.CharField(max_length=255)                 # ej: "Juan Pérez"
+    detalle = models.TextField(blank=True)                         # qué campos cambiaron, o el error completo
+    ip = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Registro de actividad"
+        verbose_name_plural = "Registro de actividad"
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"{self.fecha:%d/%m/%Y %H:%M} - {self.usuario_texto} - {self.get_accion_display()}"

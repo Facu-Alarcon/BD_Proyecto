@@ -251,3 +251,16 @@ export function IconPagos(props) {
     </IconMenu>
   );
 }
+
+// Registro de actividad: portapapeles con renglones
+export function IconRegistro(props) {
+  return (
+    <IconMenu {...props}>
+      <rect x="5" y="3" width="14" height="18" rx="2" />
+      <path d="M9 3V2h6v1" />
+      <line x1="9" y1="9" x2="15" y2="9" />
+      <line x1="9" y1="13" x2="15" y2="13" />
+      <line x1="9" y1="17" x2="13" y2="17" />
+    </IconMenu>
+  );
+}

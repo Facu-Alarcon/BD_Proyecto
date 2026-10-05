@@ -6,7 +6,8 @@ from .models import (
     Tipo_Equipos, Estado_Equipos, Equipos, Servicios, Equipos_x_Servicios,
     Clientes, Reservas, Detalles_Reservas, Reservas_x_Servicios,
     Metodo_Pagos, Pagos, Detalles_de_Pago,
-    Permisos, Permisos_x_Perfiles
+    Permisos, Permisos_x_Perfiles,
+    Registro_Actividad,
 )
 
 
@@ -155,3 +156,20 @@ class Permisos_x_Perfiles_Admin(admin.ModelAdmin):
     list_display = ('id_permiso_perfil', 'id_perfil', 'id_permiso')
     list_filter = ('id_perfil', 'id_permiso')
 
+
+
+# Registro de actividad: en el panel de Django también es solo de lectura
+@admin.register(Registro_Actividad)
+class Registro_Actividad_Admin(admin.ModelAdmin):
+    list_display = ('fecha', 'usuario_texto', 'accion', 'modulo', 'descripcion', 'ip')
+    list_filter = ('accion', 'modulo')
+    search_fields = ('usuario_texto', 'descripcion', 'detalle')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

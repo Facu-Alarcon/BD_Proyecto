@@ -49,6 +49,7 @@ import PagosList from './pages/pagos/PagosList';
 import PagoForm from './pages/pagos/PagoForm';
 
 import CambiarClave from './pages/CambiarClave';
+import RegistroActividad from './pages/registro/RegistroActividad';
 
 export default function App() {
   return (
@@ -150,6 +151,9 @@ export default function App() {
               <Route path="nuevo" element={<PagoForm />} />
               <Route path=":id/editar" element={<PagoForm />} />
             </Route>
+
+            {/* Registro de actividad: solo consulta, no tiene alta ni edición */}
+            <Route path="registro" element={<RequierePermiso modulo="registro"><RegistroActividad /></RequierePermiso>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

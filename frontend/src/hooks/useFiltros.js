@@ -51,7 +51,17 @@ function comparable(valor, input) {
 }
 
 export function useFiltros(filas, config) {
-  const [valores, setValores] = useState(() => valoresVacios(config));
+  const [estado, setValores] = useState(() => valoresVacios(config));
+  // Si la pantalla cambia de filtros (ej: las pestañas del Registro de actividad), los que
+  // todavía no tienen valor se toman como vacíos ('') en vez de quedar undefined.
+  // Se memoriza para que 'valores' sea el mismo objeto mientras no cambie nada: la
+  // paginación lo usa para saber cuándo volver a la página 1.
+  const firmaConfig = config.map((f) => `${f.tipo}:${f.id}`).join('|');
+  const valores = useMemo(
+    () => ({ ...valoresVacios(config), ...estado }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [estado, firmaConfig]
+  );
 
   // Cambia un solo filtro y deja los demás como estaban
   function cambiar(campo, valor) {

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   IconInicio, IconClientes, IconReservas, IconServicios, IconEquipos, IconTiposEquipo,
   IconEmpleados, IconPuestos, IconHorarios, IconSueldos, IconUsuarios, IconPerfiles,
-  IconPermisos, IconMetodosPago, IconPagos,
+  IconPermisos, IconMetodosPago, IconPagos, IconRegistro,
 } from './icons';
 import './Sidebar.css';
 
@@ -26,6 +26,8 @@ const NAV_ITEMS = [
   { to: '/permisos', label: 'Permisos', icon: IconPermisos, modulo: 'permisos' },
   { to: '/metodos-pago', label: 'Métodos de pago', icon: IconMetodosPago, modulo: 'metodos_pago' },
   { to: '/pagos', label: 'Pagos', icon: IconPagos, modulo: 'pagos' },
+  // Solo lo ven los perfiles con el permiso "Ver Registro de actividad" (por defecto, el Administrador)
+  { to: '/registro', label: 'Registro de actividad', icon: IconRegistro, modulo: 'registro' },
 ];
 
 // Mismo corte que en Sidebar.css: por debajo de este ancho el menú

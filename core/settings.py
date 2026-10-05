@@ -42,6 +42,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Guarda los errores del servidor en el registro de actividad y en logs/errores.log
+    'infinito_sonido.registro.RegistroErroresMiddleware',
 ]
 
 # --- API (React consume esto desde otro puerto/origen) ---
@@ -150,3 +152,37 @@ DEFAULT_FROM_EMAIL = f'Infinito Sonido e Iluminación <{EMAIL_HOST_USER or "no-r
 
 # Para saber desde el código si los mails salen de verdad o solo a la consola
 EMAIL_CONFIGURADO = bool(EMAIL_HOST_USER and EMAIL_HOST_PASSWORD)
+
+
+# --- Logs para el programador ---
+# Los errores del servidor se escriben en logs/errores.log (además de guardarse en el
+# registro de actividad, pestaña "Errores"). El archivo rota solo: cuando llega a 1 MB
+# se renombra a errores.log.1 y se empieza uno nuevo, y se guardan los últimos 5.
+CARPETA_LOGS = BASE_DIR / 'logs'
+CARPETA_LOGS.mkdir(exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'detallado': {'format': '[{asctime}] {levelname} {name}: {message}', 'style': '{'},
+    },
+    'handlers': {
+        'archivo_errores': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': CARPETA_LOGS / 'errores.log',
+            'maxBytes': 1024 * 1024,
+            'backupCount': 5,
+            'encoding': 'utf-8',
+            'formatter': 'detallado',
+        },
+        'consola': {'class': 'logging.StreamHandler'},
+    },
+    'loggers': {
+        # Errores de nuestro código (registro de actividad, envío de mails, etc.)
+        'infinito_sonido': {'handlers': ['archivo_errores', 'consola'], 'level': 'INFO'},
+        # Errores 500 que detecta Django
+        'django.request': {'handlers': ['archivo_errores'], 'level': 'ERROR', 'propagate': True},
+    },
+}
