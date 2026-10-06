@@ -55,9 +55,8 @@ class Puestos(models.Model):
 
 class Empleados(models.Model):
     id_empleado = models.AutoField(primary_key=True)
-    # El DNI ahora es dato del empleado (antes estaba en Usuarios). Es el nombre de usuario
-    # con el que entra al sistema. Puede quedar vacío solo en los empleados que se cargaron
-    # antes de este cambio; desde el formulario se pide siempre.
+    # El DNI ahora es dato del empleado (antes estaba en Usuarios). Puede quedar vacío solo
+    # en los empleados que se cargaron antes de este cambio; desde el formulario se pide siempre.
     dni = models.CharField(max_length=8, unique=True, null=True, blank=True, validators=validar_dni)
     nombre_emp = models.CharField(max_length=30, validators=validar_nombre_propio)
     apellido_emp = models.CharField(max_length=30, validators=validar_nombre_propio)
@@ -120,7 +119,8 @@ class Usuarios(models.Model):
         Empleados, on_delete=models.PROTECT, db_column='id_empleado', related_name='usuario'
     )
     id_perfil = models.ForeignKey(Perfiles, on_delete=models.PROTECT, db_column='id_perfil')
-    # Se genera solo al crear el usuario: es el DNI del empleado. Queda fijo de ahí en más.
+    # Se genera solo al crear el usuario: primer apellido + inicial del nombre (ej: perezj),
+    # con un número si ya está tomado (ver nombres_usuario.py). Queda fijo de ahí en más.
     usuario = models.CharField(max_length=50, unique=True)
     contraseña = models.CharField(max_length=128)
     # Baja de usuario = activo=False + fecha_baja (no se borra la fila:

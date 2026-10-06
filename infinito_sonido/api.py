@@ -126,11 +126,11 @@ def _token_valido(token):
 
 class RecuperarClaveView(APIView):
     """
-    Paso 1 de "Olvidé mi contraseña": el usuario escribe su DNI y, si existe y está activo,
+    Paso 1 de "Olvidé mi contraseña": el usuario escribe su usuario y, si existe y está activo,
     se le manda por mail un link para elegir una contraseña nueva.
 
     Siempre responde lo mismo, exista o no el usuario: así esta pantalla no sirve para
-    averiguar qué DNI tienen cuenta en el sistema. La contraseña actual NO se toca: sigue
+    averiguar qué usuarios existen en el sistema. La contraseña actual NO se toca: sigue
     funcionando hasta que el dueño del mail use el link.
     """
     permission_classes = [AllowAny]
@@ -143,7 +143,7 @@ class RecuperarClaveView(APIView):
                       f'El link vence en {MINUTOS_VALIDEZ_LINK} minutos.'
         })
         if not usuario_nombre:
-            return Response({'detail': 'Escribí tu usuario (tu DNI).'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Escribí tu usuario.'}, status=status.HTTP_400_BAD_REQUEST)
 
         usuario = (
             Usuarios.objects.select_related('id_empleado')

@@ -5,10 +5,12 @@ import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
 import SelectBuscable from '../../components/SelectBuscable';
 import AvisoContraseñaTemporal from '../../components/AvisoContraseñaTemporal';
+import { usuarioSugerido } from '../../utils/nombreUsuario';
 
 // Formulario de usuarios. Un usuario es la cuenta de un empleado ya registrado:
-// al crear solo se elige el empleado y el perfil. El nombre de usuario es el DNI del
-// empleado y la contraseña temporal la genera el sistema y se la manda por mail.
+// al crear solo se elige el empleado y el perfil. El nombre de usuario se arma solo con el
+// primer apellido + la inicial del nombre, y la contraseña temporal la genera el sistema
+// y se la manda por mail.
 // Al editar solo se puede cambiar el perfil (los datos de la persona se editan en Empleados).
 export default function UsuarioForm() {
   const { id } = useParams();
@@ -48,8 +50,8 @@ export default function UsuarioForm() {
   // Solo se pueden elegir empleados que todavía no tienen usuario
   const disponibles = empleados.filter((e) => !e.tiene_usuario);
   const empleadoElegido = empleados.find((e) => String(e.id_empleado) === String(form.id_empleado));
-  // Si al empleado le falta el DNI o el correo no se puede crear el usuario: se avisa antes de enviar
-  const faltanDatos = Boolean(empleadoElegido && (!empleadoElegido.dni || !empleadoElegido.email_emp));
+  // Si al empleado le falta el correo no se puede crear el usuario (ahí le llega la contraseña): se avisa antes de enviar
+  const faltanDatos = Boolean(empleadoElegido && !empleadoElegido.email_emp);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -101,7 +103,7 @@ export default function UsuarioForm() {
             Se creó el usuario de <strong>{creado.nombre} {creado.apellido}</strong> con el perfil{' '}
             <strong>{creado.perfil_nombre}</strong>.
           </p>
-          <p>Usuario para ingresar: <strong>{creado.usuario}</strong> (su DNI)</p>
+          <p>Usuario para ingresar: <strong>{creado.usuario}</strong></p>
           <AvisoContraseñaTemporal resultado={creado} />
           <div className="form-acciones">
             <button type="button" className="btn btn-primary" onClick={() => navigate('/usuarios')}>
@@ -147,13 +149,17 @@ export default function UsuarioForm() {
       {/* Datos que se toman del empleado elegido, para revisar antes de crear */}
       {(empleadoElegido || editando) && (
         <div className="datos-empleado">
-          <div><span>Usuario (DNI)</span><strong>{editando ? datosUsuario?.usuario : empleadoElegido.dni || '—'}</strong></div>
+          {/* Al crear se muestra cómo va a quedar el usuario; si ya existe, el sistema le agrega un número */}
+          <div>
+            <span>{editando ? 'Usuario' : 'Usuario (se genera solo)'}</span>
+            <strong>{editando ? datosUsuario?.usuario : usuarioSugerido(empleadoElegido.nombre_emp, empleadoElegido.apellido_emp)}</strong>
+          </div>
           <div><span>Correo</span><strong>{editando ? datosUsuario?.correo : empleadoElegido.email_emp || '—'}</strong></div>
         </div>
       )}
       {faltanDatos && (
         <div className="alert alert-error">
-          A este empleado le falta el DNI o el correo.{' '}
+          A este empleado le falta el correo.{' '}
           <Link to={`/empleados/${empleadoElegido.id_empleado}/editar`}>Completalo en Empleados</Link> antes de crear el usuario.
         </div>
       )}

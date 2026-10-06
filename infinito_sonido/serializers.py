@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from rest_framework import serializers
 
+from .nombres_usuario import generar_nombre_usuario
 from .seguridad import generar_contraseña_temporal, validar_contraseña_segura
 
 from .models import (
@@ -86,7 +87,8 @@ class PermisoConEstadoSerializer(serializers.ModelSerializer):
 class UsuariosSerializer(serializers.ModelSerializer):
     """
     Los usuarios se crean a partir de un empleado ya registrado (uno a uno).
-    Alta: solo se elige el empleado y el perfil. El nombre de usuario es el DNI
+    Alta: solo se elige el empleado y el perfil. El nombre de usuario se arma solo con el
+    primer apellido + la inicial del nombre (ver nombres_usuario.py)
     del empleado y la contraseña es temporal: la arma el sistema al azar, se le
     manda por mail al empleado (ver correos.py) y en el primer ingreso tiene que
     cambiarla (debe_cambiar_clave=True).
@@ -113,8 +115,8 @@ class UsuariosSerializer(serializers.ModelSerializer):
         # Sin el validador automático de "uno a uno": el mensaje lo damos nosotros en validate_id_empleado
         extra_kwargs = {'id_empleado': {'validators': []}}
 
-    # El empleado elegido no puede tener ya un usuario, y necesita DNI (es el usuario)
-    # y correo (ahí le llega la contraseña temporal)
+    # El empleado elegido no puede tener ya un usuario, y necesita correo (ahí le llega
+    # la contraseña temporal)
     def validate_id_empleado(self, empleado):
         if self.instance is not None:
             if empleado != self.instance.id_empleado:
@@ -122,21 +124,21 @@ class UsuariosSerializer(serializers.ModelSerializer):
             return empleado
         if Usuarios.objects.filter(id_empleado=empleado).exists():
             raise serializers.ValidationError(f'{empleado} ya tiene un usuario creado.')
-        if not empleado.dni:
-            raise serializers.ValidationError(f'{empleado} no tiene DNI cargado. Cargalo desde Empleados.')
         if not empleado.email_emp:
             raise serializers.ValidationError(f'{empleado} no tiene correo cargado. Cargalo desde Empleados.')
-        if Usuarios.objects.filter(usuario=empleado.dni).exists():
-            raise serializers.ValidationError(f'Ya existe un usuario con el DNI {empleado.dni}.')
         return empleado
 
-    # Crea el usuario con el DNI como nombre de usuario y una contraseña temporal.
+    # Crea el usuario con apellido + inicial como nombre de usuario (con un número si ya
+    # está tomado: perezj2) y una contraseña temporal.
     # La contraseña en texto plano se guarda en self.contraseña_temporal solo para que
     # la vista pueda mandarla por mail; en la base queda hasheada.
     def create(self, validated_data):
         empleado = validated_data['id_empleado']
         self.contraseña_temporal = generar_contraseña_temporal()
-        validated_data['usuario'] = empleado.dni
+        validated_data['usuario'] = generar_nombre_usuario(
+            empleado.nombre_emp, empleado.apellido_emp,
+            lambda candidato: Usuarios.objects.filter(usuario=candidato).exists(),
+        )
         validated_data['contraseña'] = make_password(self.contraseña_temporal)
         validated_data['debe_cambiar_clave'] = True
         return super().create(validated_data)

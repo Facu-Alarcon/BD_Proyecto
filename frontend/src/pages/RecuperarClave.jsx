@@ -4,9 +4,9 @@ import api from '../api/client';
 import FondoBarras from '../components/FondoBarras';
 import './Login.css';
 
-// Paso 1 de "Olvidé mi contraseña": el usuario escribe su DNI y el sistema le manda
+// Paso 1 de "Olvidé mi contraseña": el usuario escribe su usuario y el sistema le manda
 // por mail un link para elegir una contraseña nueva (ver RecuperarClaveView en api.py).
-// La respuesta es siempre la misma, exista o no el usuario, para no revelar qué DNI tienen cuenta.
+// La respuesta es siempre la misma, exista o no el usuario, para no revelar qué usuarios existen.
 export default function RecuperarClave() {
   const [usuario, setUsuario] = useState('');
   const [mensaje, setMensaje] = useState('');
@@ -45,7 +45,7 @@ export default function RecuperarClave() {
         ) : (
           <>
             <p className="login-subtitle">
-              Escribí tu usuario (tu DNI, sin puntos) y te mandamos un mail con un link para elegir una
+              Escribí tu usuario (por ejemplo perezj) y te mandamos un mail con un link para elegir una
               contraseña nueva.
             </p>
 
@@ -56,8 +56,7 @@ export default function RecuperarClave() {
               <input
                 id="usuario"
                 type="text"
-                inputMode="numeric"
-                placeholder="Tu DNI, sin puntos"
+                placeholder="Ej: perezj"
                 value={usuario}
                 onChange={(e) => setUsuario(e.target.value)}
                 autoFocus

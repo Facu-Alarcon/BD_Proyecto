@@ -4,7 +4,7 @@
 -- Crea todas las tablas (vacías) con sus claves primarias, claves
 -- foráneas, índices y restricciones de unicidad.
 -- Generado desde la base después de aplicar todas las migraciones de
--- Django (hasta la 0021). Motor: MySQL 8.0, codificación utf8mb4.
+-- Django (hasta la 0022). Motor: MySQL 8.0, codificación utf8mb4.
 --
 -- Orden de carga (sobre una base vacía):
 --   1. 01_estructura.sql        -> tablas

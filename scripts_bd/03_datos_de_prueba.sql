@@ -10,8 +10,9 @@
 --      Tiene que ejecutarse todo junto de una sola vez: los ids se van
 --      guardando en variables (@...) que se usan en los insert siguientes.
 --   3. Usuario: admin / Contrasena: admin123
---      El resto de los usuarios entran con su DNI y la contrasena: Clave#2026
---      (los usuarios se crean a partir de los empleados: el usuario es el DNI)
+--      El resto de los usuarios entran con su usuario (primer apellido + inicial,
+--      ej: alarconf) y la contrasena: Clave#2026
+--      (los usuarios se crean a partir de los empleados)
 --
 -- Pensado para una base recien migrada (sin datos cargados a mano).
 -- Si ya existe un usuario "admin" o algun DNI repetido, ese insert falla.
@@ -112,29 +113,29 @@ INSERT INTO infinito_sonido_empleados (dni, nombre_emp, apellido_emp, telefono_e
 INSERT INTO infinito_sonido_empleados (dni, nombre_emp, apellido_emp, telefono_emp, email_emp) VALUES ('30279450', 'Kevin', 'Juárez', '3876618225', 'kevin.juarez@gmail.com'); SET @emp25 = LAST_INSERT_ID();
 
 -- ======================================================================
--- 7b. USUARIOS DE LOS EMPLEADOS (usuario = DNI, contrasena: Clave#2026)
+-- 7b. USUARIOS DE LOS EMPLEADOS (usuario = primer apellido + inicial, contrasena: Clave#2026)
 -- ======================================================================
 INSERT INTO infinito_sonido_usuarios (id_empleado, id_perfil, usuario, `contraseña`, activo, debe_cambiar_clave, fecha_ultima_modificacion, fecha_baja) VALUES
-  (@emp1, @perfil_encargado, '30731178', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp2, @perfil_encargado, '31462356', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp3, @perfil_contador, '32193534', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp4, @perfil_empleado, '32924712', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp5, @perfil_empleado, '33655890', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp6, @perfil_empleado, '34387068', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp7, @perfil_empleado, '35118246', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp8, @perfil_empleado, '35849424', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp9, @perfil_empleado, '36580602', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp10, @perfil_empleado, '37311780', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp11, @perfil_empleado, '38042958', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp12, @perfil_empleado, '38774136', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp13, @perfil_empleado, '30505314', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp14, @perfil_empleado, '31236492', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 0, 0, CURDATE(), '2026-09-15'),
-  (@emp15, @perfil_empleado, '31967670', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp16, @perfil_empleado, '32698848', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp17, @perfil_empleado, '33430026', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp18, @perfil_empleado, '34161204', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
-  (@emp19, @perfil_empleado, '34892382', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 0, 0, CURDATE(), '2026-09-15'),
-  (@emp20, @perfil_empleado, '35623560', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL);
+  (@emp1, @perfil_encargado, 'alarconf', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp2, @perfil_encargado, 'pazg', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp3, @perfil_contador, 'cruze', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp4, @perfil_empleado, 'quirogab', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp5, @perfil_empleado, 'ledesmar', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp6, @perfil_empleado, 'guzmanp', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp7, @perfil_empleado, 'aguirrel', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp8, @perfil_empleado, 'cardozom', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp9, @perfil_empleado, 'vegah', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp10, @perfil_empleado, 'figueroad', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp11, @perfil_empleado, 'correai', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp12, @perfil_empleado, 'maldonadon', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp13, @perfil_empleado, 'caceress', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp14, @perfil_empleado, 'peraltaa', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 0, 0, CURDATE(), '2026-09-15'),
+  (@emp15, @perfil_empleado, 'ibanezc', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp16, @perfil_empleado, 'ramosv', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp17, @perfil_empleado, 'toledoe', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp18, @perfil_empleado, 'sancheza', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL),
+  (@emp19, @perfil_empleado, 'dominguezf', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 0, 0, CURDATE(), '2026-09-15'),
+  (@emp20, @perfil_empleado, 'poncem', 'pbkdf2_sha256$600000$VBnHGik78ngodPcY3xJWsc$8XkLjK8iHtFfqB4M4w4pUmsF54zGr99zNJgWm9OVibQ=', 1, 0, CURDATE(), NULL);
 
 -- ======================================================================
 -- 8. PUESTOS DE CADA EMPLEADO
