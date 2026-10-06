@@ -1,5 +1,8 @@
 import './ConfirmModal.css';
 
+// Ventana para confirmar una acción peligrosa (por ejemplo "¿Eliminar el cliente X?").
+// Hacer clic afuera de la tarjeta cuenta como Cancelar.
+// 'confirmando' deshabilita los botones mientras se espera la respuesta del backend.
 export default function ConfirmModal({
   titulo = 'Confirmar',
   mensaje,
@@ -10,6 +13,7 @@ export default function ConfirmModal({
 }) {
   return (
     <div className="confirm-backdrop" onClick={onCancelar}>
+      {/* stopPropagation: un clic adentro de la tarjeta no llega al fondo, así no se cierra sola */}
       <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
         <h3>{titulo}</h3>
         <p>{mensaje}</p>

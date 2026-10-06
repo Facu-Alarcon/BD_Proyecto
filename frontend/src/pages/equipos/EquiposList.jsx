@@ -12,7 +12,9 @@ import ConfirmModal from '../../components/ConfirmModal';
 import IconoCelda from '../../components/IconoCelda';
 import { iconoEquipo } from '../../utils/iconosModulos';
 
+// Lista de Equipos: tabla con buscador, filtros por tipo y estado, y botones para editar o eliminar.
 export default function EquiposList() {
+  // Qué puede hacer el usuario en este módulo según su perfil (si no puede gestionar, solo ve la tabla)
   const { puedeGestionar } = usePermiso('equipos');
   const [equipos, setEquipos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -20,6 +22,7 @@ export default function EquiposList() {
   const [aEliminar, setAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
 
+  // Trae todos los registros del backend y los guarda para la tabla
   function cargar() {
     setCargando(true);
     api
@@ -29,8 +32,11 @@ export default function EquiposList() {
       .finally(() => setCargando(false));
   }
 
+  // Se cargan una sola vez, al abrir la pantalla
   useEffect(cargar, []);
 
+  // Se ejecuta al confirmar en la ventana de "¿Eliminar?". Si el backend no deja borrarlo
+  // (por ejemplo, porque está en uso en otra tabla) se muestra el motivo que devuelve.
   async function confirmarEliminar() {
     setEliminando(true);
     try {
@@ -70,6 +76,7 @@ export default function EquiposList() {
       <div className="card">
         {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
         <Paginacion paginacion={paginacion} posicion="arriba" />
+        {/* Tabla con las filas de la página actual (paginacion.visibles) */}
         <table className="data-table">
           <thead>
             <tr>
@@ -111,6 +118,7 @@ export default function EquiposList() {
         <Paginacion paginacion={paginacion} />
       </div>
 
+      {/* Ventana para confirmar el borrado (solo aparece cuando se tocó el tachito de alguna fila) */}
       {aEliminar && (
         <ConfirmModal
           titulo="Eliminar equipo"

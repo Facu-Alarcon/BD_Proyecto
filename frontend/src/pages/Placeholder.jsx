@@ -1,3 +1,5 @@
+// Pantalla de relleno para módulos que todavía no estaban hechos. Hoy no la usa ninguna
+// ruta, pero se deja por si se agrega un módulo nuevo y se quiere mostrar "Próximamente".
 export default function Placeholder({ titulo }) {
   return (
     <div>

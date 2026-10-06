@@ -1,7 +1,12 @@
+# Direcciones de la API. Todas cuelgan de /api/ (ver core/urls.py).
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import api 
 
+# El router arma solo las URLs de cada ViewSet. Por ejemplo, para "clientes" crea:
+#   /api/clientes/        -> GET lista, POST crea
+#   /api/clientes/5/      -> GET uno, PUT edita, DELETE borra
+# y las acciones extra (@action) quedan como /api/reservas/5/anular/.
 router = DefaultRouter()
 router.register('equipos', api.EquiposViewSet, basename='api-equipos')
 router.register('tipo-equipos', api.TipoEquiposViewSet, basename='api-tipo-equipos')
@@ -20,6 +25,7 @@ router.register('metodos-pago', api.MetodoPagosViewSet, basename='api-metodos-pa
 router.register('pagos', api.PagosViewSet, basename='api-pagos')
 router.register('registro', api.RegistroActividadViewSet, basename='api-registro')
 
+# Vistas sueltas (no son un ABM): sesión, contraseñas y el resumen de Inicio
 urlpatterns = [
     path('login/', api.LoginView.as_view(), name='api_login'),
     path('logout/', api.LogoutView.as_view(), name='api_logout'),
@@ -29,5 +35,6 @@ urlpatterns = [
     path('recuperar-clave/', api.RecuperarClaveView.as_view(), name='api_recuperar_clave'),
     path('restablecer-clave/<str:token>/', api.RestablecerConLinkView.as_view(), name='api_restablecer_con_link'),
     path('dashboard/resumen/', api.DashboardResumenView.as_view(), name='api_dashboard_resumen'),
+    # Al final, todas las URLs que armó el router
     path('', include(router.urls)),
 ]

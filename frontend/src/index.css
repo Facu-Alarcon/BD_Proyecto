@@ -1,3 +1,7 @@
+/* Estilos generales de todo el sistema. Los de cada pantalla puntual están en su propio .css */
+/* (Login.css, Inicio.css, etc.). Las clases de acá se usan en todas las pantallas. */
+/* Variables de color y sombra: se usan en todo el CSS como var(--nombre). Para cambiar un */
+/* color en todo el sistema alcanza con cambiarlo acá. */
 :root {
   /* Colores institucionales (manual de marca de Infinito):
      Azul Institucional #05284C, Verde Claro #89B181 y Verde Institucional #4E7246.
@@ -30,10 +34,12 @@
   color-scheme: light;
 }
 
+/* border-box: el ancho de un elemento incluye su relleno y su borde (más fácil de calcular) */
 * {
   box-sizing: border-box;
 }
 
+/* La página ocupa todo el alto de la ventana (lo necesita el layout, ver Layout.css) */
 html, body, #root {
   height: 100%;
 }
@@ -45,15 +51,19 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Los links no se ven subrayados ni azules por defecto: cada uno define su estilo */
 a {
   color: inherit;
   text-decoration: none;
 }
 
+/* Los botones usan la misma letra que el resto (por defecto el navegador les pone otra) */
 button {
   font-family: inherit;
 }
 
+/* ---------- Botones ---------- */
+/* Base de todos los botones; el color lo da la segunda clase (btn-primary, btn-secondary...) */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -82,28 +92,34 @@ button {
 }
 .btn-outline:hover { background: var(--gray-bg); }
 
+/* Botón gris, para acciones secundarias (Editar, Limpiar, Volver) */
 .btn-secondary {
   background: var(--gray-bg);
   color: var(--text-main);
 }
 .btn-secondary:hover { background: #e3e6ee; }
 
+/* Botón rojo, para acciones peligrosas (Eliminar, Anular) */
 .btn-danger {
   background: var(--red-bg);
   color: var(--red);
 }
 .btn-danger:hover { opacity: 0.85; }
 
+/* Botón chico, para las acciones de cada fila de las tablas */
 .btn-sm {
   padding: 6px 12px;
   font-size: 13px;
 }
 
+/* Botón deshabilitado (por ejemplo, mientras se guarda): más transparente y sin la manito */
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
+/* ---------- Tarjetas ---------- */
+/* Recuadro blanco con borde redondeado y sombra suave (tablas, formularios, filtros) */
 .card {
   background: var(--card-bg);
   border: 1px solid var(--border);
@@ -111,6 +127,8 @@ button {
   box-shadow: var(--shadow-card);
 }
 
+/* ---------- Etiquetas de estado ---------- */
+/* Pastillita de color (Pendiente, Confirmada, Activo...); el color lo da badge-green/amber/gray/red */
 .badge {
   display: inline-block;
   padding: 4px 12px;
@@ -124,6 +142,8 @@ button {
 .badge-gray { background: var(--gray-bg); color: var(--text-muted); }
 .badge-red { background: var(--red-bg); color: var(--red); }
 
+/* ---------- Tablas ---------- */
+/* Tabla de las listas de todos los módulos */
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -145,6 +165,7 @@ button {
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tr:hover td { background: #fafbfd; }
 
+/* Celda de la última columna con los botones de cada fila (ver, editar, eliminar...) */
 .actions-cell {
   display: flex;
   align-items: center;
@@ -153,6 +174,8 @@ button {
   white-space: nowrap;
 }
 
+/* ---------- Formularios ---------- */
+/* Cada campo: la etiqueta arriba y el input abajo */
 .form-field {
   display: flex;
   flex-direction: column;
@@ -181,15 +204,19 @@ button {
   outline: 2px solid var(--navy-accent);
   outline-offset: 1px;
 }
+/* Texto de ayuda gris debajo de un campo */
 .form-hint {
   font-size: 12px;
   color: var(--text-muted);
 }
+/* Mensaje de error en rojo debajo de un campo (lo que devuelve el backend) */
 .form-error {
   font-size: 12px;
   color: var(--red);
 }
 
+/* ---------- Avisos ---------- */
+/* Recuadro de aviso arriba de un formulario o tabla: rojo (error) o verde (éxito) */
 .alert {
   padding: 12px 16px;
   border-radius: 10px;
@@ -199,6 +226,8 @@ button {
 .alert-error { background: var(--red-bg); color: var(--red); }
 .alert-success { background: var(--green-bg); color: var(--green); }
 
+/* ---------- Circulitos e íconos de las tablas ---------- */
+/* Circulito con las iniciales de una persona (ver components/Avatar.jsx) */
 .avatar-badge {
   display: inline-flex;
   align-items: center;
@@ -258,6 +287,8 @@ button {
   color: var(--text-muted);
 }
 
+/* Lista de casillas para tildar (servicios y personal de una reserva, permisos de un perfil, */
+/* puestos de un empleado). Si son muchas, la lista scrollea sola. */
 .checkbox-list {
   display: flex;
   flex-direction: column;

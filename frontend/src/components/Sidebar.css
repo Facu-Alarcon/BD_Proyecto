@@ -11,6 +11,7 @@
   padding: 16px 16px;
 }
 
+/* Sin uso: ninguna pantalla usa hoy esta clase (quedó de un diseño anterior). Se puede borrar. */
 .sidebar-logo {
   padding: 0 4px 24px;
 }
@@ -61,6 +62,7 @@
   color: #fff;
 }
 
+/* La sección en la que estamos queda resaltada */
 .sidebar-link.active {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
@@ -124,6 +126,8 @@
   }
 }
 
+/* Sin uso: ninguna pantalla usa hoy esta clase (quedó de un diseño anterior). Se puede borrar. (también .sidebar-user y .sidebar-logout: */
+/* el cierre de sesión pasó al menú de la barra de arriba) */
 .sidebar-footer {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: 16px;

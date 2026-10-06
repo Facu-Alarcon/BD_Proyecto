@@ -1,3 +1,5 @@
+/* Ventanita de confirmación ("¿Eliminar...?", "Anular reserva", "Restablecer clave"). */
+/* Fondo semitransparente que oscurece la pantalla de atrás, con la tarjeta centrada. */
 .confirm-backdrop {
   position: fixed;
   inset: 0;
@@ -30,6 +32,7 @@
   color: var(--text-muted);
 }
 
+/* Botones abajo a la derecha (Cancelar y la acción) */
 .confirm-actions {
   display: flex;
   justify-content: flex-end;

@@ -6,19 +6,27 @@ import SuccessModal from '../../components/SuccessModal';
 
 const VACIO = { dni: '', nombre_emp: '', apellido_emp: '', telefono_emp: '', email_emp: '' };
 
+// Formulario de Empleados (alta y edición): datos personales, DNI y los puestos que ocupa.
+// Es el mismo componente para crear y para editar: si la URL trae un id (/.../5/editar)
+// se está editando y se abre como ventana emergente; si no, es una pantalla de alta común.
 export default function EmpleadoForm() {
+  // id viene de la URL; si existe, estamos editando
   const { id } = useParams();
   const editando = Boolean(id);
   const navigate = useNavigate();
 
   const [form, setForm] = useState(VACIO);
   const [puestos, setPuestos] = useState([]);
+  // Puestos tildados (un Set de ids para agregar y sacar fácil)
   const [seleccionados, setSeleccionados] = useState(new Set());
+  // Errores que devuelve el backend, por campo (ej: { telefono_emp: ["..."] })
   const [errores, setErrores] = useState({});
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  // Se prende después de guardar una edición, para mostrar la ventana de éxito
   const [guardadoOk, setGuardadoOk] = useState(false);
 
+  // Al abrir: todos los puestos y, si se está editando, los datos del empleado y qué puestos tiene
   useEffect(() => {
     if (editando) {
       Promise.all([
@@ -39,10 +47,12 @@ export default function EmpleadoForm() {
     }
   }, [id, editando]);
 
+  // Cambia un solo campo del formulario y deja los demás como estaban
   function actualizar(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }));
   }
 
+  // Tilda o destilda un puesto
   function togglePuesto(idPuesto) {
     setSeleccionados((prev) => {
       const next = new Set(prev);
@@ -51,6 +61,8 @@ export default function EmpleadoForm() {
     });
   }
 
+  // Guardar: si se está editando hace PUT y muestra la ventana de éxito; si es un alta hace
+  // POST y vuelve a la lista. Si el backend rechaza los datos (400), se muestran sus errores.
   async function handleSubmit(e) {
     e.preventDefault();
     setGuardando(true);
@@ -81,6 +93,7 @@ export default function EmpleadoForm() {
     }
   }
 
+  // Mientras se traen los datos del registro a editar
   if (cargando) return <p>Cargando...</p>;
 
   if (guardadoOk) {
@@ -94,6 +107,7 @@ export default function EmpleadoForm() {
     );
   }
 
+  // Los campos del formulario (los mismos para crear y para editar)
   const formulario = (
     <form onSubmit={handleSubmit}>
       {errores.detail && <div className="alert alert-error">{errores.detail}</div>}
@@ -157,6 +171,7 @@ export default function EmpleadoForm() {
     </form>
   );
 
+  // Editar se muestra como ventana emergente encima de la lista; el alta, como pantalla común
   if (editando) {
     return (
       <FormModal

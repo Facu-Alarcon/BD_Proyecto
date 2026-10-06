@@ -1,3 +1,5 @@
+/* Pantallas fuera del sistema: Login, Cambiar clave, Recuperar y Restablecer contraseña. */
+/* Fondo azul oscuro con barras decorativas y la tarjeta blanca centrada. */
 .login-page {
   position: relative;
   min-height: 100vh;
@@ -45,6 +47,7 @@
   font-size: 14px;
 }
 
+/* Campo de contraseña con el botón del ojito adentro, a la derecha */
 .password-field {
   position: relative;
   display: flex;
@@ -74,6 +77,7 @@
   color: var(--navy-950);
 }
 
+/* Fila con "Recordarme" a la izquierda y "Olvidé mi contraseña" a la derecha */
 .login-row {
   display: flex;
   align-items: center;
@@ -106,6 +110,7 @@
   font-size: 14px;
 }
 
+/* Botón principal ocupando todo el ancho de la tarjeta */
 .login-submit {
   width: 100%;
   justify-content: center;
@@ -113,6 +118,7 @@
   font-size: 15px;
 }
 
+/* Sin uso: ninguna pantalla usa hoy esta clase (quedó de un diseño anterior). Se puede borrar. */
 .login-footnote {
   margin: 18px 0 0;
   text-align: center;

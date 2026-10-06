@@ -1,3 +1,13 @@
+// Rutas del sistema: qué pantalla se muestra para cada dirección (URL).
+//
+// Cómo está armado:
+//   - /login y las de "Olvidé mi contraseña" son públicas.
+//   - Todo lo demás está adentro de ProtectedRoute (hay que haber iniciado sesión) y de
+//     Layout (barra de arriba + menú lateral).
+//   - Cada módulo va envuelto en RequierePermiso, que muestra "Acceso restringido" si el
+//     perfil no tiene permiso para verlo.
+//   - Dentro de cada módulo: la lista en la raíz, "nuevo" para el alta y ":id/editar"
+//     para editar (":id" es el número del registro, se lee con useParams).
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -55,6 +65,7 @@ import RegistroActividad from './pages/registro/RegistroActividad';
 import RecuperarClave from './pages/RecuperarClave';
 import RestablecerConLink from './pages/RestablecerConLink';
 
+// BrowserRouter maneja las URLs; AuthProvider deja la sesión disponible para toda la app
 export default function App() {
   return (
     <BrowserRouter>
@@ -73,6 +84,7 @@ export default function App() {
               </ProtectedRoute>
             }
           >
+            {/* Pantalla de Inicio (la raíz "/") */}
             <Route index element={<Inicio />} />
 
             <Route path="equipos" element={<RequierePermiso modulo="equipos"><Outlet /></RequierePermiso>}>
@@ -165,8 +177,10 @@ export default function App() {
             {/* Registro de actividad: solo consulta, no tiene alta ni edición */}
             <Route path="registro" element={<RequierePermiso modulo="registro"><RegistroActividad /></RequierePermiso>} />
 
+            {/* Cualquier dirección que no exista vuelve al Inicio */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
+          {/* Cambiar clave va fuera del Layout: se muestra sola, sin menú, como el login */}
           <Route path="/cambiar-clave" element={<ProtectedRoute><CambiarClave /></ProtectedRoute>}/>
         </Routes>
       </AuthProvider>

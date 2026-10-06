@@ -1,3 +1,5 @@
+/* Pantalla de Inicio (ver pages/Inicio.jsx). */
+/* Fila de tarjetas con números (Reservas de hoy, Equipos disponibles...) */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -12,6 +14,7 @@
   gap: 6px;
 }
 
+/* Dentro de cada tarjeta: el título chico, el número grande y la aclaración de abajo */
 .stat-label {
   font-size: 13px;
   color: var(--text-muted);
@@ -29,6 +32,7 @@
   color: var(--text-muted);
 }
 
+/* Dos paneles abajo: próximas reservas (más ancho) y estado de equipos */
 .inicio-grid {
   display: grid;
   grid-template-columns: 1.3fr 1fr;
@@ -36,6 +40,7 @@
   align-items: start;
 }
 
+/* Cada reserva de la lista de próximas reservas */
 .reserva-row {
   display: flex;
   align-items: center;
@@ -57,6 +62,7 @@
   color: var(--navy-950);
 }
 
+/* Sin uso: ninguna pantalla usa hoy esta clase (quedó de un diseño anterior). Se puede borrar. */
 .accesos-list {
   display: flex;
   flex-direction: column;
@@ -88,6 +94,7 @@
   color: var(--text-muted);
 }
 
+/* Barras de "Estado de equipos": nombre y cantidad arriba, la barra abajo */
 .progress-row {
   margin-bottom: 18px;
 }
@@ -115,11 +122,13 @@
   height: 100%;
   border-radius: 999px;
 }
+/* Color de la barra según el estado (lo elige colorEstadoEquipo en utils/estadoEquipo.js) */
 .fill-green { background: var(--green); }
 .fill-blue { background: var(--blue-bar); }
 .fill-red { background: var(--red); }
 .fill-gray { background: var(--text-muted); }
 
+/* En pantallas angostas los paneles van uno debajo del otro */
 @media (max-width: 900px) {
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
   .inicio-grid { grid-template-columns: 1fr; }

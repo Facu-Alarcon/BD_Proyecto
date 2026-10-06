@@ -33,6 +33,7 @@
   background: var(--gray-bg);
 }
 
+/* Circulito verde con las iniciales del usuario */
 .topbar-avatar {
   display: flex;
   align-items: center;
@@ -46,6 +47,7 @@
   font-weight: 700;
 }
 
+/* Flechita al lado del circulito; gira cuando el menú está abierto */
 .topbar-chevron {
   color: var(--text-muted);
   transition: transform 0.15s ease;
@@ -54,6 +56,7 @@
   transform: rotate(180deg);
 }
 
+/* Menú desplegable del usuario (su usuario, su perfil y Cerrar sesión) */
 .topbar-dropdown {
   position: absolute;
   top: calc(100% + 10px);

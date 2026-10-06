@@ -5,7 +5,11 @@ import { useAuth } from '../../context/AuthContext';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
 
+// Formulario de Perfiles (alta y edición): el nombre del perfil y qué permisos tiene.
+// Es el mismo componente para crear y para editar: si la URL trae un id (/.../5/editar)
+// se está editando y se abre como ventana emergente; si no, es una pantalla de alta común.
 export default function PerfilForm() {
+  // id viene de la URL; si existe, estamos editando
   const { id } = useParams();
   const editando = Boolean(id);
   const navigate = useNavigate();
@@ -13,14 +17,19 @@ export default function PerfilForm() {
 
   const [tipoPerfil, setTipoPerfil] = useState('');
   const [permisos, setPermisos] = useState([]);
+  // Permisos tildados para este perfil
   const [seleccionados, setSeleccionados] = useState(new Set());
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  // Se prende después de guardar una edición, para mostrar la ventana de éxito
   const [guardadoOk, setGuardadoOk] = useState(false);
 
+  // Si estoy editando mi propio perfil hay que tener cuidado: si me saco el permiso de
+  // gestionar perfiles, ya no lo voy a poder volver a poner (se pide confirmación al guardar)
   const esMiPropioPerfil = editando && usuario?.id_perfil === Number(id);
 
+  // Al abrir: la lista de permisos (con cuáles tiene el perfil, si se está editando)
   useEffect(() => {
     if (editando) {
       Promise.all([
@@ -40,6 +49,7 @@ export default function PerfilForm() {
     }
   }, [id, editando]);
 
+  // Tilda o destilda un permiso
   function toggle(idPermiso) {
     setSeleccionados((prev) => {
       const next = new Set(prev);
@@ -48,6 +58,8 @@ export default function PerfilForm() {
     });
   }
 
+  // Guardar: si se está editando hace PUT y muestra la ventana de éxito; si es un alta hace
+  // POST y vuelve a la lista. Si el backend rechaza los datos (400), se muestran sus errores.
   async function handleSubmit(e) {
     e.preventDefault();
 
@@ -88,6 +100,7 @@ export default function PerfilForm() {
     }
   }
 
+  // Mientras se traen los datos del registro a editar
   if (cargando) return <p>Cargando...</p>;
 
   if (guardadoOk) {
@@ -101,6 +114,7 @@ export default function PerfilForm() {
     );
   }
 
+  // Los campos del formulario (los mismos para crear y para editar)
   const formulario = (
     <form onSubmit={handleSubmit}>
       {error && <div className="alert alert-error">{error}</div>}
@@ -151,6 +165,7 @@ export default function PerfilForm() {
     </form>
   );
 
+  // Editar se muestra como ventana emergente encima de la lista; el alta, como pantalla común
   if (editando) {
     return (
       <FormModal titulo="Editar perfil" subtitulo={tipoPerfil} onClose={() => navigate('/perfiles')} wide>

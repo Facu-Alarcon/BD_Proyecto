@@ -1,3 +1,14 @@
+# Serializers: convierten los modelos a JSON para mandarlos al frontend, y validan lo que
+# llega desde el frontend antes de guardarlo. Cada ViewSet de api.py usa uno de estos.
+#
+# Cómo leer un serializer:
+#   - Meta.fields: los campos que viajan en el JSON (en los dos sentidos).
+#   - read_only=True / read_only_fields: se mandan al frontend pero no se pueden cambiar desde él.
+#   - write_only=True: se reciben pero no se devuelven (ej: contraseñas, listas de ids).
+#   - source='id_cliente.nombre': toma el valor de otro lado (ej: un dato de la tabla relacionada).
+#   - SerializerMethodField: el valor lo calcula el método get_<campo>.
+#   - validate_<campo>: valida un campo; validate(): valida varios juntos.
+#   - create / update: qué se hace al guardar (cuando hay que hacer más que guardar la fila).
 from collections import Counter
 
 from django.contrib.auth.hashers import check_password, make_password
@@ -21,6 +32,9 @@ from .models import (
 )
 
 
+# ---------------- Equipos ----------------
+#
+# Tipos y estados de equipo: solo el id y el nombre
 class TipoEquiposSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tipo_Equipos
@@ -33,6 +47,8 @@ class EstadoEquiposSerializer(serializers.ModelSerializer):
         fields = ['id_estadoeq', 'nombre_estadoeq']
 
 
+# Equipos. Además de los ids de tipo y estado, manda sus nombres para mostrarlos en la tabla
+# sin que el frontend tenga que buscarlos aparte.
 class EquiposSerializer(serializers.ModelSerializer):
     tipo_nombre = serializers.CharField(source='id_tipoeq.nombre_tipoeq', read_only=True)
     estado_nombre = serializers.CharField(source='id_estadoeq.nombre_estadoeq', read_only=True)
@@ -45,6 +61,9 @@ class EquiposSerializer(serializers.ModelSerializer):
         ]
 
 
+# ---------------- Seguridad ----------------
+#
+# Perfiles: solo el id y el nombre (los permisos de cada perfil se manejan aparte, ver PerfilesViewSet.permisos)
 class PerfilesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Perfiles
@@ -65,6 +84,8 @@ class PermisosSerializer(serializers.ModelSerializer):
         fields = ['id_permiso', 'nombre_permiso', 'descripcion_permiso', 'estado_permiso', 'codigo']
 
     def create(self, validated_data):
+        # Arma el código a partir del nombre: "Ver Reportes" -> "ver_reportes".
+        # Si ya existe, le agrega un número (ver_reportes_2, ver_reportes_3...).
         base = slugify(validated_data['nombre_permiso']).replace('-', '_')[:55] or 'permiso'
         codigo = base
         i = 2
@@ -156,6 +177,7 @@ class CambiarClaveSerializer(serializers.Serializer):
     # La clave nueva tiene que cumplir las reglas de seguridad (ver seguridad.py)
     contraseña_nueva = serializers.CharField(write_only=True, validators=[validar_contraseña_segura])
 
+    # La clave actual tiene que ser la correcta (así nadie cambia la clave de una sesión ajena abierta)
     def validate(self, attrs):
         usuario = self.context['usuario']
         if not check_password(attrs['contraseña_actual'], usuario.contraseña):
@@ -167,12 +189,16 @@ class CambiarClaveSerializer(serializers.Serializer):
 
     def save(self, **kwargs):
         usuario = self.context['usuario']
+        # Se guarda hasheada y se apaga el aviso de "tenés que cambiar la clave"
         usuario.contraseña = make_password(self.validated_data['contraseña_nueva'])
         usuario.debe_cambiar_clave = False
         usuario.save()
         return usuario
 
 
+# ---------------- Clientes y empleados ----------------
+#
+# Clientes: todos sus campos, sin nada especial (las validaciones están en el modelo)
 class ClientesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clientes
@@ -182,6 +208,7 @@ class ClientesSerializer(serializers.ModelSerializer):
         ]
 
 
+# Empleados, con un dato extra (tiene_usuario) que no está en la tabla
 class EmpleadosSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empleados
@@ -193,6 +220,7 @@ class EmpleadosSerializer(serializers.ModelSerializer):
     tiene_usuario = serializers.SerializerMethodField()
 
     def get_tiene_usuario(self, obj):
+        # Si el empleado tiene usuario, Django le agrega el atributo 'usuario' (es el related_name de la relación uno a uno)
         return hasattr(obj, 'usuario')
 
 
@@ -270,6 +298,8 @@ class ServiciosSerializer(serializers.ModelSerializer):
 # pagar después de él (total de la reserva menos lo pagado hasta ese pago).
 # Se llama cada vez que algo puede dejar los saldos viejos: crear, editar o
 # borrar un pago, o cambiar los servicios (y con eso el total) de la reserva.
+# ---------------- Reservas y pagos ----------------
+#
 def recalcular_saldos(reserva):
     pagado = 0
     for pago in Pagos.objects.filter(id_reserva=reserva).order_by('id_pago'):
@@ -325,6 +355,7 @@ class ReservasSerializer(serializers.ModelSerializer):
         # o editar desde el formulario la pedimos siempre.
         extra_kwargs = {'duracion_evento': {'required': True, 'allow_null': False}}
 
+    # Servicios de la reserva (detalle), con el nombre y el precio que tenían al reservar
     def get_servicios_detalle(self, obj):
         rels = Reservas_x_Servicios.objects.filter(id_reserva=obj).select_related('id_servicio')
         return [
@@ -377,6 +408,7 @@ class ReservasSerializer(serializers.ModelSerializer):
     def get_usuario_anulacion(self, obj):
         return self._texto_usuario(obj.id_usuario_anulacion)
 
+    # Personal asignado a la reserva (detalle)
     def get_empleados_detalle(self, obj):
         rels = Detalles_Reservas.objects.filter(id_reserva=obj).select_related('id_empleado')
         return [
@@ -412,6 +444,9 @@ class ReservasSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('La duración del evento tiene que ser mayor a 00:00.')
         return valor
 
+    # Un empleado no puede trabajar en dos eventos el mismo día. Se buscan otras reservas de esa
+    # fecha (sin contar las anuladas) donde ya esté alguno de los empleados elegidos. Al editar se
+    # excluye la propia reserva, si no siempre 'chocaría' consigo misma.
     def _validar_empleados(self, empleados, fecha_evento, excluir_reserva=None):
         if not empleados:
             return
@@ -542,12 +577,16 @@ class ReservasSerializer(serializers.ModelSerializer):
         return instance
 
 
+# ---------------- Personal, horarios y métodos de pago ----------------
+#
+# Sueldos, horarios y métodos de pago son catálogos simples: solo se mandan sus campos
 class SueldosSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sueldos
         fields = ['id_sueldo', 'monto_sueldo']
 
 
+# Puestos, con el monto del sueldo para mostrarlo en la tabla
 class PuestosSerializer(serializers.ModelSerializer):
     sueldo_monto = serializers.FloatField(source='id_sueldo.monto_sueldo', read_only=True)
 
@@ -629,6 +668,7 @@ class PagosSerializer(serializers.ModelSerializer):
                 })
         return attrs
 
+    # Métodos con los que se hizo el pago (puede ser más de uno)
     def get_metodos_pago_detalle(self, obj):
         rels = Detalles_de_Pago.objects.filter(id_pago=obj).select_related('id_metodo_pago')
         return [
@@ -637,6 +677,8 @@ class PagosSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
+        # Los métodos van en otra tabla (Detalles_de_Pago): se sacan de los datos, se guarda el pago
+        # y después se crea una fila por cada método
         metodos = validated_data.pop('metodos_pago', [])
         pago = Pagos.objects.create(**validated_data)
         for metodo in metodos:
@@ -666,6 +708,8 @@ class PagosSerializer(serializers.ModelSerializer):
         return instance
 
 
+# ---------------- Registro de actividad ----------------
+#
 class RegistroActividadSerializer(serializers.ModelSerializer):
     """Una fila del registro de actividad, con el nombre de la acción y de la persona para mostrar."""
     accion_display = serializers.CharField(source='get_accion_display', read_only=True)

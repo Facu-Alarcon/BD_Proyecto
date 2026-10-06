@@ -1,6 +1,27 @@
+# Modelos del sistema: cada clase de este archivo es una tabla de la base de datos (MySQL).
+# Django arma las tablas a partir de estas clases con las migraciones (makemigrations / migrate),
+# y el nombre real de cada tabla en la base es "infinito_sonido_" + el nombre de la clase en minúscula.
+#
+# Convenciones que usamos en todas las tablas:
+#   - La clave primaria se llama id_<tabla> y es un AutoField (número que se incrementa solo).
+#   - Las claves foráneas se llaman igual que la clave primaria de la tabla a la que apuntan
+#     (ej: id_cliente), y con db_column se fuerza ese mismo nombre en la base.
+#   - on_delete dice qué pasa si se borra el registro "padre":
+#       PROTECT  -> no deja borrarlo mientras tenga hijos (la API lo atrapa y avisa con un 409).
+#       CASCADE  -> se borran también los hijos (se usa en las tablas intermedias).
+#       SET_NULL -> el hijo queda, pero con la referencia vacía.
+#   - verbose_name es el nombre "lindo" que se ve en el panel /admin de Django.
+#   - __str__ es cómo se muestra el registro cuando se lo convierte a texto (en /admin,
+#     en mensajes de error, en el registro de actividad, etc.).
+
 from django.db import models
 from django.core.validators import MinValueValidator, MinLengthValidator, RegexValidator
 from decimal import Decimal
+
+# ---------------------------------------------------------------------------
+# Validadores reutilizables: se ponen en los campos con validators=[...] y Django
+# los revisa al guardar desde la API. Si no se cumplen, el usuario ve el mensaje.
+# ---------------------------------------------------------------------------
 
 # Los teléfonos se guardan como texto, no como número: nunca se operan
 # matemáticamente y un IntegerField normal tiene tope en 2.147.483.647,
@@ -28,6 +49,13 @@ validar_dni = [
 Van los modelos de la base datos === TABLAS DE LA BD 
 Se lo crea como objetos
 '''
+
+
+# ===========================================================================
+# Personal: sueldos, puestos y empleados
+# ===========================================================================
+
+# Montos de sueldo que se le pueden asignar a un puesto
 class Sueldos(models.Model):
     id_sueldo = models.AutoField(primary_key=True)
     monto_sueldo = models.FloatField()
@@ -36,10 +64,13 @@ class Sueldos(models.Model):
         verbose_name = "Sueldo"
         verbose_name_plural = "Sueldos"
 
+    # Se muestra como "$500000.0"
     def __str__(self):
         return f'${self.monto_sueldo}'
 
 
+# Puestos de trabajo (DJ, iluminador, administración...). Cada puesto tiene un sueldo;
+# PROTECT: no se puede borrar un sueldo que esté usando algún puesto.
 class Puestos(models.Model):
     id_puesto = models.AutoField(primary_key=True)
     id_sueldo = models.ForeignKey(Sueldos, on_delete=models.PROTECT, db_column='id_sueldo')
@@ -53,6 +84,8 @@ class Puestos(models.Model):
         return self.nombre_puesto
 
 
+# Empleados de la empresa. Son la base de los usuarios del sistema: cada usuario
+# es la cuenta de un empleado (ver Usuarios más abajo).
 class Empleados(models.Model):
     id_empleado = models.AutoField(primary_key=True)
     # El DNI ahora es dato del empleado (antes estaba en Usuarios). Puede quedar vacío solo
@@ -67,10 +100,13 @@ class Empleados(models.Model):
         verbose_name = "Empleado"
         verbose_name_plural = "Empleados"
 
+    # Se muestra como "Nombre Apellido"
     def __str__(self):
         return f'{self.nombre_emp} {self.apellido_emp}'
 
 
+# Tabla intermedia empleado <-> puesto: un empleado puede tener varios puestos y un
+# puesto puede tenerlo más de un empleado. unique_together evita cargar dos veces el mismo par.
 class Puestos_x_Empleados(models.Model):
     id_puesto_empleado = models.AutoField(primary_key=True)
     id_empleado = models.ForeignKey(Empleados, on_delete=models.CASCADE, db_column='id_empleado')
@@ -86,6 +122,11 @@ class Puestos_x_Empleados(models.Model):
 
 #! facumacaione - Usuario, Perfil y Horarios
 
+# ===========================================================================
+# Horarios, usuarios, perfiles y permisos (seguridad)
+# ===========================================================================
+
+# Cargas horarias que se le pueden asignar a los empleados (ej: 8 horas)
 class Horarios(models.Model):
     id_horario = models.AutoField(primary_key=True)
     cantidad_horas = models.FloatField()
@@ -98,6 +139,8 @@ class Horarios(models.Model):
         return f"Horario {self.id_horario} - {self.cantidad_horas}hs"
 
 
+# Perfiles de usuario (Administrador, Encargado, Empleado...). Lo que puede hacer cada
+# perfil se define con los permisos que tiene asignados (tabla Permisos_x_Perfiles).
 class Perfiles(models.Model):
     id_perfil = models.AutoField(primary_key=True)
     tipo_perfil = models.CharField(max_length=50)
@@ -110,6 +153,8 @@ class Perfiles(models.Model):
         return self.tipo_perfil
 
 
+# Cuentas para entrar al sistema. No usamos el modelo de usuarios que trae Django
+# (auth.User) porque el DER del proyecto define su propia tabla de usuarios.
 class Usuarios(models.Model):
     id_usuario = models.AutoField(primary_key=True)
     # Cada usuario es la cuenta de un empleado: relación uno a uno, así un empleado
@@ -122,6 +167,8 @@ class Usuarios(models.Model):
     # Se genera solo al crear el usuario: primer apellido + inicial del nombre (ej: perezj),
     # con un número si ya está tomado (ver nombres_usuario.py). Queda fijo de ahí en más.
     usuario = models.CharField(max_length=50, unique=True)
+    # Nunca se guarda la contraseña tal cual: se guarda hasheada con make_password
+    # (por eso el largo de 128) y se compara con check_password.
     contraseña = models.CharField(max_length=128)
     # Baja de usuario = activo=False + fecha_baja (no se borra la fila:
     # ver UsuariosViewSet.destroy en api.py).
@@ -130,6 +177,7 @@ class Usuarios(models.Model):
     # obliga a definir una contraseña propia en el próximo login; se
     # apaga cuando el usuario la cambia (ver CambiarClaveView en api.py).
     debe_cambiar_clave = models.BooleanField(default=False)
+    # auto_now: Django la actualiza sola cada vez que se guarda el usuario
     fecha_ultima_modificacion = models.DateField(auto_now=True)
     fecha_baja = models.DateField(null=True, blank=True)
 
@@ -159,10 +207,14 @@ class Usuarios(models.Model):
         return True
 
 
+# Catálogo de permisos. Cada módulo tiene dos: ver_<modulo> (solo mirar) y
+# gestionar_<modulo> (crear, editar, borrar). Hay además permisos puntuales como
+# ver_registro y anular_reservas. Los cargan las migraciones (0009, 0011, 0013, 0018, 0020).
 class Permisos(models.Model):
     id_permiso = models.AutoField(primary_key=True)
     nombre_permiso = models.CharField(max_length=50, unique=True)
     descripcion_permiso = models.CharField(max_length=150, blank=True)
+    # Si se apaga, el permiso deja de valer para todos los perfiles aunque lo tengan asignado
     estado_permiso = models.BooleanField(default=True)
     # Clave interna estable que usa el backend para decidir accesos
     # (ver infinito_sonido/permissions.py). No se edita desde la UI:
@@ -178,6 +230,7 @@ class Permisos(models.Model):
         return self.nombre_permiso
 
 
+# Tabla intermedia perfil <-> permiso: qué permisos tiene cada perfil
 class Permisos_x_Perfiles(models.Model):
     id_permiso_perfil = models.AutoField(primary_key=True)
     id_perfil = models.ForeignKey(Perfiles, on_delete=models.CASCADE, db_column='id_perfil')
@@ -192,6 +245,7 @@ class Permisos_x_Perfiles(models.Model):
         return f"{self.id_perfil} - {self.id_permiso}"
 
 
+# Tabla intermedia empleado <-> horario: qué carga horaria tiene cada empleado
 class Horarios_x_Empleados(models.Model):
     id_horario_empleado = models.AutoField(primary_key=True)
     id_empleado = models.ForeignKey(Empleados, on_delete=models.CASCADE, db_column='id_empleado')
@@ -208,6 +262,12 @@ class Horarios_x_Empleados(models.Model):
 
 #* facualarcon - Tipo_Equipos, Equipos y Servicios
 
+# ===========================================================================
+# Equipos y servicios
+# ===========================================================================
+
+# Tipos de equipo (Sonido, Iluminación, Estructuras...). Se usan para agrupar los
+# equipos y para elegir el ícono y el color de cada fila en las tablas.
 class Tipo_Equipos(models.Model):
     id_tipoeq = models.AutoField(primary_key=True)
     nombre_tipoeq = models.CharField(max_length=50)
@@ -220,6 +280,9 @@ class Tipo_Equipos(models.Model):
         return self.nombre_tipoeq
 
 
+# Estados posibles de un equipo (Disponible, En uso, En reparación). Es un catálogo
+# editable: desde el formulario de Equipos se puede agregar uno nuevo con el botón "+".
+# Los equipos En reparación no se pueden reservar.
 class Estado_Equipos(models.Model):
     id_estadoeq = models.AutoField(primary_key=True)
     nombre_estadoeq = models.CharField(max_length=50, unique=True)
@@ -232,6 +295,9 @@ class Estado_Equipos(models.Model):
         return self.nombre_estadoeq
 
 
+# Equipos que tiene la empresa (bafles, consolas, luces...). cantidad_equipo son las
+# unidades que hay: se usa para controlar la disponibilidad al reservar.
+# PROTECT en tipo y estado: no se puede borrar un tipo o un estado que tenga equipos.
 class Equipos(models.Model):
     id_equipo = models.AutoField(primary_key=True)
     id_tipoeq = models.ForeignKey(Tipo_Equipos, on_delete=models.PROTECT, db_column='id_tipoeq')
@@ -247,6 +313,8 @@ class Equipos(models.Model):
         return f"{self.nombre_equipo} ({self.id_tipoeq})"
 
 
+# Servicios que se le ofrecen al cliente (combos de sonido e iluminación, DJ, etc.)
+# con su precio actual. Al reservar, el precio se copia a la reserva (ver Reservas_x_Servicios).
 class Servicios(models.Model):
     id_servicio = models.AutoField(primary_key=True)
     tipo_servicio = models.CharField(max_length=100)
@@ -260,6 +328,8 @@ class Servicios(models.Model):
         return self.tipo_servicio
 
 
+# Tabla intermedia equipo <-> servicio: qué equipos usa cada servicio y cuántos.
+# PROTECT en equipo: no se puede borrar un equipo que usa algún servicio.
 class Equipos_x_Servicios(models.Model):
     id_equipo_servicio = models.AutoField(primary_key=True)
     id_equipo = models.ForeignKey(Equipos, on_delete=models.PROTECT, db_column='id_equipo')
@@ -277,6 +347,11 @@ class Equipos_x_Servicios(models.Model):
         return f"{self.id_equipo} - {self.id_servicio}"
 
 
+# ===========================================================================
+# Clientes y reservas (el proceso principal del sistema, Hito 3)
+# ===========================================================================
+
+# Clientes que contratan los servicios
 class Clientes(models.Model):
     id_cliente = models.AutoField(primary_key=True)
     nombre_cliente = models.CharField(max_length=30, validators=validar_nombre_propio)
@@ -293,6 +368,9 @@ class Clientes(models.Model):
         return f"{self.nombre_cliente} {self.apellido_cliente}"
 
 
+# Reserva de un evento: es la CABECERA del proceso. Sus detalles son los servicios
+# contratados (Reservas_x_Servicios) y el personal asignado (Detalles_Reservas).
+# PROTECT en cliente: no se puede borrar un cliente que tiene reservas.
 class Reservas(models.Model):
     # Estados de la reserva. Nace siempre en PENDIENTE. ANULADA reemplaza a la vieja
     # "Cancelada": las reservas no se borran nunca, se anulan dejando fecha, motivo y
@@ -314,6 +392,7 @@ class Reservas(models.Model):
     # Cuánto dura el evento en horas:minutos (ej: 04:30 = cuatro horas y media).
     # Puede quedar vacía solo en las reservas viejas, de antes de separar hora y duración.
     duracion_evento = models.TimeField(null=True, blank=True)
+    # Suma de los precios de los servicios: lo calcula el sistema, nunca se carga a mano
     monto_total = models.FloatField(default=0)
     estado_reserva = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE')
 
@@ -343,6 +422,9 @@ class Reservas(models.Model):
         return f"Reserva N°{self.id_reserva} - {self.id_cliente}"
 
 
+# Detalle de la reserva: personal asignado al evento. Un empleado no puede estar en dos
+# eventos el mismo día (lo controla ReservasSerializer._validar_empleados).
+# PROTECT en empleado: no se puede borrar un empleado que trabajó en alguna reserva.
 class Detalles_Reservas(models.Model):
     id_detalle_reserva = models.AutoField(primary_key=True)
     id_reserva = models.ForeignKey(Reservas, on_delete=models.CASCADE, db_column='id_reserva')
@@ -356,6 +438,7 @@ class Detalles_Reservas(models.Model):
         return f"Detalle {self.id_detalle_reserva} - Reserva {self.id_reserva_id}"
 
 
+# Detalle de la reserva: servicios contratados, con el precio al momento de reservar
 class Reservas_x_Servicios(models.Model):
     id_reserva_servicio = models.AutoField(primary_key=True)
     id_reserva = models.ForeignKey(Reservas, on_delete=models.CASCADE, db_column='id_reserva')
@@ -373,6 +456,11 @@ class Reservas_x_Servicios(models.Model):
         return f'{self.id_reserva} - {self.id_servicio}'
 
 
+# ===========================================================================
+# Pagos
+# ===========================================================================
+
+# Formas de pago aceptadas (Efectivo, Transferencia, Tarjeta, Mercado Pago...)
 class Metodo_Pagos(models.Model):
     id_metodo_pago = models.AutoField(primary_key=True)
     metodo_pago = models.CharField(max_length=50)
@@ -384,10 +472,13 @@ class Metodo_Pagos(models.Model):
     def __str__(self):
         return self.metodo_pago
 
+# Pagos de una reserva (seña, cuotas, saldo). PROTECT en reserva: una reserva con pagos
+# no se puede borrar ni anular (por ahora no hay devoluciones).
 class Pagos(models.Model):
     id_pago = models.AutoField(primary_key=True)
     id_reserva = models.ForeignKey(Reservas, on_delete=models.PROTECT, db_column='id_reserva')
     monto = models.FloatField(default=0, validators=[MinValueValidator(0.01)])
+    # Lo que faltaba pagar después de este pago. Lo calcula recalcular_saldos() en serializers.py
     saldo_pendiente = models.FloatField(default=0)
 
     class Meta:
@@ -398,6 +489,8 @@ class Pagos(models.Model):
         return f"Pago N°{self.id_pago} - Reserva {self.id_reserva_id}"
 
 
+# Tabla intermedia pago <-> método: un pago puede hacerse con más de un método
+# (ej: parte en efectivo y parte con transferencia)
 class Detalles_de_Pago(models.Model):
     id_detalle_pago = models.AutoField(primary_key=True)
     id_pago = models.ForeignKey(Pagos, on_delete=models.CASCADE, db_column='id_pago')
@@ -411,12 +504,17 @@ class Detalles_de_Pago(models.Model):
         return f"Detalle {self.id_detalle_pago} - Pago {self.id_pago_id}"
 
 
+# ===========================================================================
+# Tablas de apoyo: sesiones, registro de actividad y recuperación de contraseña
+# ===========================================================================
+
 class SesionToken(models.Model):
     """
     Token de sesión propio para autenticar contra el frontend en React.
     No usamos rest_framework.authtoken porque ese token está atado a
     auth.User, y nuestro modelo de usuarios es Usuarios (definido por el DER).
     """
+    # Texto largo al azar que el frontend manda en cada pedido (Authorization: Token ...)
     token = models.CharField(max_length=64, unique=True, db_index=True)
     id_usuario = models.ForeignKey(Usuarios, on_delete=models.CASCADE, db_column='id_usuario')
     creado = models.DateTimeField(auto_now_add=True)
@@ -435,6 +533,8 @@ class Registro_Actividad(models.Model):
     errores del servidor. Lo arma solo el backend (ver registro.py) y no se puede
     editar ni borrar desde la API: solo se consulta, con el permiso "Ver Registro de actividad".
     """
+    # Tipos de acción que se registran. Se definen como constantes para usarlas desde
+    # el código sin escribir el texto a mano (ej: Registro_Actividad.ALTA)
     ALTA = 'ALTA'
     MODIFICACION = 'MODIFICACION'
     BAJA = 'BAJA'
@@ -443,6 +543,7 @@ class Registro_Actividad(models.Model):
     LOGOUT = 'LOGOUT'
     CLAVE = 'CLAVE'
     ERROR = 'ERROR'
+    # Código que se guarda en la base y texto que se muestra en pantalla
     ACCION_CHOICES = [
         (ALTA, 'Alta'),
         (MODIFICACION, 'Modificación'),
@@ -455,6 +556,7 @@ class Registro_Actividad(models.Model):
     ]
 
     id_registro = models.AutoField(primary_key=True)
+    # db_index: la pantalla siempre ordena y filtra por fecha, así la consulta es más rápida
     fecha = models.DateTimeField(auto_now_add=True, db_index=True)
     # Quién lo hizo. SET_NULL para no perder el registro si algún día se borra el usuario
     id_usuario = models.ForeignKey(
@@ -472,6 +574,7 @@ class Registro_Actividad(models.Model):
     class Meta:
         verbose_name = "Registro de actividad"
         verbose_name_plural = "Registro de actividad"
+        # Los más nuevos primero
         ordering = ['-fecha']
 
     def __str__(self):
@@ -492,7 +595,9 @@ class Token_Recuperacion(models.Model):
     id_usuario = models.ForeignKey(Usuarios, on_delete=models.CASCADE, db_column='id_usuario')
     token_hash = models.CharField(max_length=64, unique=True)
     creado = models.DateTimeField(auto_now_add=True)
+    # Fecha y hora en que el link deja de servir
     expira = models.DateTimeField()
+    # Se prende al usarlo, así no se puede usar dos veces
     usado = models.BooleanField(default=False)
 
     class Meta:

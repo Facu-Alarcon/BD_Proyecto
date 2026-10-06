@@ -2,6 +2,7 @@
 // (Editar / Eliminar / Ver). Todos heredan el color del texto (currentColor)
 // así toman automáticamente el color del botón donde los pongas.
 
+// Lápiz: botón Editar de las tablas
 export function IconEditar(props) {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -12,6 +13,7 @@ export function IconEditar(props) {
   );
 }
 
+// Tachito: botón Eliminar de las tablas
 export function IconEliminar(props) {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -25,6 +27,7 @@ export function IconEliminar(props) {
   );
 }
 
+// Ojo: botón Ver detalle (lista de Reservas)
 export function IconVer(props) {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -35,6 +38,7 @@ export function IconVer(props) {
   );
 }
 
+// Campana (notificaciones). Sin uso por ahora: quedó de un diseño anterior de la barra de arriba
 export function IconCampana(props) {
   return (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -45,6 +49,7 @@ export function IconCampana(props) {
   );
 }
 
+// Globo de chat. Sin uso por ahora: quedó de un diseño anterior de la barra de arriba
 export function IconChat(props) {
   return (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -54,6 +59,7 @@ export function IconChat(props) {
   );
 }
 
+// Flechita hacia abajo: menú del usuario en la barra de arriba
 export function IconChevronDown(props) {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -63,6 +69,7 @@ export function IconChevronDown(props) {
   );
 }
 
+// Puerta con flecha: Cerrar sesión
 export function IconSalir(props) {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -74,6 +81,7 @@ export function IconSalir(props) {
   );
 }
 
+// Llave: Restablecer clave (lista de Usuarios)
 export function IconLlave(props) {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -85,6 +93,7 @@ export function IconLlave(props) {
   );
 }
 
+// Flecha circular: Reactivar un usuario dado de baja
 export function IconReactivar(props) {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -97,6 +106,7 @@ export function IconReactivar(props) {
 // ---------- Íconos del menú lateral (Sidebar) ----------
 // Mismo estilo que los de arriba, un poco más grandes (20px).
 
+// Base común de los íconos del menú: el mismo <svg> de 20px, solo cambian los trazos de adentro
 function IconMenu({ children, ...props }) {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"

@@ -24,7 +24,9 @@ function formatearFecha(fecha, hora) {
   return `${dia} ${meses[Number(mes) - 1]}, ${horaCorta}`;
 }
 
+// Lista de Reservas: filtros por fecha, estado y cliente, y botones para ver, editar o anular.
 export default function ReservasList() {
+  // Qué puede hacer el usuario en este módulo según su perfil (si no puede gestionar, solo ve la tabla)
   const { puedeGestionar, tiene } = usePermiso('reservas');
   // Anular es un permiso aparte: un perfil puede registrar reservas pero no anularlas
   const puedeAnular = tiene('anular_reservas');
@@ -33,6 +35,7 @@ export default function ReservasList() {
   const [error, setError] = useState('');
   const [aAnular, setAAnular] = useState(null); // reserva que se está por anular
 
+  // Trae todos los registros del backend y los guarda para la tabla
   function cargar() {
     setCargando(true);
     api
@@ -42,6 +45,7 @@ export default function ReservasList() {
       .finally(() => setCargando(false));
   }
 
+  // Se cargan una sola vez, al abrir la pantalla
   useEffect(cargar, []);
 
   // Filtros de esta pantalla (ver hooks/useFiltros.js)
@@ -84,6 +88,7 @@ export default function ReservasList() {
       <div className="card">
         {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
         <Paginacion paginacion={paginacion} posicion="arriba" />
+        {/* Tabla con las filas de la página actual (paginacion.visibles) */}
         <table className="data-table">
           <thead>
             <tr>

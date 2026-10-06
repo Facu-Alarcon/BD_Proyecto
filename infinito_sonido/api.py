@@ -1,3 +1,16 @@
+# API del sistema: todo lo que el frontend en React le pide al backend pasa por acá.
+#
+# Hay dos tipos de clases:
+#   - Vistas sueltas (APIView): login, logout, "quién soy", cambiar y recuperar la clave,
+#     y el resumen de Inicio.
+#   - ViewSets: uno por módulo (Clientes, Reservas, Equipos...). Un ModelViewSet arma solo
+#     los endpoints de listar, ver uno, crear, editar y borrar; acá solo escribimos lo que
+#     cambia respecto de lo normal (por ejemplo, avisar en vez de romper si no se puede borrar).
+#
+# Las URLs de cada cosa están en api_urls.py. Los permisos (quién puede ver o modificar cada
+# módulo) se definen con permission_classes, usando las funciones de permissions.py.
+# Todos los ViewSets llevan RegistrarActividadMixin, que anota sus altas, modificaciones y
+# bajas en el Registro de actividad (ver registro.py).
 import hashlib
 import secrets
 from datetime import timedelta
@@ -40,6 +53,9 @@ from .registro import RegistrarActividadMixin, registrar
 from .seguridad import generar_contraseña_temporal, validar_contraseña_segura
 
 
+# Datos del usuario logueado que se le mandan al frontend al entrar (y en /api/me/).
+# El frontend los guarda y los usa para saber qué mostrar: por ejemplo 'permisos' decide
+# qué secciones aparecen en el menú, y debe_cambiar_clave lo manda a la pantalla de cambiar clave.
 def _usuario_repr(usuario):
     return {
         'id_usuario': usuario.pk,
@@ -53,14 +69,20 @@ def _usuario_repr(usuario):
     }
 
 
+# Inicio de sesión: recibe usuario y contraseña y, si están bien, crea una sesión nueva
+# (SesionToken) y devuelve el token. El frontend manda ese token en todos los pedidos siguientes.
+# Es la única vista (junto con las de recuperar clave) que se puede usar sin estar logueado.
 class LoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
     def post(self, request):
+        # Se acepta 'contraseña' o 'password' por si algún cliente de la API manda el nombre en inglés
         usuario_nombre = (request.data.get('usuario') or '').strip()
         contraseña = request.data.get('contraseña') or request.data.get('password') or ''
 
+        # Mismo mensaje si el usuario no existe o si la clave está mal: así no se puede
+        # averiguar qué usuarios existen probando nombres
         error = {'detail': 'Usuario o contraseña incorrectos.'}
         if not usuario_nombre or not contraseña:
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
@@ -73,6 +95,7 @@ class LoginView(APIView):
                       usuario_texto=usuario_nombre)
             return Response(error, status=status.HTTP_401_UNAUTHORIZED)
 
+        # check_password compara lo que escribió contra el hash guardado (la clave nunca se guarda tal cual)
         if not check_password(contraseña, usuario.contraseña):
             registrar(request, Registro_Actividad.LOGIN_FALLIDO, 'Contraseña incorrecta', 'Sesión', usuario=usuario)
             return Response(error, status=status.HTTP_401_UNAUTHORIZED)
@@ -81,6 +104,7 @@ class LoginView(APIView):
             registrar(request, Registro_Actividad.LOGIN_FALLIDO, 'Usuario dado de baja', 'Sesión', usuario=usuario)
             return Response({'detail': 'Este usuario está dado de baja.'}, status=status.HTTP_403_FORBIDDEN)
 
+        # Token de 64 caracteres al azar: identifica esta sesión hasta que el usuario cierre sesión
         sesion = SesionToken.objects.create(token=secrets.token_hex(32), id_usuario=usuario)
         registrar(request, Registro_Actividad.LOGIN, 'Inició sesión', 'Sesión', usuario=usuario)
         return Response({'token': sesion.token, 'usuario': _usuario_repr(usuario)})
@@ -218,6 +242,7 @@ class RestablecerConLinkView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# Cierre de sesión: borra el token con el que se hizo el pedido, así deja de servir
 class LogoutView(APIView):
     def post(self, request):
         # request.auth es la instancia de SesionToken usada para autenticar (ver authentication.py)
@@ -227,11 +252,17 @@ class LogoutView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# "Quién soy": devuelve los datos del usuario logueado. El frontend lo llama al abrir la
+# página para refrescar los permisos (por si un admin le cambió el perfil mientras tanto).
 class MeView(APIView):
     def get(self, request):
         return Response(_usuario_repr(request.user))
 
 
+# ---------------- Equipos ----------------
+#
+# Tipos de equipo (Sonido, Iluminación...). Solo se ordenan por nombre y se avisa si
+# se quiere borrar uno que todavía tiene equipos.
 class TipoEquiposViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Tipos de equipo'
@@ -240,6 +271,8 @@ class TipoEquiposViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     permission_classes = [permiso_modulo('tipos_equipo')]
 
     def destroy(self, request, *args, **kwargs):
+        # Tipo_Equipos está protegido (PROTECT) desde Equipos: si tiene equipos, delete() tira
+        # ProtectedError y en vez de un error 500 devolvemos un 409 con un mensaje claro
         tipo = self.get_object()
         try:
             tipo.delete()
@@ -251,6 +284,7 @@ class TipoEquiposViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# Cargas horarias de los empleados. No necesita nada especial: el ModelViewSet hace todo.
 class HorariosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Horarios'
@@ -259,6 +293,7 @@ class HorariosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     permission_classes = [permiso_modulo('horarios')]
 
 
+# Métodos de pago (Efectivo, Transferencia...). No se puede borrar uno que ya usó algún pago.
 class MetodoPagosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Métodos de pago'
@@ -302,6 +337,8 @@ class EstadoEquiposViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# Equipos de la empresa. select_related trae el tipo y el estado en la misma consulta,
+# así la lista no hace una consulta extra por cada equipo.
 class EquiposViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Equipos'
@@ -321,6 +358,10 @@ class EquiposViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# ---------------- Seguridad: perfiles, permisos y usuarios ----------------
+#
+# Perfiles de usuario. Además del ABM normal tiene la acción /perfiles/<id>/permisos/
+# para ver y cambiar qué permisos tiene el perfil (pantalla "Asignar permisos").
 class PerfilesViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Perfiles'
@@ -339,6 +380,8 @@ class PerfilesViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    # GET: todos los permisos del sistema, cada uno marcado con asignado=True/False para este perfil
+    # PUT: recibe la lista completa de ids tildados y deja el perfil exactamente con esos
     @action(detail=True, methods=['get', 'put'], url_path='permisos')
     def permisos(self, request, pk=None):
         perfil = self.get_object()
@@ -364,6 +407,8 @@ class PerfilesViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         )
 
         with transaction.atomic():
+            # Con operaciones de conjuntos: se agregan los tildados que no tenía y se sacan los
+            # que tenía y ahora no están tildados. Todo dentro de una transacción.
             nuevos = ids_seleccionados - ids_asignados
             for id_permiso in nuevos:
                 Permisos_x_Perfiles.objects.create(id_perfil=perfil, id_permiso_id=id_permiso)
@@ -375,6 +420,7 @@ class PerfilesViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# Catálogo de permisos. El código interno (ver_..., gestionar_...) lo arma el serializer.
 class PermisosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Permisos'
@@ -383,6 +429,8 @@ class PermisosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     permission_classes = [permiso_modulo('permisos')]
 
 
+# Usuarios del sistema. Se crean a partir de un empleado, con usuario y contraseña
+# automáticos (ver UsuariosSerializer). No se borran: se dan de baja y se pueden reactivar.
 class UsuariosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Usuarios'
@@ -451,6 +499,9 @@ class UsuariosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         return Response(UsuariosSerializer(usuario).data)
 
 
+# ---------------- Clientes y personal ----------------
+#
+# Clientes. No se puede borrar uno que tenga reservas (aunque estén anuladas).
 class ClientesViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Clientes'
@@ -470,6 +521,7 @@ class ClientesViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# Empleados. Además del ABM tiene /empleados/<id>/puestos/ para asignarle puestos.
 class EmpleadosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Empleados'
@@ -509,6 +561,7 @@ class EmpleadosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
             serializer = PuestoConEstadoSerializer(puestos_qs, many=True)
             return Response(serializer.data)
 
+        # Misma lógica que con los permisos de un perfil: se agregan los nuevos y se sacan los destildados
         # PUT: sincroniza la lista completa de puestos seleccionados
         ids_seleccionados = request.data.get('puestos', [])
         if not isinstance(ids_seleccionados, list):
@@ -531,6 +584,7 @@ class EmpleadosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# Sueldos. No se puede borrar uno que esté asignado a algún puesto.
 class SueldosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Sueldos'
@@ -550,6 +604,7 @@ class SueldosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# Puestos de trabajo, con su sueldo.
 class PuestosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Puestos'
@@ -561,6 +616,9 @@ class PuestosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     permission_classes = [permiso_modulo('puestos')]
 
 
+# ---------------- Servicios, reservas y pagos (proceso del Hito 3) ----------------
+#
+# Servicios que se ofrecen, con los equipos que usa cada uno (ver ServiciosSerializer).
 class ServiciosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Servicios'
@@ -581,6 +639,9 @@ class ServiciosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# Reservas: el proceso principal. Registrar y editar los maneja ReservasSerializer
+# (estado automático, transacción, disponibilidad de equipos y personal). Acá se
+# agregan la prohibición de borrar y la acción de anular.
 class ReservasViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Reservas'
@@ -612,6 +673,7 @@ class ReservasViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
           - el evento ya se hizo (Finalizada),
           - tiene pagos registrados (por ahora no hay devoluciones).
         """
+        # Primero todas las validaciones; recién si pasan todas se toca la base
         reserva = self.get_object()
         motivo = (request.data.get('motivo') or '').strip()
 
@@ -644,6 +706,8 @@ class ReservasViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         return Response(self.get_serializer(reserva).data)
 
 
+# Pagos de las reservas. Al crear o editar, el serializer valida que no superen el saldo
+# y recalcula los saldos; al borrar se recalculan acá.
 class PagosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Pagos'
@@ -661,6 +725,9 @@ class PagosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# ---------------- Consultas ----------------
+#
+# ReadOnlyModelViewSet: solo tiene listar y ver uno, no crear, editar ni borrar
 class RegistroActividadViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Consulta del registro de actividad. Es de solo lectura: nadie puede editar ni borrar
@@ -683,6 +750,8 @@ class DashboardResumenView(APIView):
     """
 
     def get(self, request):
+        # Equipos agrupados por estado (para las barras de "Estado de equipos" en Inicio).
+        # values + annotate arma un GROUP BY: cuántos equipos hay de cada estado.
         total = Equipos.objects.count()
         por_estado = list(
             Equipos.objects.values('id_estadoeq', 'id_estadoeq__nombre_estadoeq')
@@ -698,6 +767,7 @@ class DashboardResumenView(APIView):
             for r in por_estado
         ]
 
+        # Reservas de hoy (sin contar las anuladas) y las próximas 5, para la lista de Inicio
         hoy = timezone.localdate()
         reservas_hoy_qs = Reservas.objects.filter(fecha_evento=hoy).exclude(estado_reserva='ANULADA')
 

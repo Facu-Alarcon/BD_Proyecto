@@ -6,7 +6,11 @@ import SuccessModal from '../../components/SuccessModal';
 
 const VACIO = { id_reserva: '', monto: '' };
 
+// Formulario de Pagos (alta y edición): la reserva, el monto y con qué métodos se pagó.
+// Es el mismo componente para crear y para editar: si la URL trae un id (/.../5/editar)
+// se está editando y se abre como ventana emergente; si no, es una pantalla de alta común.
 export default function PagoForm() {
+  // id viene de la URL; si existe, estamos editando
   const { id } = useParams();
   const editando = Boolean(id);
   const navigate = useNavigate();
@@ -14,12 +18,16 @@ export default function PagoForm() {
   const [reservas, setReservas] = useState([]);
   const [metodos, setMetodos] = useState([]);
   const [form, setForm] = useState(VACIO);
+  // Métodos de pago tildados (un pago puede tener más de uno)
   const [metodosSel, setMetodosSel] = useState(new Set());
+  // Errores que devuelve el backend, por campo (ej: { telefono_emp: ["..."] })
   const [errores, setErrores] = useState({});
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  // Se prende después de guardar una edición, para mostrar la ventana de éxito
   const [guardadoOk, setGuardadoOk] = useState(false);
 
+  // Al abrir: reservas y métodos de pago para elegir y, si se está editando, los datos del pago
   useEffect(() => {
     Promise.all([
       api.get('/reservas/'),
@@ -38,10 +46,12 @@ export default function PagoForm() {
     });
   }, [id, editando]);
 
+  // Cambia un solo campo del formulario y deja los demás como estaban
   function actualizar(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }));
   }
 
+  // Tilda o destilda un método de pago
   function toggleMetodo(idMetodo) {
     const mid = Number(idMetodo);
     setMetodosSel((prev) => {
@@ -51,11 +61,14 @@ export default function PagoForm() {
     });
   }
 
+  // Reserva elegida, para mostrar cliente y evento como subtítulo de la ventana
   const reservaSeleccionada = reservas.find((r) => String(r.id_reserva) === String(form.id_reserva));
   const subtitulo = reservaSeleccionada
     ? `${reservaSeleccionada.cliente_nombre}${reservaSeleccionada.nombre_evento ? ' · ' + reservaSeleccionada.nombre_evento : ''}`
     : undefined;
 
+  // Guardar: si se está editando hace PUT y muestra la ventana de éxito; si es un alta hace
+  // POST y vuelve a la lista. Si el backend rechaza los datos (400), se muestran sus errores.
   async function handleSubmit(e) {
     e.preventDefault();
     setGuardando(true);
@@ -80,6 +93,7 @@ export default function PagoForm() {
     }
   }
 
+  // Mientras se traen los datos del registro a editar
   if (cargando) return <p>Cargando...</p>;
 
   if (guardadoOk) {
@@ -93,6 +107,7 @@ export default function PagoForm() {
     );
   }
 
+  // Los campos del formulario (los mismos para crear y para editar)
   const formulario = (
     <form onSubmit={handleSubmit}>
       {errores.detail && <div className="alert alert-error">{errores.detail}</div>}
@@ -147,6 +162,7 @@ export default function PagoForm() {
     </form>
   );
 
+  // Editar se muestra como ventana emergente encima de la lista; el alta, como pantalla común
   if (editando) {
     return (
       <FormModal titulo="Editar pago" subtitulo={subtitulo} onClose={() => navigate('/pagos')}>

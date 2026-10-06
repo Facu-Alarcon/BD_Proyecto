@@ -7,6 +7,9 @@ import ReglasContraseña from '../components/ReglasContraseña';
 import { contraseñaSegura } from '../utils/contraseña';
 import './Login.css';
 
+// Pantalla para elegir una contraseña propia. Aparece obligatoriamente cuando el usuario
+// entra con una contraseña temporal (debe_cambiar_clave, ver ProtectedRoute): hasta que
+// no la cambie no puede usar el resto del sistema. También tiene el botón para cerrar sesión.
 export default function CambiarClave() {
   const [contraseñaActual, setContraseñaActual] = useState('');
   const [contraseñaNueva, setContraseñaNueva] = useState('');
@@ -16,6 +19,8 @@ export default function CambiarClave() {
   const { actualizarUsuario, logout } = useAuth();
   const navigate = useNavigate();
 
+  // Revisa que la nueva cumpla las reglas y coincida con la repetición, y la manda al backend.
+  // Si sale bien, apaga el aviso de "tenés que cambiar la clave" y va al Inicio.
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');

@@ -1,3 +1,5 @@
+/* Ventanas emergentes de editar (FormModal) y de "¡Listo!" (SuccessModal). */
+/* Fondo azul oscuro que tapa toda la pantalla, con la tarjeta blanca centrada. */
 .overlay-page {
   position: fixed;
   inset: 0;
@@ -10,6 +12,7 @@
   background: radial-gradient(circle at 20% 20%, #163169 0%, #0a1730 55%, #060f24 100%);
 }
 
+/* Barras verticales decorativas del fondo (ver components/FondoBarras.jsx) */
 .overlay-bars {
   position: absolute;
   inset: 0;
@@ -25,6 +28,7 @@
   border-radius: 4px 4px 0 0;
 }
 
+/* Tarjeta blanca con el contenido; si es más alta que la pantalla, scrollea por dentro */
 .overlay-card {
   position: relative;
   z-index: 1;
@@ -37,10 +41,12 @@
   padding: 32px 32px 26px;
 }
 
+/* Versión más ancha para formularios largos (ej: editar reserva) */
 .overlay-card-wide {
   width: min(900px, 92vw);
 }
 
+/* Título y subtítulo a la izquierda, la X para cerrar a la derecha */
 .overlay-card-header {
   display: flex;
   align-items: flex-start;
@@ -77,6 +83,7 @@
   background: var(--gray-bg);
 }
 
+/* Ventana de "¡Listo!": todo centrado, con el tilde verde grande */
 .overlay-success {
   text-align: center;
   padding-top: 8px;

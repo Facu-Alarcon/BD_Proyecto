@@ -4,7 +4,11 @@ import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
 
+// Formulario de Permisos (alta y edición): nombre, descripción y si está activo.
+// Es el mismo componente para crear y para editar: si la URL trae un id (/.../5/editar)
+// se está editando y se abre como ventana emergente; si no, es una pantalla de alta común.
 export default function PermisoForm() {
+  // id viene de la URL; si existe, estamos editando
   const { id } = useParams();
   const editando = Boolean(id);
   const navigate = useNavigate();
@@ -14,9 +18,12 @@ export default function PermisoForm() {
     descripcion_permiso: '',
     estado_permiso: true,
   });
+  // Errores que devuelve el backend, por campo (ej: { telefono_emp: ["..."] })
   const [errores, setErrores] = useState({});
+  // Al editar arranca en "cargando" hasta que llegan los datos del registro
   const [cargando, setCargando] = useState(editando);
   const [guardando, setGuardando] = useState(false);
+  // Se prende después de guardar una edición, para mostrar la ventana de éxito
   const [guardadoOk, setGuardadoOk] = useState(false);
 
   useEffect(() => {
@@ -27,10 +34,13 @@ export default function PermisoForm() {
     });
   }, [id, editando]);
 
+  // Cambia un solo campo del formulario y deja los demás como estaban
   function actualizar(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }));
   }
 
+  // Guardar: si se está editando hace PUT y muestra la ventana de éxito; si es un alta hace
+  // POST y vuelve a la lista. Si el backend rechaza los datos (400), se muestran sus errores.
   async function handleSubmit(e) {
     e.preventDefault();
     setGuardando(true);
@@ -54,6 +64,7 @@ export default function PermisoForm() {
     }
   }
 
+  // Mientras se traen los datos del registro a editar
   if (cargando) return <p>Cargando...</p>;
 
   if (guardadoOk) {
@@ -67,6 +78,7 @@ export default function PermisoForm() {
     );
   }
 
+  // Los campos del formulario (los mismos para crear y para editar)
   const formulario = (
     <form onSubmit={handleSubmit}>
       {errores.detail && <div className="alert alert-error">{errores.detail}</div>}
@@ -111,6 +123,7 @@ export default function PermisoForm() {
     </form>
   );
 
+  // Editar se muestra como ventana emergente encima de la lista; el alta, como pantalla común
   if (editando) {
     return (
       <FormModal titulo="Editar permiso" subtitulo={form.nombre_permiso} onClose={() => navigate('/permisos')}>

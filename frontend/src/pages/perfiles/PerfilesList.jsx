@@ -11,7 +11,9 @@ import ConfirmModal from '../../components/ConfirmModal';
 import IconoCelda from '../../components/IconoCelda';
 import { iconoPerfil } from '../../utils/iconosModulos';
 
+// Lista de Perfiles de usuario: tabla con buscador y botones para editar (y asignar permisos) o eliminar.
 export default function PerfilesList() {
+  // Qué puede hacer el usuario en este módulo según su perfil (si no puede gestionar, solo ve la tabla)
   const { puedeGestionar } = usePermiso('perfiles');
   const [perfiles, setPerfiles] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -19,6 +21,7 @@ export default function PerfilesList() {
   const [aEliminar, setAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
 
+  // Trae todos los registros del backend y los guarda para la tabla
   function cargar() {
     setCargando(true);
     api
@@ -28,8 +31,11 @@ export default function PerfilesList() {
       .finally(() => setCargando(false));
   }
 
+  // Se cargan una sola vez, al abrir la pantalla
   useEffect(cargar, []);
 
+  // Se ejecuta al confirmar en la ventana de "¿Eliminar?". Si el backend no deja borrarlo
+  // (por ejemplo, porque está en uso en otra tabla) se muestra el motivo que devuelve.
   async function confirmarEliminar() {
     setEliminando(true);
     try {
@@ -67,6 +73,7 @@ export default function PerfilesList() {
       <div className="card">
         {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
         <Paginacion paginacion={paginacion} posicion="arriba" />
+        {/* Tabla con las filas de la página actual (paginacion.visibles) */}
         <table className="data-table">
           <thead>
             <tr>
@@ -102,6 +109,7 @@ export default function PerfilesList() {
         <Paginacion paginacion={paginacion} />
       </div>
 
+      {/* Ventana para confirmar el borrado (solo aparece cuando se tocó el tachito de alguna fila) */}
       {aEliminar && (
         <ConfirmModal
           titulo="Eliminar perfil"

@@ -5,6 +5,7 @@ import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
 import SelectBuscable from '../../components/SelectBuscable';
 
+// Estados que se pueden elegir al editar (Anulada no: para eso está el botón "Anular")
 const ESTADOS = [
   { value: 'PENDIENTE', label: 'Pendiente' },
   { value: 'CONFIRMADA', label: 'Confirmada' },
@@ -21,6 +22,7 @@ function hoyLocal() {
   return `${d.getFullYear()}-${mes}-${dia}`;
 }
 
+// Valores iniciales del formulario en un alta
 const VACIO = {
   id_cliente: '',
   nombre_evento: '',
@@ -31,7 +33,11 @@ const VACIO = {
   estado_reserva: 'PENDIENTE',
 };
 
+// Formulario de Reservas (alta y edición): cliente, evento, fecha, hora, duración, servicios y personal.
+// Es el mismo componente para crear y para editar: si la URL trae un id (/.../5/editar)
+// se está editando y se abre como ventana emergente; si no, es una pantalla de alta común.
 export default function ReservaForm() {
+  // id viene de la URL; si existe, estamos editando
   const { id } = useParams();
   const editando = Boolean(id);
   const navigate = useNavigate();
@@ -40,15 +46,20 @@ export default function ReservaForm() {
   const [servicios, setServicios] = useState([]);
   const [empleados, setEmpleados] = useState([]);
   const [form, setForm] = useState(VACIO);
+  // Servicios y empleados tildados (Sets de ids)
   const [serviciosSel, setServiciosSel] = useState(new Set());
   const [empleadosSel, setEmpleadosSel] = useState(new Set());
+  // Errores que devuelve el backend, por campo (ej: { telefono_emp: ["..."] })
   const [errores, setErrores] = useState({});
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  // Se prende después de guardar una edición, para mostrar la ventana de éxito
   const [guardadoOk, setGuardadoOk] = useState(false);
   // Fecha que tenía la reserva al abrirla para editar (sirve para no trabar las reservas que ya pasaron)
   const [fechaOriginal, setFechaOriginal] = useState('');
 
+  // Al abrir: clientes, servicios y empleados para elegir; si se está editando, también los
+  // datos de la reserva con los servicios y empleados que ya tiene
   useEffect(() => {
     Promise.all([
       api.get('/clientes/'),
@@ -85,10 +96,12 @@ export default function ReservaForm() {
   const hoy = hoyLocal();
   const fechaMinima = fechaOriginal && fechaOriginal < hoy ? fechaOriginal : hoy;
 
+  // Cambia un solo campo del formulario y deja los demás como estaban
   function actualizar(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }));
   }
 
+  // Tilda o destilda un servicio (el total se recalcula solo)
   function toggleServicio(idServicio) {
     const id = Number(idServicio);
     setServiciosSel((prev) => {
@@ -98,6 +111,7 @@ export default function ReservaForm() {
     });
   }
 
+  // Tilda o destilda un empleado
   function toggleEmpleado(idEmpleado) {
     const id = Number(idEmpleado);
     setEmpleadosSel((prev) => {
@@ -113,11 +127,14 @@ export default function ReservaForm() {
     .filter((s) => serviciosSel.has(Number(s.id_servicio)))
     .reduce((acc, s) => acc + Number(s.precio_servicio), 0);
 
+  // Subtítulo de la ventana de edición: "Nombre del evento · Cliente"
   const clienteSeleccionado = clientes.find((c) => String(c.id_cliente) === String(form.id_cliente));
   const subtitulo = clienteSeleccionado
     ? [form.nombre_evento, `${clienteSeleccionado.nombre_cliente} ${clienteSeleccionado.apellido_cliente}`].filter(Boolean).join(' · ')
     : undefined;
 
+  // Guardar: si se está editando hace PUT y muestra la ventana de éxito; si es un alta hace
+  // POST y vuelve a la lista. Si el backend rechaza los datos (400), se muestran sus errores.
   async function handleSubmit(e) {
     e.preventDefault();
     setGuardando(true);
@@ -146,6 +163,7 @@ export default function ReservaForm() {
     }
   }
 
+  // Mientras se traen los datos del registro a editar
   if (cargando) return <p>Cargando...</p>;
 
   if (guardadoOk) {
@@ -159,6 +177,7 @@ export default function ReservaForm() {
     );
   }
 
+  // Los campos del formulario (los mismos para crear y para editar)
   const formulario = (
     <form onSubmit={handleSubmit}>
       {errores.detail && <div className="alert alert-error">{errores.detail}</div>}
@@ -294,6 +313,7 @@ export default function ReservaForm() {
     </form>
   );
 
+  // Editar se muestra como ventana emergente encima de la lista; el alta, como pantalla común
   if (editando) {
     return (
       <FormModal titulo="Editar reserva" subtitulo={subtitulo} onClose={() => navigate('/reservas')} wide>

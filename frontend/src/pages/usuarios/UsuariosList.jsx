@@ -11,7 +11,9 @@ import ConfirmModal from '../../components/ConfirmModal';
 import { PersonaCelda } from '../../components/Avatar';
 import RestablecerClaveModal from '../../components/RestablecerClaveModal';
 
+// Lista de Usuarios: además de editar, permite restablecer la clave, dar de baja y reactivar.
 export default function UsuariosList() {
+  // Qué puede hacer el usuario en este módulo según su perfil (si no puede gestionar, solo ve la tabla)
   const { puedeGestionar } = usePermiso('usuarios');
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -20,6 +22,7 @@ export default function UsuariosList() {
   const [procesando, setProcesando] = useState(false);
   const [aRestablecer, setARestablecer] = useState(null);
 
+  // Trae todos los registros del backend y los guarda para la tabla
   function cargar() {
     setCargando(true);
     api
@@ -29,6 +32,7 @@ export default function UsuariosList() {
       .finally(() => setCargando(false));
   }
 
+  // Se cargan una sola vez, al abrir la pantalla
   useEffect(cargar, []);
 
   async function confirmarBaja() {
@@ -101,6 +105,7 @@ export default function UsuariosList() {
       <div className="card">
         {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
         <Paginacion paginacion={paginacion} posicion="arriba" />
+        {/* Tabla con las filas de la página actual (paginacion.visibles) */}
         <table className="data-table">
           <thead>
             <tr>

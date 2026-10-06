@@ -9,7 +9,9 @@ import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 
+// Lista de Sueldos, con filtro por monto.
 export default function SueldosList() {
+  // Qué puede hacer el usuario en este módulo según su perfil (si no puede gestionar, solo ve la tabla)
   const { puedeGestionar } = usePermiso('sueldos');
   const [sueldos, setSueldos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -17,6 +19,7 @@ export default function SueldosList() {
   const [aEliminar, setAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
 
+  // Trae todos los registros del backend y los guarda para la tabla
   function cargar() {
     setCargando(true);
     api
@@ -26,8 +29,11 @@ export default function SueldosList() {
       .finally(() => setCargando(false));
   }
 
+  // Se cargan una sola vez, al abrir la pantalla
   useEffect(cargar, []);
 
+  // Se ejecuta al confirmar en la ventana de "¿Eliminar?". Si el backend no deja borrarlo
+  // (por ejemplo, porque está en uso en otra tabla) se muestra el motivo que devuelve.
   async function confirmarEliminar() {
     setEliminando(true);
     try {
@@ -65,6 +71,7 @@ export default function SueldosList() {
       <div className="card">
         {/* Paginación arriba de la tabla, para no tener que bajar hasta el final */}
         <Paginacion paginacion={paginacion} posicion="arriba" />
+        {/* Tabla con las filas de la página actual (paginacion.visibles) */}
         <table className="data-table">
           <thead>
             <tr>
@@ -100,6 +107,7 @@ export default function SueldosList() {
         <Paginacion paginacion={paginacion} />
       </div>
 
+      {/* Ventana para confirmar el borrado (solo aparece cuando se tocó el tachito de alguna fila) */}
       {aEliminar && (
         <ConfirmModal
           titulo="Eliminar sueldo"

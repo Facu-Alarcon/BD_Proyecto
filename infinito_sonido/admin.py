@@ -1,3 +1,11 @@
+# Configuración del panel /admin de Django: qué tablas aparecen y cómo se ven.
+# No lo usa el frontend: sirve para revisar o corregir datos a mano mientras desarrollamos.
+#
+# En cada clase:
+#   list_display  -> columnas que se ven en la lista
+#   search_fields -> campos en los que busca el buscador de arriba
+#   list_filter   -> filtros que aparecen a la derecha
+# @admin.register(Modelo) es lo que hace que la tabla aparezca en el panel.
 from django.contrib import admin
 
 from .models import (

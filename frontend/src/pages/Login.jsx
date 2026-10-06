@@ -4,16 +4,22 @@ import { useAuth } from '../context/AuthContext';
 import FondoBarras from '../components/FondoBarras';
 import './Login.css';
 
+// Pantalla de inicio de sesión: usuario, contraseña (con el ojito para verla) y el link de
+// "Olvidé mi contraseña". Al entrar bien va al Inicio (o a cambiar la clave, si es temporal).
 export default function Login() {
   const [usuario, setUsuario] = useState('');
   const [contraseña, setContraseña] = useState('');
   const [verContraseña, setVerContraseña] = useState(false);
+  // OJO: "Recordarme" todavía no hace nada; la sesión siempre queda guardada en el navegador
+  // hasta cerrar sesión (ver AuthContext). Está para cuando se implemente.
   const [recordarme, setRecordarme] = useState(false);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  // Intenta iniciar sesión. Si el backend dice 400/401 es usuario o clave incorrectos;
+  // cualquier otro error (servidor apagado, error 500) se muestra como problema de conexión.
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -57,6 +63,7 @@ export default function Login() {
 
         <div className="form-field">
           <label htmlFor="contraseña">Contraseña</label>
+          {/* Campo de contraseña con el botón del ojito para mostrarla u ocultarla */}
           <div className="password-field">
             <input
               id="contraseña"

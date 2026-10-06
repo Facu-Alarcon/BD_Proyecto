@@ -5,6 +5,7 @@ import { colorEstadoEquipo } from '../utils/estadoEquipo';
 import './Inicio.css';
 import Avatar from '../components/Avatar';
 
+// Color de la etiqueta según el estado de la reserva
 const BADGE_BY_ESTADO = {
   PENDIENTE: 'badge-amber',
   CONFIRMADA: 'badge-green',
@@ -12,6 +13,7 @@ const BADGE_BY_ESTADO = {
   ANULADA: 'badge-red',
 };
 
+// Fecha corta para la lista de próximas reservas: "2026-10-18" + "21:00:00" -> "18 oct, 21:00"
 function formatearFecha(fecha, hora) {
   const [anio, mes, dia] = fecha.split('-');
   const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -19,6 +21,8 @@ function formatearFecha(fecha, hora) {
   return `${dia} ${meses[Number(mes) - 1]}, ${horaCorta}`;
 }
 
+// Pantalla de Inicio: tarjetas con números del día y del inventario, las próximas reservas
+// y el estado de los equipos. Todo sale de un solo pedido a /dashboard/resumen/.
 export default function Inicio() {
   const [resumen, setResumen] = useState(null);
   const [error, setError] = useState('');
@@ -30,10 +34,13 @@ export default function Inicio() {
       .catch(() => setError('No se pudo cargar el resumen.'));
   }, []);
 
+  // Porcentaje de equipos de cada estado sobre el total, para el largo de las barras
   const eq = resumen?.equipos;
   const totalEquipos = eq?.total || 0;
   const pct = (n) => (totalEquipos ? Math.round((n / totalEquipos) * 100) : 0);
 
+  // Busca la cantidad de equipos de un estado por una parte del nombre ("dispon", "repar"),
+  // así funciona aunque el estado se llame "Disponible" o "Disponibles"
   function cantidadPorEstado(palabraClave) {
     const fila = eq?.por_estado?.find((e) => e.nombre_estadoeq.toLowerCase().includes(palabraClave));
     return fila?.cantidad ?? 0;
@@ -51,6 +58,7 @@ export default function Inicio() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
+      {/* Tarjetas con los números principales ("—" mientras se cargan) */}
       <div className="stat-grid">
         <div className="card stat-card">
           <span className="stat-label">Reservas de hoy</span>
@@ -76,6 +84,7 @@ export default function Inicio() {
         </div>
       </div>
 
+      {/* Abajo: próximas reservas a la izquierda y estado de los equipos a la derecha */}
       <div className="inicio-grid">
         <div className="card inicio-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -101,6 +110,7 @@ export default function Inicio() {
         </div>
 
         <div className="card inicio-panel">
+          {/* Una barra por estado; el color sale de colorEstadoEquipo (verde disponible, rojo reparación...) */}
           <h2>Estado de equipos</h2>
           {eq && eq.por_estado.length === 0 && (
             <p className="form-hint">No hay equipos cargados todavía.</p>

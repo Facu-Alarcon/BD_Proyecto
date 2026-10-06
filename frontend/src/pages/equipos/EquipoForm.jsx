@@ -4,10 +4,15 @@ import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
 
+// Formulario de Equipos (alta y edición): nombre, tipo, estado y cantidad de unidades.
+// Es el mismo componente para crear y para editar: si la URL trae un id (/.../5/editar)
+// se está editando y se abre como ventana emergente; si no, es una pantalla de alta común.
 export default function EquipoForm() {
+  // id viene de la URL; si existe, estamos editando
   const { id } = useParams();
   const editando = Boolean(id);
   const navigate = useNavigate();
+  // Se prende después de guardar una edición, para mostrar la ventana de éxito
   const [guardadoOk, setGuardadoOk] = useState(false);
 
   const [tipos, setTipos] = useState([]);
@@ -18,15 +23,19 @@ export default function EquipoForm() {
     id_estadoeq: '',
     cantidad_equipo: 1,
   });
+  // Errores que devuelve el backend, por campo (ej: { telefono_emp: ["..."] })
   const [errores, setErrores] = useState({});
+  // Al editar arranca en "cargando" hasta que llegan los datos del registro
   const [cargando, setCargando] = useState(editando);
   const [guardando, setGuardando] = useState(false);
 
+  // Para el botón "+" que permite crear un estado de equipo nuevo sin salir del formulario
   const [mostrarNuevoEstado, setMostrarNuevoEstado] = useState(false);
   const [nuevoEstado, setNuevoEstado] = useState('');
   const [guardandoEstado, setGuardandoEstado] = useState(false);
   const [errorEstado, setErrorEstado] = useState('');
 
+  // Trae los estados de equipo (se vuelve a llamar después de crear uno nuevo)
   function cargarEstados() {
     return api.get('/estado-equipos/').then(({ data }) => {
       setEstados(data);
@@ -34,11 +43,13 @@ export default function EquipoForm() {
     });
   }
 
+  // Al abrir: tipos y estados para los desplegables
   useEffect(() => {
     api.get('/tipo-equipos/').then(({ data }) => setTipos(data));
     cargarEstados();
   }, []);
 
+  // Al editar: se traen los datos del equipo
   useEffect(() => {
     if (!editando) return;
     api.get(`/equipos/${id}/`).then(({ data }) => {
@@ -52,10 +63,12 @@ export default function EquipoForm() {
     });
   }, [id, editando]);
 
+  // Cambia un solo campo del formulario y deja los demás como estaban
   function actualizar(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }));
   }
 
+  // Crea un estado nuevo, recarga la lista de estados y lo deja elegido en el formulario
   async function agregarEstado(e) {
     e.preventDefault();
     if (!nuevoEstado.trim()) return;
@@ -74,6 +87,8 @@ export default function EquipoForm() {
     }
   }
 
+  // Guardar: si se está editando hace PUT y muestra la ventana de éxito; si es un alta hace
+  // POST y vuelve a la lista. Si el backend rechaza los datos (400), se muestran sus errores.
   async function handleSubmit(e) {
     e.preventDefault();
     setGuardando(true);
@@ -97,6 +112,7 @@ export default function EquipoForm() {
     }
   }
 
+  // Mientras se traen los datos del registro a editar
   if (cargando) return <p>Cargando...</p>;
 
   if (guardadoOk) {
@@ -110,6 +126,7 @@ export default function EquipoForm() {
     );
   }
 
+  // Los campos del formulario (los mismos para crear y para editar)
   const formulario = (
     <form onSubmit={handleSubmit}>
       {errores.detail && <div className="alert alert-error">{errores.detail}</div>}
@@ -210,6 +227,7 @@ export default function EquipoForm() {
     </form>
   );
 
+  // Editar se muestra como ventana emergente encima de la lista; el alta, como pantalla común
   if (editando) {
     return (
       <FormModal titulo="Editar equipo" subtitulo={form.nombre_equipo} onClose={() => navigate('/equipos')}>
