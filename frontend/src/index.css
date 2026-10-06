@@ -164,8 +164,10 @@ button {
   font-weight: 600;
   color: var(--text-main);
 }
+/* textarea: el campo de texto largo (ej: motivo de anulación) se ve igual que los demás */
 .form-field input,
-.form-field select {
+.form-field select,
+.form-field textarea {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
@@ -174,7 +176,8 @@ button {
   background: #fff;
 }
 .form-field input:focus,
-.form-field select:focus {
+.form-field select:focus,
+.form-field textarea:focus {
   outline: 2px solid var(--navy-accent);
   outline-offset: 1px;
 }
@@ -754,4 +757,104 @@ button {
 .badge-chica {
   padding: 1px 8px;
   font-size: 11px;
+}
+
+/* Lista de equipos en el formulario de Servicios: cada fila con el nombre del equipo
+   y un campito para la cantidad. Si hay muchos equipos, la lista scrollea sola. */
+.equipos-servicio {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.equipos-servicio input[type="number"] {
+  width: 72px;
+  flex-shrink: 0;
+  padding: 6px 8px;
+}
+
+/* El motivo de anulación se puede agrandar solo para abajo, no a lo ancho */
+.form-field textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* ---------- Detalle de una reserva (ver pages/reservas/ReservaDetalle.jsx) ---------- */
+
+/* Botones de arriba a la derecha: Comprobante, Editar, Anular */
+.detalle-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Aviso rojo con los datos de la anulación */
+.detalle-anulacion {
+  margin-bottom: 16px;
+}
+
+/* Tarjetas chicas (Registro, Cliente, Evento, Personal) de a dos por fila */
+.detalle-grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.detalle-card {
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.detalle-grilla .detalle-card {
+  margin-bottom: 0;
+}
+
+.detalle-card h2 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--verde);
+}
+
+/* Pares "dato: valor" en dos columnas */
+.detalle-datos {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 16px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.detalle-datos dt {
+  color: var(--text-muted);
+}
+
+.detalle-datos dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.detalle-lista {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* Fila del total en la tabla de servicios */
+.data-table .fila-total td {
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+}
+
+/* Pagado y saldo, abajo de la tabla de pagos */
+.detalle-resumen {
+  display: flex;
+  justify-content: flex-end;
+  gap: 24px;
+  margin-top: 12px;
+  font-size: 14px;
 }

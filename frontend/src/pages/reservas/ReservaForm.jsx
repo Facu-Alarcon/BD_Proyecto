@@ -9,7 +9,6 @@ const ESTADOS = [
   { value: 'PENDIENTE', label: 'Pendiente' },
   { value: 'CONFIRMADA', label: 'Confirmada' },
   { value: 'FINALIZADA', label: 'Finalizada' },
-  { value: 'CANCELADA', label: 'Cancelada' },
 ];
 
 // Devuelve la fecha de hoy como 'AAAA-MM-DD' usando la hora de la compu.
@@ -164,6 +163,8 @@ export default function ReservaForm() {
     <form onSubmit={handleSubmit}>
       {errores.detail && <div className="alert alert-error">{errores.detail}</div>}
       {errores.empleados && <div className="alert alert-error">{errores.empleados}</div>}
+      {/* Errores de los servicios elegidos (por ejemplo, equipos no disponibles ese día) */}
+      {errores.servicios && <div className="alert alert-error">{errores.servicios}</div>}
 
       <div className="form-field">
         <label htmlFor="id_cliente">Cliente</label>
@@ -231,11 +232,21 @@ export default function ReservaForm() {
 
       <div className="form-field">
         <label htmlFor="estado_reserva">Estado</label>
-        <select id="estado_reserva" value={form.estado_reserva} onChange={(e) => actualizar('estado_reserva', e.target.value)}>
-          {ESTADOS.map((e) => (
-            <option key={e.value} value={e.value}>{e.label}</option>
-          ))}
-        </select>
+        {/* Al crear, el estado lo pone el sistema (siempre Pendiente). Al editar se puede
+            pasar a Confirmada o Finalizada; para anular está el botón "Anular" de la lista */}
+        {editando ? (
+          <select id="estado_reserva" value={form.estado_reserva} onChange={(e) => actualizar('estado_reserva', e.target.value)}>
+            {ESTADOS.map((e) => (
+              <option key={e.value} value={e.value}>{e.label}</option>
+            ))}
+          </select>
+        ) : (
+          <>
+            <input id="estado_reserva" value="Pendiente" disabled />
+            <span className="form-hint">Toda reserva nueva queda Pendiente automáticamente.</span>
+          </>
+        )}
+        {errores.estado_reserva && <span className="form-error">{errores.estado_reserva}</span>}
       </div>
 
       <div className="form-field">

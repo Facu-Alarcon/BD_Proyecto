@@ -44,3 +44,21 @@ def permiso_modulo(modulo):
 
     _PermisoModulo.__name__ = f'PermisoModulo_{modulo}'
     return _PermisoModulo
+
+
+def permiso_codigo(codigo):
+    """
+    Fábrica de permission_classes para una acción puntual que no es "ver" ni "gestionar"
+    (ej: 'anular_reservas'). Solo deja pasar a los usuarios cuyo perfil tiene ese código.
+    Así se puede tener un perfil que registra reservas pero no las anula.
+    """
+
+    class _PermisoCodigo(BasePermission):
+        message = 'Tu perfil no tiene permiso para realizar esta acción.'
+
+        def has_permission(self, request, view):
+            usuario = request.user
+            return getattr(usuario, 'is_authenticated', False) and codigo in permisos_del_usuario(usuario)
+
+    _PermisoCodigo.__name__ = f'PermisoCodigo_{codigo}'
+    return _PermisoCodigo

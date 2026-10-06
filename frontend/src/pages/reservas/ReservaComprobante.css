@@ -1,0 +1,216 @@
+/* ---------- Comprobante de reserva (ver ReservaComprobante.jsx) ---------- */
+
+.comprobante-pantalla {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.comprobante-botones {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 760px;
+  justify-content: flex-end;
+}
+
+/* La hoja: blanca, con el ancho de una A4 en pantalla */
+.comprobante {
+  position: relative;
+  width: 100%;
+  max-width: 760px;
+  padding: 40px 44px;
+  background: #fff;
+  color: #1a2233;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-card);
+  font-size: 13px;
+  overflow: hidden;
+}
+
+/* Logo a la izquierda y el número de comprobante en un recuadro a la derecha */
+.comprobante-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 18px;
+  border-bottom: 3px solid var(--verde);
+}
+
+.comprobante-logo {
+  height: 56px;
+  width: auto;
+}
+
+.comprobante-numero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 1px solid var(--navy-900);
+  border-radius: 8px;
+  color: var(--navy-900);
+}
+
+.comprobante-numero strong {
+  font-size: 22px;
+  letter-spacing: 1px;
+}
+
+.comprobante-numero span {
+  font-size: 11px;
+}
+
+.comprobante h3 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--verde);
+}
+
+.comprobante p {
+  margin: 2px 0;
+}
+
+/* Cliente y datos de la reserva lado a lado */
+.comprobante-dos-columnas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.comprobante-evento {
+  padding: 16px 0;
+}
+
+/* Tabla de servicios con el total abajo */
+.comprobante-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 4px;
+}
+
+.comprobante-tabla th {
+  text-align: left;
+  padding: 8px 10px;
+  background: var(--navy-900);
+  color: #fff;
+  font-size: 12px;
+}
+
+.comprobante-tabla td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.comprobante-tabla .numero,
+.data-table .numero {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.comprobante-tabla tfoot td {
+  font-weight: 700;
+  font-size: 15px;
+  border-bottom: none;
+}
+
+.comprobante-tabla tfoot .comprobante-secundaria td {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-muted);
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.comprobante-motivo {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--red-bg);
+}
+
+.comprobante-motivo h3 {
+  color: var(--red);
+}
+
+.comprobante-pie {
+  margin-top: 28px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Sello "ANULADA" grande y cruzado sobre la hoja */
+.comprobante-sello {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-24deg);
+  padding: 8px 32px;
+  border: 6px solid rgba(214, 69, 69, 0.45);
+  border-radius: 12px;
+  color: rgba(214, 69, 69, 0.45);
+  font-size: 72px;
+  font-weight: 800;
+  letter-spacing: 8px;
+  pointer-events: none;
+}
+
+/* ---------- Al imprimir ---------- */
+@media print {
+  /* Solo sale la hoja: sin menú, barra de arriba ni botones */
+  .sidebar,
+  .topbar,
+  .no-imprimir {
+    display: none !important;
+  }
+
+  /* El sistema mide una pantalla y scrollea por dentro; al imprimir tiene que ocupar lo que haga falta */
+  .app-root,
+  .app-shell,
+  .app-main {
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .app-content {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  .comprobante {
+    max-width: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  /* Para que los fondos de color (encabezado de la tabla, sello) salgan impresos */
+  .comprobante,
+  .comprobante * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 16mm;
+}

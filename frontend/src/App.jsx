@@ -35,6 +35,8 @@ import ServicioForm from './pages/servicios/ServicioForm';
 
 import ReservasList from './pages/reservas/ReservasList';
 import ReservaForm from './pages/reservas/ReservaForm';
+import ReservaDetalle from './pages/reservas/ReservaDetalle';
+import ReservaComprobante from './pages/reservas/ReservaComprobante';
 
 import TiposEquipoList from './pages/tiposequipo/TiposEquipoList';
 import TipoEquipoForm from './pages/tiposequipo/TipoEquipoForm';
@@ -137,6 +139,9 @@ export default function App() {
               <Route index element={<ReservasList />} />
               <Route path="nueva" element={<ReservaForm />} />
               <Route path=":id/editar" element={<ReservaForm />} />
+              {/* Hito 3: consultar el detalle y emitir el comprobante (con el permiso de ver reservas) */}
+              <Route path=":id" element={<ReservaDetalle />} />
+              <Route path=":id/comprobante" element={<ReservaComprobante />} />
             </Route>
 
             <Route path="horarios" element={<RequierePermiso modulo="horarios"><Outlet /></RequierePermiso>}>

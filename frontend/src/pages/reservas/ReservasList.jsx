@@ -6,15 +6,15 @@ import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
 import { useFiltros } from '../../hooks/useFiltros';
 import Paginacion from '../../components/Paginacion';
 import { usePaginacion } from '../../hooks/usePaginacion';
-import { IconEditar, IconEliminar } from '../../components/icons';
-import ConfirmModal from '../../components/ConfirmModal';
+import { IconAnular, IconEditar, IconVer } from '../../components/icons';
+import AnularReservaModal from '../../components/AnularReservaModal';
 import { PersonaCelda } from '../../components/Avatar';
 
 const BADGE_BY_ESTADO = {
   PENDIENTE: 'badge-amber',
   CONFIRMADA: 'badge-green',
   FINALIZADA: 'badge-gray',
-  CANCELADA: 'badge-red',
+  ANULADA: 'badge-red',
 };
 
 function formatearFecha(fecha, hora) {
@@ -25,12 +25,13 @@ function formatearFecha(fecha, hora) {
 }
 
 export default function ReservasList() {
-  const { puedeGestionar } = usePermiso('reservas');
+  const { puedeGestionar, tiene } = usePermiso('reservas');
+  // Anular es un permiso aparte: un perfil puede registrar reservas pero no anularlas
+  const puedeAnular = tiene('anular_reservas');
   const [reservas, setReservas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
-  const [aEliminar, setAEliminar] = useState(null);
-  const [eliminando, setEliminando] = useState(false);
+  const [aAnular, setAAnular] = useState(null); // reserva que se está por anular
 
   function cargar() {
     setCargando(true);
@@ -53,7 +54,7 @@ export default function ReservasList() {
         { value: 'PENDIENTE', label: 'Pendiente' },
         { value: 'CONFIRMADA', label: 'Confirmada' },
         { value: 'FINALIZADA', label: 'Finalizada' },
-        { value: 'CANCELADA', label: 'Cancelada' },
+        { value: 'ANULADA', label: 'Anulada' },
       ],
     },
   ];
@@ -61,17 +62,10 @@ export default function ReservasList() {
   // De las filas filtradas se muestran de a 10 (ver hooks/usePaginacion.js)
   const paginacion = usePaginacion(filtros.filtradas, filtros.valores);
 
-  async function confirmarEliminar() {
-    setEliminando(true);
-    try {
-      await api.delete(`/reservas/${aEliminar.id_reserva}/`);
-      setAEliminar(null);
-      cargar();
-    } catch (err) {
-      alert(err.response?.data?.detail || 'No se pudo eliminar la reserva.');
-    } finally {
-      setEliminando(false);
-    }
+  // Después de anular se cierra la ventana y se recarga la lista (la reserva sigue, ahora Anulada)
+  function terminarAnulacion() {
+    setAAnular(null);
+    cargar();
   }
 
   return (
@@ -117,14 +111,24 @@ export default function ReservasList() {
                 <td>${Number(reserva.monto_total).toLocaleString('es-AR')}</td>
                 <td><span className={`badge ${BADGE_BY_ESTADO[reserva.estado_reserva] || 'badge-gray'}`}>{reserva.estado_display}</span></td>
                 <td>
-                  {puedeGestionar ? (
-                    <div className="actions-cell">
-                      <Link to={`/reservas/${reserva.id_reserva}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
-                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(reserva)} title="Eliminar"><IconEliminar /></button>
-                    </div>
-                  ) : (
-                    <span className="form-hint">Solo lectura</span>
-                  )}
+                  {/* Ver: todos los que pueden ver reservas (detalle y comprobante).
+                      Editar: con permiso de gestionar y si no está anulada.
+                      Anular: con el permiso "Anular Reservas" y solo si está Pendiente o Confirmada */}
+                  {(() => {
+                    const editable = puedeGestionar && reserva.estado_reserva !== 'ANULADA';
+                    const anulable = puedeAnular && ['PENDIENTE', 'CONFIRMADA'].includes(reserva.estado_reserva);
+                    return (
+                      <div className="actions-cell">
+                        <Link to={`/reservas/${reserva.id_reserva}`} className="btn btn-secondary btn-sm" title="Ver detalle y comprobante"><IconVer /></Link>
+                        {editable && (
+                          <Link to={`/reservas/${reserva.id_reserva}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
+                        )}
+                        {anulable && (
+                          <button type="button" className="btn btn-danger btn-sm" onClick={() => setAAnular(reserva)} title="Anular"><IconAnular /></button>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </td>
               </tr>
             ))}
@@ -133,14 +137,8 @@ export default function ReservasList() {
         <Paginacion paginacion={paginacion} />
       </div>
 
-      {aEliminar && (
-        <ConfirmModal
-          titulo="Eliminar reserva"
-          mensaje={`¿Eliminar la reserva de "${aEliminar.cliente_nombre}"?`}
-          confirmando={eliminando}
-          onCancelar={() => setAEliminar(null)}
-          onConfirmar={confirmarEliminar}
-        />
+      {aAnular && (
+        <AnularReservaModal reserva={aAnular} onCancelar={() => setAAnular(null)} onAnulada={terminarAnulacion} />
       )}
     </div>
   );

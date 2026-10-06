@@ -86,7 +86,14 @@ export default function ServiciosList() {
             <FilaSinResultados filtros={filtros} total={servicios.length} cargando={cargando} columnas={3} nombreItems="servicios" />
             {paginacion.visibles.map((servicio) => (
               <tr key={servicio.id_servicio}>
-                <td><IconoCelda {...iconoServicio(servicio.tipo_servicio)} nombre={servicio.tipo_servicio} /></td>
+                {/* Abajo del nombre: cuántos equipos usa (o un aviso si todavía no se cargaron) */}
+                <td>
+                  <IconoCelda
+                    {...iconoServicio(servicio.tipo_servicio)}
+                    nombre={servicio.tipo_servicio}
+                    detalle={servicio.equipos_detalle?.length ? `Usa ${servicio.equipos_detalle.length} equipos` : 'Sin equipos cargados'}
+                  />
+                </td>
                 <td>${Number(servicio.precio_servicio).toLocaleString('es-AR')}</td>
                 <td>
                   {puedeGestionar ? (

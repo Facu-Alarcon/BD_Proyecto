@@ -264,6 +264,9 @@ class Equipos_x_Servicios(models.Model):
     id_equipo_servicio = models.AutoField(primary_key=True)
     id_equipo = models.ForeignKey(Equipos, on_delete=models.PROTECT, db_column='id_equipo')
     id_servicio = models.ForeignKey(Servicios, on_delete=models.CASCADE, db_column='id_servicio')
+    # Cuántas unidades de ese equipo usa el servicio (ej: el Combo Boda usa 4 bafles).
+    # Con esto se controla que en un mismo día no se reserven más equipos de los que hay.
+    cantidad = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
 
     class Meta:
         verbose_name = "Equipo x Servicio"
@@ -291,11 +294,14 @@ class Clientes(models.Model):
 
 
 class Reservas(models.Model):
+    # Estados de la reserva. Nace siempre en PENDIENTE. ANULADA reemplaza a la vieja
+    # "Cancelada": las reservas no se borran nunca, se anulan dejando fecha, motivo y
+    # quién lo hizo (pedido del Hito 3).
     ESTADO_CHOICES = [
         ('PENDIENTE', 'Pendiente'),
         ('CONFIRMADA', 'Confirmada'),
         ('FINALIZADA', 'Finalizada'),
-        ('CANCELADA', 'Cancelada'),
+        ('ANULADA', 'Anulada'),
     ]
 
     id_reserva = models.AutoField(primary_key=True)
@@ -310,6 +316,24 @@ class Reservas(models.Model):
     duracion_evento = models.TimeField(null=True, blank=True)
     monto_total = models.FloatField(default=0)
     estado_reserva = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='PENDIENTE')
+
+    # --- Datos automáticos del registro (el número de comprobante es el propio id_reserva) ---
+    # Cuándo se cargó la reserva en el sistema (no confundir con fecha_evento, que es el día de la fiesta).
+    # Queda vacía solo en las reservas cargadas antes de agregar este campo.
+    fecha_registro = models.DateTimeField(auto_now_add=True, null=True)
+    # Usuario logueado que registró la reserva
+    id_usuario_registro = models.ForeignKey(
+        Usuarios, on_delete=models.PROTECT, null=True, blank=True,
+        db_column='id_usuario_registro', related_name='reservas_registradas',
+    )
+
+    # --- Anulación: se completan solo cuando la reserva pasa a ANULADA ---
+    fecha_anulacion = models.DateTimeField(null=True, blank=True)
+    motivo_anulacion = models.CharField(max_length=255, blank=True)
+    id_usuario_anulacion = models.ForeignKey(
+        Usuarios, on_delete=models.PROTECT, null=True, blank=True,
+        db_column='id_usuario_anulacion', related_name='reservas_anuladas',
+    )
 
     class Meta:
         verbose_name = "Reserva"
@@ -336,6 +360,9 @@ class Reservas_x_Servicios(models.Model):
     id_reserva_servicio = models.AutoField(primary_key=True)
     id_reserva = models.ForeignKey(Reservas, on_delete=models.CASCADE, db_column='id_reserva')
     id_servicio = models.ForeignKey(Servicios, on_delete=models.CASCADE, db_column='id_servicio')
+    # Precio del servicio en el momento de reservar. Se guarda acá (y no se lee siempre de
+    # Servicios) para que si mañana cambia el precio, las reservas y comprobantes viejos no cambien.
+    precio_servicio = models.FloatField(validators=[MinValueValidator(0.0)])
 
     class Meta:
         verbose_name = "Reserva x Servicio"

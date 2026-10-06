@@ -9,7 +9,7 @@ const BADGE_BY_ESTADO = {
   PENDIENTE: 'badge-amber',
   CONFIRMADA: 'badge-green',
   FINALIZADA: 'badge-gray',
-  CANCELADA: 'badge-red',
+  ANULADA: 'badge-red',
 };
 
 function formatearFecha(fecha, hora) {

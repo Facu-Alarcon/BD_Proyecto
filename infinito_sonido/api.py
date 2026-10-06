@@ -34,7 +34,7 @@ from .serializers import (
     recalcular_saldos,
     RegistroActividadSerializer,
 )
-from .permissions import permiso_modulo, permisos_del_usuario
+from .permissions import permiso_codigo, permiso_modulo, permisos_del_usuario
 from .correos import enviar_contraseña_temporal, enviar_link_recuperacion
 from .registro import RegistrarActividadMixin, registrar
 from .seguridad import generar_contraseña_temporal, validar_contraseña_segura
@@ -584,20 +584,64 @@ class ServiciosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
 class ReservasViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Reservas'
-    queryset = Reservas.objects.select_related('id_cliente').all().order_by('-fecha_evento', '-hora_evento')
+    queryset = (
+        Reservas.objects.select_related(
+            'id_cliente', 'id_usuario_registro__id_empleado', 'id_usuario_anulacion__id_empleado'
+        ).all().order_by('-fecha_evento', '-hora_evento')
+    )
     serializer_class = ReservasSerializer
     permission_classes = [permiso_modulo('reservas')]
 
+    # Las reservas no se borran nunca de la base (pedido del Hito 3): se anulan con la
+    # acción "anular" de abajo, que deja registrado quién, cuándo y por qué.
     def destroy(self, request, *args, **kwargs):
+        return Response(
+            {'detail': 'Las reservas no se eliminan: usá la opción "Anular" e indicá el motivo.'},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+    @action(detail=True, methods=['post'], url_path='anular', permission_classes=[permiso_codigo('anular_reservas')])
+    def anular(self, request, pk=None):
+        """
+        Anula una reserva: pasa a ANULADA guardando fecha, motivo y usuario que la anuló.
+        Solo lo pueden hacer los perfiles con el permiso "Anular Reservas".
+        Al quedar anulada, sus equipos y su personal vuelven a estar disponibles para ese
+        día (las anuladas no cuentan en los controles de disponibilidad).
+        No se puede anular si:
+          - ya estaba anulada,
+          - el evento ya se hizo (Finalizada),
+          - tiene pagos registrados (por ahora no hay devoluciones).
+        """
         reserva = self.get_object()
-        try:
-            reserva.delete()
-        except ProtectedError:
+        motivo = (request.data.get('motivo') or '').strip()
+
+        if len(motivo) < 10:
+            return Response({'motivo': 'Escribí el motivo de la anulación (al menos 10 caracteres).'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if reserva.estado_reserva == 'ANULADA':
+            return Response({'detail': 'Esta reserva ya está anulada.'}, status=status.HTTP_409_CONFLICT)
+        if reserva.estado_reserva == 'FINALIZADA':
+            return Response({'detail': 'No se puede anular una reserva Finalizada: el evento ya se realizó.'},
+                            status=status.HTTP_409_CONFLICT)
+        cantidad_pagos = Pagos.objects.filter(id_reserva=reserva).count()
+        if cantidad_pagos:
             return Response(
-                {'detail': 'No se puede eliminar esta reserva porque tiene pagos registrados.'},
+                {'detail': f'No se puede anular: la reserva tiene {cantidad_pagos} pago(s) registrado(s) '
+                           'y por ahora no se hacen devoluciones.'},
                 status=status.HTTP_409_CONFLICT,
             )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+
+        # Todo junto o nada: cambio de estado y datos de la anulación
+        with transaction.atomic():
+            reserva.estado_reserva = 'ANULADA'
+            reserva.fecha_anulacion = timezone.now()
+            reserva.motivo_anulacion = motivo[:255]
+            reserva.id_usuario_anulacion = request.user
+            reserva.save(update_fields=['estado_reserva', 'fecha_anulacion', 'motivo_anulacion', 'id_usuario_anulacion'])
+            registrar(request, Registro_Actividad.BAJA, f'Anuló {reserva}', 'Reservas', reserva.pk,
+                      detalle=f'Motivo: {motivo}')
+
+        return Response(self.get_serializer(reserva).data)
 
 
 class PagosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
@@ -655,12 +699,12 @@ class DashboardResumenView(APIView):
         ]
 
         hoy = timezone.localdate()
-        reservas_hoy_qs = Reservas.objects.filter(fecha_evento=hoy).exclude(estado_reserva='CANCELADA')
+        reservas_hoy_qs = Reservas.objects.filter(fecha_evento=hoy).exclude(estado_reserva='ANULADA')
 
         proximas_qs = (
             Reservas.objects.select_related('id_cliente')
             .filter(fecha_evento__gte=hoy)
-            .exclude(estado_reserva='CANCELADA')
+            .exclude(estado_reserva='ANULADA')
             .order_by('fecha_evento', 'hora_evento')[:5]
         )
         proximas = [

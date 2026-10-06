@@ -10,5 +10,7 @@ export function usePermiso(modulo) {
   const permisos = usuario?.permisos || [];
   const puedeGestionar = permisos.includes(`gestionar_${modulo}`);
   const puedeVer = puedeGestionar || permisos.includes(`ver_${modulo}`);
-  return { puedeVer, puedeGestionar };
+  // Para permisos puntuales que no son ver/gestionar (ej: tiene('anular_reservas'))
+  const tiene = (codigo) => permisos.includes(codigo);
+  return { puedeVer, puedeGestionar, tiene };
 }

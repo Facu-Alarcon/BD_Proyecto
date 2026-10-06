@@ -71,6 +71,18 @@ docker-compose restart web
 docker exec -i -t Infinito_Sonido_web python manage.py createsuperuser
 ```
 
+## Scripts de base de datos (carpeta `scripts_bd/`)
+
+Para crear la base sin Docker ni Django (por ejemplo, para la entrega), cargar en
+phpMyAdmin, en este orden y sobre una base vacía:
+
+1. `01_estructura.sql`: crea todas las tablas.
+2. `02_datos_iniciales.sql`: permisos, estados de equipo y el control interno de Django.
+3. `03_datos_de_prueba.sql`: datos de ejemplo. Usuario `admin` / contraseña `admin123`.
+
+Con Docker no hace falta: las tablas las crean las migraciones y alcanza con cargar
+`datos_de_prueba.txt` (es el mismo contenido que el script 3).
+
 ## Acceso
 
 - Aplicacion Django:  http://localhost:8000/

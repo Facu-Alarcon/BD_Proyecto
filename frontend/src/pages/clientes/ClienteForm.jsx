@@ -23,7 +23,7 @@ function hoyLocal() {
 function armarResumen(clientes, reservas) {
   const hoy = hoyLocal();
   const mesActual = hoy.slice(0, 7); // 'AAAA-MM'
-  const noCanceladas = reservas.filter((r) => r.estado_reserva !== 'CANCELADA');
+  const noCanceladas = reservas.filter((r) => r.estado_reserva !== 'ANULADA');
 
   // Reserva vigente = todavía no pasó y no está finalizada
   const conVigentes = new Set(
