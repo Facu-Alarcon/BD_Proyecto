@@ -139,6 +139,8 @@ class UsuariosSerializer(serializers.ModelSerializer):
     # El empleado elegido no puede tener ya un usuario, y necesita correo (ahí le llega
     # la contraseña temporal)
     def validate_id_empleado(self, empleado):
+        if not empleado.activo:
+            raise serializers.ValidationError(f'{empleado} está dado de baja.')
         if self.instance is not None:
             if empleado != self.instance.id_empleado:
                 raise serializers.ValidationError('No se puede cambiar el empleado de un usuario ya creado.')
@@ -258,7 +260,8 @@ class ServiciosSerializer(serializers.ModelSerializer):
             if id_equipo in vistos:
                 raise serializers.ValidationError('Hay un equipo repetido en la lista.')
             vistos.add(id_equipo)
-            equipo = Equipos.objects.filter(pk=id_equipo).first()
+            # Solo equipos activos: uno dado de baja ya no se puede agregar a un servicio
+            equipo = Equipos.objects.activos().filter(pk=id_equipo).first()
             if equipo is None:
                 raise serializers.ValidationError(f'No existe el equipo {id_equipo}.')
             if cantidad < 1:
@@ -302,7 +305,8 @@ class ServiciosSerializer(serializers.ModelSerializer):
 #
 def recalcular_saldos(reserva):
     pagado = 0
-    for pago in Pagos.objects.filter(id_reserva=reserva).order_by('id_pago'):
+    # Solo los pagos activos: uno dado de baja ya no cuenta para el saldo
+    for pago in Pagos.objects.activos().filter(id_reserva=reserva).order_by('id_pago'):
         pagado += pago.monto
         nuevo_saldo = max(reserva.monto_total - pagado, 0)
         if pago.saldo_pendiente != nuevo_saldo:
@@ -322,10 +326,11 @@ class ReservasSerializer(serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source='id_cliente.__str__', read_only=True)
     estado_display = serializers.CharField(source='get_estado_reserva_display', read_only=True)
     servicios = serializers.PrimaryKeyRelatedField(
-        queryset=Servicios.objects.all(), many=True, write_only=True, required=False
+        # Solo se pueden elegir servicios y empleados activos (los dados de baja no aparecen)
+        queryset=Servicios.objects.activos(), many=True, write_only=True, required=False
     )
     empleados = serializers.PrimaryKeyRelatedField(
-        queryset=Empleados.objects.all(), many=True, write_only=True, required=False
+        queryset=Empleados.objects.activos(), many=True, write_only=True, required=False
     )
     servicios_detalle = serializers.SerializerMethodField()
     empleados_detalle = serializers.SerializerMethodField()
@@ -385,7 +390,7 @@ class ReservasSerializer(serializers.ModelSerializer):
 
     # Pagos de la reserva, con sus métodos, y el resumen: cuánto se pagó y cuánto falta
     def get_pagos_detalle(self, obj):
-        pagos = Pagos.objects.filter(id_reserva=obj).order_by('id_pago').prefetch_related('detalles_de_pago_set__id_metodo_pago')
+        pagos = Pagos.objects.activos().filter(id_reserva=obj).order_by('id_pago').prefetch_related('detalles_de_pago_set__id_metodo_pago')
         lista = [
             {
                 'id_pago': p.id_pago,
@@ -629,7 +634,8 @@ class PagosSerializer(serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source='id_reserva.id_cliente.__str__', read_only=True)
     evento_nombre = serializers.CharField(source='id_reserva.nombre_evento', read_only=True)
     metodos_pago = serializers.PrimaryKeyRelatedField(
-        queryset=Metodo_Pagos.objects.all(), many=True, write_only=True, required=False
+        # Solo métodos de pago activos
+        queryset=Metodo_Pagos.objects.activos(), many=True, write_only=True, required=False
     )
     metodos_pago_detalle = serializers.SerializerMethodField()
 
@@ -653,7 +659,7 @@ class PagosSerializer(serializers.ModelSerializer):
         reserva = attrs.get('id_reserva', getattr(self.instance, 'id_reserva', None))
         monto = attrs.get('monto', getattr(self.instance, 'monto', 0))
         if reserva is not None:
-            otros_pagos = Pagos.objects.filter(id_reserva=reserva)
+            otros_pagos = Pagos.objects.activos().filter(id_reserva=reserva)
             if self.instance is not None:
                 otros_pagos = otros_pagos.exclude(pk=self.instance.pk)
             saldo = max(reserva.monto_total - sum(p.monto for p in otros_pagos), 0)

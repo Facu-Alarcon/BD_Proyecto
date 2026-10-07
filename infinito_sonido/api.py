@@ -11,6 +11,10 @@
 # módulo) se definen con permission_classes, usando las funciones de permissions.py.
 # Todos los ViewSets llevan RegistrarActividadMixin, que anota sus altas, modificaciones y
 # bajas en el Registro de actividad (ver registro.py).
+#
+# Nada se borra de la base: los ViewSets con BajaLogicaMixin dan de baja (activo=False)
+# en lugar de eliminar, y cada uno define en validar_baja() cuándo no se puede (ver
+# baja_logica.py). Las reservas tampoco se borran: se anulan.
 import hashlib
 import secrets
 from datetime import timedelta
@@ -18,7 +22,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import transaction
-from django.db.models import Count, ProtectedError
+from django.db.models import Count
 from django.utils import timezone
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
@@ -27,6 +31,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import (
+    Equipos_x_Servicios, Detalles_Reservas,
     Tipo_Equipos, Estado_Equipos, Equipos,
     Perfiles, Usuarios,
     Permisos, Permisos_x_Perfiles,
@@ -50,6 +55,7 @@ from .serializers import (
 from .permissions import permiso_codigo, permiso_modulo, permisos_del_usuario
 from .correos import enviar_contraseña_temporal, enviar_link_recuperacion
 from .registro import RegistrarActividadMixin, registrar
+from .baja_logica import BajaLogicaMixin
 from .seguridad import generar_contraseña_temporal, validar_contraseña_segura
 
 
@@ -263,29 +269,21 @@ class MeView(APIView):
 #
 # Tipos de equipo (Sonido, Iluminación...). Solo se ordenan por nombre y se avisa si
 # se quiere borrar uno que todavía tiene equipos.
-class TipoEquiposViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+class TipoEquiposViewSet(RegistrarActividadMixin, BajaLogicaMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Tipos de equipo'
     queryset = Tipo_Equipos.objects.all().order_by('nombre_tipoeq')
     serializer_class = TipoEquiposSerializer
     permission_classes = [permiso_modulo('tipos_equipo')]
 
-    def destroy(self, request, *args, **kwargs):
-        # Tipo_Equipos está protegido (PROTECT) desde Equipos: si tiene equipos, delete() tira
-        # ProtectedError y en vez de un error 500 devolvemos un 409 con un mensaje claro
-        tipo = self.get_object()
-        try:
-            tipo.delete()
-        except ProtectedError:
-            return Response(
-                {'detail': f'No se puede eliminar "{tipo.nombre_tipoeq}" porque hay equipos de ese tipo.'},
-                status=status.HTTP_409_CONFLICT,
-            )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    # No se da de baja un tipo que todavía tiene equipos activos (quedarían con un tipo invisible)
+    def validar_baja(self, tipo):
+        if Equipos.objects.activos().filter(id_tipoeq=tipo).exists():
+            return f'No se puede eliminar "{tipo.nombre_tipoeq}" porque hay equipos de ese tipo.'
 
 
 # Cargas horarias de los empleados. No necesita nada especial: el ModelViewSet hace todo.
-class HorariosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+class HorariosViewSet(RegistrarActividadMixin, BajaLogicaMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Horarios'
     queryset = Horarios.objects.all().order_by('cantidad_horas')
@@ -293,27 +291,19 @@ class HorariosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     permission_classes = [permiso_modulo('horarios')]
 
 
-# Métodos de pago (Efectivo, Transferencia...). No se puede borrar uno que ya usó algún pago.
-class MetodoPagosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+# Métodos de pago (Efectivo, Transferencia...).
+class MetodoPagosViewSet(RegistrarActividadMixin, BajaLogicaMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Métodos de pago'
     queryset = Metodo_Pagos.objects.all().order_by('metodo_pago')
     serializer_class = MetodoPagosSerializer
     permission_classes = [permiso_modulo('metodos_pago')]
 
-    def destroy(self, request, *args, **kwargs):
-        metodo = self.get_object()
-        try:
-            metodo.delete()
-        except ProtectedError:
-            return Response(
-                {'detail': f'No se puede eliminar "{metodo.metodo_pago}" porque hay pagos que lo usan.'},
-                status=status.HTTP_409_CONFLICT,
-            )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    # Un método de pago se puede dar de baja aunque haya pagos que lo usaron: esos pagos
+    # lo siguen mostrando, pero ya no aparece para elegirlo en los pagos nuevos.
 
 
-class EstadoEquiposViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+class EstadoEquiposViewSet(RegistrarActividadMixin, BajaLogicaMixin, viewsets.ModelViewSet):
     """
     Catálogo editable de estados de equipo (antes era una lista fija
     DISPONIBLE/EN_USO/EN_REPARACION hardcodeada). Se puede crear un
@@ -325,60 +315,45 @@ class EstadoEquiposViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     serializer_class = EstadoEquiposSerializer
     permission_classes = [permiso_modulo('equipos')]
 
-    def destroy(self, request, *args, **kwargs):
-        estado = self.get_object()
-        try:
-            estado.delete()
-        except ProtectedError:
-            return Response(
-                {'detail': f'No se puede eliminar "{estado.nombre_estadoeq}" porque hay equipos con ese estado.'},
-                status=status.HTTP_409_CONFLICT,
-            )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    # No se da de baja un estado que tienen equipos activos
+    def validar_baja(self, estado):
+        if Equipos.objects.activos().filter(id_estadoeq=estado).exists():
+            return f'No se puede eliminar "{estado.nombre_estadoeq}" porque hay equipos con ese estado.'
 
 
 # Equipos de la empresa. select_related trae el tipo y el estado en la misma consulta,
 # así la lista no hace una consulta extra por cada equipo.
-class EquiposViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+class EquiposViewSet(RegistrarActividadMixin, BajaLogicaMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Equipos'
     queryset = Equipos.objects.select_related('id_tipoeq', 'id_estadoeq').all().order_by('nombre_equipo')
     serializer_class = EquiposSerializer
     permission_classes = [permiso_modulo('equipos')]
 
-    def destroy(self, request, *args, **kwargs):
-        equipo = self.get_object()
-        try:
-            equipo.delete()
-        except ProtectedError:
-            return Response(
-                {'detail': f'No se puede eliminar "{equipo.nombre_equipo}" porque tiene servicios asociados.'},
-                status=status.HTTP_409_CONFLICT,
-            )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    # No se da de baja un equipo que usa algún servicio activo: el control de disponibilidad
+    # de las reservas lo seguiría pidiendo. Primero hay que sacarlo de esos servicios.
+    def validar_baja(self, equipo):
+        servicios = Equipos_x_Servicios.objects.filter(id_equipo=equipo, id_servicio__activo=True)
+        if servicios.exists():
+            nombres = ', '.join(sorted({r.id_servicio.tipo_servicio for r in servicios.select_related('id_servicio')}))
+            return f'No se puede eliminar "{equipo.nombre_equipo}" porque lo usan estos servicios: {nombres}.'
 
 
 # ---------------- Seguridad: perfiles, permisos y usuarios ----------------
 #
 # Perfiles de usuario. Además del ABM normal tiene la acción /perfiles/<id>/permisos/
 # para ver y cambiar qué permisos tiene el perfil (pantalla "Asignar permisos").
-class PerfilesViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+class PerfilesViewSet(RegistrarActividadMixin, BajaLogicaMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Perfiles'
     queryset = Perfiles.objects.all().order_by('tipo_perfil')
     serializer_class = PerfilesSerializer
     permission_classes = [permiso_modulo('perfiles')]
 
-    def destroy(self, request, *args, **kwargs):
-        perfil = self.get_object()
-        try:
-            perfil.delete()
-        except ProtectedError:
-            return Response(
-                {'detail': f'No se puede eliminar "{perfil.tipo_perfil}" porque hay usuarios con ese perfil.'},
-                status=status.HTTP_409_CONFLICT,
-            )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    # No se da de baja un perfil que tienen usuarios activos (se quedarían sin permisos)
+    def validar_baja(self, perfil):
+        if Usuarios.objects.filter(id_perfil=perfil, activo=True).exists():
+            return f'No se puede eliminar "{perfil.tipo_perfil}" porque hay usuarios activos con ese perfil.'
 
     # GET: todos los permisos del sistema, cada uno marcado con asignado=True/False para este perfil
     # PUT: recibe la lista completa de ids tildados y deja el perfil exactamente con esos
@@ -390,7 +365,8 @@ class PerfilesViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
             asignados = set(
                 Permisos_x_Perfiles.objects.filter(id_perfil=perfil).values_list('id_permiso_id', flat=True)
             )
-            permisos_qs = Permisos.objects.all().order_by('nombre_permiso')
+            # Solo los permisos activos: los dados de baja ya no se pueden asignar
+            permisos_qs = Permisos.objects.activos().order_by('nombre_permiso')
             for permiso in permisos_qs:
                 permiso.asignado = permiso.pk in asignados
             serializer = PermisoConEstadoSerializer(permisos_qs, many=True)
@@ -421,7 +397,7 @@ class PerfilesViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
 
 
 # Catálogo de permisos. El código interno (ver_..., gestionar_...) lo arma el serializer.
-class PermisosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+class PermisosViewSet(RegistrarActividadMixin, BajaLogicaMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Permisos'
     queryset = Permisos.objects.all().order_by('nombre_permiso')
@@ -493,6 +469,10 @@ class UsuariosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     def reactivar(self, request, pk=None):
         """Contraparte de la baja lógica: reactiva a un usuario dado de baja."""
         usuario = self.get_object()
+        # Si el empleado también fue dado de baja, primero hay que reactivarlo a él (desde /admin)
+        if not usuario.id_empleado.activo:
+            return Response({'detail': f'No se puede reactivar: el empleado {usuario.id_empleado} está dado de baja.'},
+                            status=status.HTTP_409_CONFLICT)
         usuario.activo = True
         usuario.fecha_baja = None
         usuario.save()
@@ -501,50 +481,36 @@ class UsuariosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
 
 # ---------------- Clientes y personal ----------------
 #
-# Clientes. No se puede borrar uno que tenga reservas (aunque estén anuladas).
-class ClientesViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+# Clientes. Se dan de baja (no se borran) si no tienen eventos por hacerse.
+class ClientesViewSet(RegistrarActividadMixin, BajaLogicaMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Clientes'
     queryset = Clientes.objects.all().order_by('apellido_cliente', 'nombre_cliente')
     serializer_class = ClientesSerializer
     permission_classes = [permiso_modulo('clientes')]
 
-    def destroy(self, request, *args, **kwargs):
-        cliente = self.get_object()
-        try:
-            cliente.delete()
-        except ProtectedError:
-            return Response(
-                {'detail': f'No se puede eliminar a "{cliente}" porque tiene reservas asociadas.'},
-                status=status.HTTP_409_CONFLICT,
-            )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    # No se da de baja un cliente con reservas pendientes o confirmadas (eventos por hacerse).
+    # Con reservas finalizadas o anuladas sí: esas reservas lo siguen mostrando.
+    def validar_baja(self, cliente):
+        if Reservas.objects.filter(id_cliente=cliente, estado_reserva__in=('PENDIENTE', 'CONFIRMADA')).exists():
+            return f'No se puede eliminar a "{cliente}" porque tiene reservas pendientes o confirmadas.'
 
 
 # Empleados. Además del ABM tiene /empleados/<id>/puestos/ para asignarle puestos.
-class EmpleadosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+class EmpleadosViewSet(RegistrarActividadMixin, BajaLogicaMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Empleados'
     queryset = Empleados.objects.all().order_by('apellido_emp', 'nombre_emp')
     serializer_class = EmpleadosSerializer
     permission_classes = [permiso_modulo('empleados')]
 
-    def destroy(self, request, *args, **kwargs):
-        empleado = self.get_object()
-        # Un empleado con usuario no se puede borrar: el usuario se da de baja desde Usuarios
-        if hasattr(empleado, 'usuario'):
-            return Response(
-                {'detail': f'No se puede eliminar a "{empleado}" porque tiene un usuario del sistema. Dalo de baja desde Usuarios.'},
-                status=status.HTTP_409_CONFLICT,
-            )
-        try:
-            empleado.delete()
-        except ProtectedError:
-            return Response(
-                {'detail': f'No se puede eliminar a "{empleado}" porque tiene reservas asignadas.'},
-                status=status.HTTP_409_CONFLICT,
-            )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    # No se da de baja un empleado que tiene un usuario activo (primero se da de baja el
+    # usuario desde Usuarios) ni uno asignado a reservas pendientes o confirmadas.
+    def validar_baja(self, empleado):
+        if Usuarios.objects.filter(id_empleado=empleado, activo=True).exists():
+            return f'No se puede eliminar a "{empleado}" porque tiene un usuario activo. Dalo de baja primero desde Usuarios.'
+        if Detalles_Reservas.objects.filter(id_empleado=empleado, id_reserva__estado_reserva__in=('PENDIENTE', 'CONFIRMADA')).exists():
+            return f'No se puede eliminar a "{empleado}" porque está asignado a reservas pendientes o confirmadas.'
 
     @action(detail=True, methods=['get', 'put'], url_path='puestos')
     def puestos(self, request, pk=None):
@@ -555,7 +521,8 @@ class EmpleadosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
             asignados = set(
                 Puestos_x_Empleados.objects.filter(id_empleado=empleado).values_list('id_puesto_id', flat=True)
             )
-            puestos_qs = Puestos.objects.select_related('id_sueldo').all().order_by('nombre_puesto')
+            # Solo los puestos activos: los dados de baja ya no se pueden asignar
+            puestos_qs = Puestos.objects.activos().select_related('id_sueldo').order_by('nombre_puesto')
             for puesto in puestos_qs:
                 puesto.asignado = puesto.pk in asignados
             serializer = PuestoConEstadoSerializer(puestos_qs, many=True)
@@ -584,33 +551,26 @@ class EmpleadosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# Sueldos. No se puede borrar uno que esté asignado a algún puesto.
-class SueldosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+# Sueldos. No se puede dar de baja uno que esté asignado a algún puesto activo.
+class SueldosViewSet(RegistrarActividadMixin, BajaLogicaMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Sueldos'
     queryset = Sueldos.objects.all().order_by('monto_sueldo')
     serializer_class = SueldosSerializer
     permission_classes = [permiso_modulo('sueldos')]
 
-    def destroy(self, request, *args, **kwargs):
-        sueldo = self.get_object()
-        try:
-            sueldo.delete()
-        except ProtectedError:
-            return Response(
-                {'detail': f'No se puede eliminar el sueldo "${sueldo.monto_sueldo}" porque hay puestos que lo usan.'},
-                status=status.HTTP_409_CONFLICT,
-            )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    # No se da de baja un sueldo que usan puestos activos
+    def validar_baja(self, sueldo):
+        if Puestos.objects.activos().filter(id_sueldo=sueldo).exists():
+            return f'No se puede eliminar el sueldo "${sueldo.monto_sueldo}" porque hay puestos que lo usan.'
 
 
 # Puestos de trabajo, con su sueldo.
-class PuestosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+class PuestosViewSet(RegistrarActividadMixin, BajaLogicaMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Puestos'
-    # Puestos_x_Empleados usa CASCADE sobre id_puesto: si se borra un puesto,
-    # sus asignaciones a empleados se limpian solas (no hay ProtectedError
-    # que atajar acá, a diferencia de Sueldos que sí usa PROTECT).
+    # Un puesto dado de baja deja de aparecer en la lista y en "Asignar puestos"; las
+    # asignaciones viejas quedan guardadas en Puestos_x_Empleados por si se reactiva.
     queryset = Puestos.objects.select_related('id_sueldo').all().order_by('nombre_puesto')
     serializer_class = PuestosSerializer
     permission_classes = [permiso_modulo('puestos')]
@@ -619,24 +579,18 @@ class PuestosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
 # ---------------- Servicios, reservas y pagos (proceso del Hito 3) ----------------
 #
 # Servicios que se ofrecen, con los equipos que usa cada uno (ver ServiciosSerializer).
-class ServiciosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+class ServiciosViewSet(RegistrarActividadMixin, BajaLogicaMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Servicios'
     queryset = Servicios.objects.all().order_by('tipo_servicio')
     serializer_class = ServiciosSerializer
     permission_classes = [permiso_modulo('servicios')]
 
-    # No deja borrar un servicio que está cargado en alguna reserva: si se borrara,
-    # la reserva lo perdería pero su monto total seguiría sumando ese precio.
-    def destroy(self, request, *args, **kwargs):
-        servicio = self.get_object()
-        if Reservas_x_Servicios.objects.filter(id_servicio=servicio).exists():
-            return Response(
-                {'detail': f'No se puede eliminar "{servicio.tipo_servicio}" porque está cargado en reservas.'},
-                status=status.HTTP_409_CONFLICT,
-            )
-        servicio.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    # No se da de baja un servicio cargado en reservas pendientes o confirmadas. En las
+    # reservas viejas no molesta: guardan el precio y lo siguen mostrando.
+    def validar_baja(self, servicio):
+        if Reservas_x_Servicios.objects.filter(id_servicio=servicio, id_reserva__estado_reserva__in=('PENDIENTE', 'CONFIRMADA')).exists():
+            return f'No se puede eliminar "{servicio.tipo_servicio}" porque está en reservas pendientes o confirmadas.'
 
 
 # Reservas: el proceso principal. Registrar y editar los maneja ReservasSerializer
@@ -685,7 +639,7 @@ class ReservasViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         if reserva.estado_reserva == 'FINALIZADA':
             return Response({'detail': 'No se puede anular una reserva Finalizada: el evento ya se realizó.'},
                             status=status.HTTP_409_CONFLICT)
-        cantidad_pagos = Pagos.objects.filter(id_reserva=reserva).count()
+        cantidad_pagos = Pagos.objects.activos().filter(id_reserva=reserva).count()
         if cantidad_pagos:
             return Response(
                 {'detail': f'No se puede anular: la reserva tiene {cantidad_pagos} pago(s) registrado(s) '
@@ -707,22 +661,18 @@ class ReservasViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
 
 
 # Pagos de las reservas. Al crear o editar, el serializer valida que no superen el saldo
-# y recalcula los saldos; al borrar se recalculan acá.
-class PagosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+# y recalcula los saldos; al darlo de baja se recalculan acá.
+class PagosViewSet(RegistrarActividadMixin, BajaLogicaMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Pagos'
     queryset = Pagos.objects.select_related('id_reserva', 'id_reserva__id_cliente').all().order_by('-id_pago')
     serializer_class = PagosSerializer
     permission_classes = [permiso_modulo('pagos')]
 
-    # Al borrar un pago, los saldos de los otros pagos de la misma reserva
-    # quedan viejos, así que se vuelven a calcular
-    def destroy(self, request, *args, **kwargs):
-        pago = self.get_object()
-        reserva = pago.id_reserva
-        pago.delete()
-        recalcular_saldos(reserva)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    # Un pago dado de baja deja de contar para el saldo de la reserva, así que se recalculan
+    # los saldos de los otros pagos (ver recalcular_saldos en serializers.py)
+    def despues_de_baja(self, pago):
+        recalcular_saldos(pago.id_reserva)
 
 
 # ---------------- Consultas ----------------
@@ -752,9 +702,9 @@ class DashboardResumenView(APIView):
     def get(self, request):
         # Equipos agrupados por estado (para las barras de "Estado de equipos" en Inicio).
         # values + annotate arma un GROUP BY: cuántos equipos hay de cada estado.
-        total = Equipos.objects.count()
+        total = Equipos.objects.activos().count()
         por_estado = list(
-            Equipos.objects.values('id_estadoeq', 'id_estadoeq__nombre_estadoeq')
+            Equipos.objects.activos().values('id_estadoeq', 'id_estadoeq__nombre_estadoeq')
             .annotate(cantidad=Count('id_equipo'))
             .order_by('id_estadoeq__nombre_estadoeq')
         )
@@ -795,8 +745,8 @@ class DashboardResumenView(APIView):
                 'total': total,
                 'por_estado': por_estado,
             },
-            'usuarios_total': Usuarios.objects.count(),
-            'perfiles_total': Perfiles.objects.count(),
+            'usuarios_total': Usuarios.objects.filter(activo=True).count(),
+            'perfiles_total': Perfiles.objects.activos().count(),
             'reservas_hoy': reservas_hoy_qs.count(),
             'reservas_hoy_confirmadas': reservas_hoy_qs.filter(estado_reserva='CONFIRMADA').count(),
             'reservas_hoy_pendientes': reservas_hoy_qs.filter(estado_reserva='PENDIENTE').count(),

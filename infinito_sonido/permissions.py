@@ -15,6 +15,8 @@ def permisos_del_usuario(usuario):
         Permisos_x_Perfiles.objects.filter(
             id_perfil_id=usuario.id_perfil_id,
             id_permiso__estado_permiso=True,
+            # Un permiso dado de baja tampoco cuenta (ver baja_logica.py)
+            id_permiso__activo=True,
         ).values_list('id_permiso__codigo', flat=True)
     )
 

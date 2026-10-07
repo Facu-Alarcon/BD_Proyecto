@@ -11,12 +11,19 @@
 #       CASCADE  -> se borran también los hijos (se usa en las tablas intermedias).
 #       SET_NULL -> el hijo queda, pero con la referencia vacía.
 #   - verbose_name es el nombre "lindo" que se ve en el panel /admin de Django.
+#   - BajaLogica: las tablas que heredan de ella nunca se borran desde el sistema, se dan
+#     de baja (activo=False). Ver baja_logica.py.
 #   - __str__ es cómo se muestra el registro cuando se lo convierte a texto (en /admin,
 #     en mensajes de error, en el registro de actividad, etc.).
 
 from django.db import models
 from django.core.validators import MinValueValidator, MinLengthValidator, RegexValidator
 from decimal import Decimal
+
+# Las tablas que se pueden "borrar" desde el sistema heredan de BajaLogica en vez de
+# models.Model: así suman los campos activo y fecha_baja, y en lugar de borrarse se
+# dan de baja (ver baja_logica.py).
+from .baja_logica import BajaLogica
 
 # ---------------------------------------------------------------------------
 # Validadores reutilizables: se ponen en los campos con validators=[...] y Django
@@ -56,7 +63,7 @@ Se lo crea como objetos
 # ===========================================================================
 
 # Montos de sueldo que se le pueden asignar a un puesto
-class Sueldos(models.Model):
+class Sueldos(BajaLogica):
     id_sueldo = models.AutoField(primary_key=True)
     monto_sueldo = models.FloatField()
 
@@ -71,7 +78,7 @@ class Sueldos(models.Model):
 
 # Puestos de trabajo (DJ, iluminador, administración...). Cada puesto tiene un sueldo;
 # PROTECT: no se puede borrar un sueldo que esté usando algún puesto.
-class Puestos(models.Model):
+class Puestos(BajaLogica):
     id_puesto = models.AutoField(primary_key=True)
     id_sueldo = models.ForeignKey(Sueldos, on_delete=models.PROTECT, db_column='id_sueldo')
     nombre_puesto = models.CharField(max_length=50)
@@ -86,7 +93,7 @@ class Puestos(models.Model):
 
 # Empleados de la empresa. Son la base de los usuarios del sistema: cada usuario
 # es la cuenta de un empleado (ver Usuarios más abajo).
-class Empleados(models.Model):
+class Empleados(BajaLogica):
     id_empleado = models.AutoField(primary_key=True)
     # El DNI ahora es dato del empleado (antes estaba en Usuarios). Puede quedar vacío solo
     # en los empleados que se cargaron antes de este cambio; desde el formulario se pide siempre.
@@ -127,7 +134,7 @@ class Puestos_x_Empleados(models.Model):
 # ===========================================================================
 
 # Cargas horarias que se le pueden asignar a los empleados (ej: 8 horas)
-class Horarios(models.Model):
+class Horarios(BajaLogica):
     id_horario = models.AutoField(primary_key=True)
     cantidad_horas = models.FloatField()
 
@@ -141,7 +148,7 @@ class Horarios(models.Model):
 
 # Perfiles de usuario (Administrador, Encargado, Empleado...). Lo que puede hacer cada
 # perfil se define con los permisos que tiene asignados (tabla Permisos_x_Perfiles).
-class Perfiles(models.Model):
+class Perfiles(BajaLogica):
     id_perfil = models.AutoField(primary_key=True)
     tipo_perfil = models.CharField(max_length=50)
 
@@ -210,7 +217,7 @@ class Usuarios(models.Model):
 # Catálogo de permisos. Cada módulo tiene dos: ver_<modulo> (solo mirar) y
 # gestionar_<modulo> (crear, editar, borrar). Hay además permisos puntuales como
 # ver_registro y anular_reservas. Los cargan las migraciones (0009, 0011, 0013, 0018, 0020).
-class Permisos(models.Model):
+class Permisos(BajaLogica):
     id_permiso = models.AutoField(primary_key=True)
     nombre_permiso = models.CharField(max_length=50, unique=True)
     descripcion_permiso = models.CharField(max_length=150, blank=True)
@@ -268,7 +275,7 @@ class Horarios_x_Empleados(models.Model):
 
 # Tipos de equipo (Sonido, Iluminación, Estructuras...). Se usan para agrupar los
 # equipos y para elegir el ícono y el color de cada fila en las tablas.
-class Tipo_Equipos(models.Model):
+class Tipo_Equipos(BajaLogica):
     id_tipoeq = models.AutoField(primary_key=True)
     nombre_tipoeq = models.CharField(max_length=50)
 
@@ -283,7 +290,7 @@ class Tipo_Equipos(models.Model):
 # Estados posibles de un equipo (Disponible, En uso, En reparación). Es un catálogo
 # editable: desde el formulario de Equipos se puede agregar uno nuevo con el botón "+".
 # Los equipos En reparación no se pueden reservar.
-class Estado_Equipos(models.Model):
+class Estado_Equipos(BajaLogica):
     id_estadoeq = models.AutoField(primary_key=True)
     nombre_estadoeq = models.CharField(max_length=50, unique=True)
 
@@ -298,7 +305,7 @@ class Estado_Equipos(models.Model):
 # Equipos que tiene la empresa (bafles, consolas, luces...). cantidad_equipo son las
 # unidades que hay: se usa para controlar la disponibilidad al reservar.
 # PROTECT en tipo y estado: no se puede borrar un tipo o un estado que tenga equipos.
-class Equipos(models.Model):
+class Equipos(BajaLogica):
     id_equipo = models.AutoField(primary_key=True)
     id_tipoeq = models.ForeignKey(Tipo_Equipos, on_delete=models.PROTECT, db_column='id_tipoeq')
     nombre_equipo = models.CharField(max_length=50)
@@ -315,7 +322,7 @@ class Equipos(models.Model):
 
 # Servicios que se le ofrecen al cliente (combos de sonido e iluminación, DJ, etc.)
 # con su precio actual. Al reservar, el precio se copia a la reserva (ver Reservas_x_Servicios).
-class Servicios(models.Model):
+class Servicios(BajaLogica):
     id_servicio = models.AutoField(primary_key=True)
     tipo_servicio = models.CharField(max_length=100)
     precio_servicio = models.FloatField(validators=[MinValueValidator(0.0)])
@@ -352,7 +359,7 @@ class Equipos_x_Servicios(models.Model):
 # ===========================================================================
 
 # Clientes que contratan los servicios
-class Clientes(models.Model):
+class Clientes(BajaLogica):
     id_cliente = models.AutoField(primary_key=True)
     nombre_cliente = models.CharField(max_length=30, validators=validar_nombre_propio)
     apellido_cliente = models.CharField(max_length=30, validators=validar_nombre_propio)
@@ -461,7 +468,7 @@ class Reservas_x_Servicios(models.Model):
 # ===========================================================================
 
 # Formas de pago aceptadas (Efectivo, Transferencia, Tarjeta, Mercado Pago...)
-class Metodo_Pagos(models.Model):
+class Metodo_Pagos(BajaLogica):
     id_metodo_pago = models.AutoField(primary_key=True)
     metodo_pago = models.CharField(max_length=50)
 
@@ -474,7 +481,7 @@ class Metodo_Pagos(models.Model):
 
 # Pagos de una reserva (seña, cuotas, saldo). PROTECT en reserva: una reserva con pagos
 # no se puede borrar ni anular (por ahora no hay devoluciones).
-class Pagos(models.Model):
+class Pagos(BajaLogica):
     id_pago = models.AutoField(primary_key=True)
     id_reserva = models.ForeignKey(Reservas, on_delete=models.PROTECT, db_column='id_reserva')
     monto = models.FloatField(default=0, validators=[MinValueValidator(0.01)])

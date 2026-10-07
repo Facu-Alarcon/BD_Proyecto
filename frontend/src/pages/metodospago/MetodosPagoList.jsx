@@ -36,6 +36,8 @@ export default function MetodosPagoList() {
 
   // Se ejecuta al confirmar en la ventana de "¿Eliminar?". Si el backend no deja borrarlo
   // (por ejemplo, porque está en uso en otra tabla) se muestra el motivo que devuelve.
+  // Para el usuario es eliminar, pero el backend no lo borra de la base: lo da de baja (activo=False)
+  // y el programador lo puede recuperar desde /admin. Ver infinito_sonido/baja_logica.py.
   async function confirmarEliminar() {
     setEliminando(true);
     try {
