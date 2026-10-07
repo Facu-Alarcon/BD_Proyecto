@@ -9,7 +9,6 @@
 #   - SerializerMethodField: el valor lo calcula el método get_<campo>.
 #   - validate_<campo>: valida un campo; validate(): valida varios juntos.
 #   - create / update: qué se hace al guardar (cuando hay que hacer más que guardar la fila).
-from collections import Counter
 
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import transaction
@@ -17,6 +16,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from rest_framework import serializers
 
+from .disponibilidad import equipos_faltantes
 from .nombres_usuario import generar_nombre_usuario
 from .seguridad import generar_contraseña_temporal, validar_contraseña_segura
 
@@ -473,34 +473,9 @@ class ReservasSerializer(serializers.ModelSerializer):
     # se pasa de las unidades que hay, no deja guardar. Los equipos En reparación no se
     # pueden reservar.
     def _validar_equipos(self, servicios, fecha_evento, excluir_reserva=None):
-        # Equipos que pide esta reserva: {id_equipo: unidades}
-        pedidos = Counter()
-        for rel in Equipos_x_Servicios.objects.filter(id_servicio__in=servicios):
-            pedidos[rel.id_equipo_id] += rel.cantidad
-        if not pedidos:
-            return
-
-        # Servicios de las otras reservas de ese día (un servicio puede estar en varias reservas)
-        otras = Reservas_x_Servicios.objects.filter(id_reserva__fecha_evento=fecha_evento).exclude(
-            id_reserva__estado_reserva='ANULADA'
-        )
-        if excluir_reserva is not None:
-            otras = otras.exclude(id_reserva=excluir_reserva)
-        servicios_del_dia = Counter(otras.values_list('id_servicio_id', flat=True))
-
-        # Unidades ya comprometidas ese día de cada equipo que pide esta reserva
-        ocupados = Counter()
-        for rel in Equipos_x_Servicios.objects.filter(id_servicio__in=servicios_del_dia, id_equipo__in=pedidos):
-            ocupados[rel.id_equipo_id] += rel.cantidad * servicios_del_dia[rel.id_servicio_id]
-
-        faltantes = []
-        for equipo in Equipos.objects.filter(pk__in=pedidos).select_related('id_estadoeq'):
-            if 'reparac' in equipo.id_estadoeq.nombre_estadoeq.lower():
-                faltantes.append(f'{equipo.nombre_equipo} (está en reparación)')
-                continue
-            libres = equipo.cantidad_equipo - ocupados[equipo.pk]
-            if pedidos[equipo.pk] > libres:
-                faltantes.append(f'{equipo.nombre_equipo} (se necesitan {pedidos[equipo.pk]}, quedan {max(libres, 0)} libres)')
+        # La cuenta de unidades libres está en disponibilidad.py (la usan también el
+        # formulario, la acción Confirmar y el Inicio, así todos calculan igual)
+        faltantes = equipos_faltantes(servicios, fecha_evento, excluir_reserva)
         if faltantes:
             raise serializers.ValidationError({
                 'servicios': f'No hay equipos suficientes el {fecha_evento:%d/%m/%Y}: ' + '; '.join(faltantes) + '.'

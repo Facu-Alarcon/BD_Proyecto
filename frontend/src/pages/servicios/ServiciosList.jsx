@@ -12,6 +12,15 @@ import IconoCelda from '../../components/IconoCelda';
 import { iconoServicio } from '../../utils/iconosModulos';
 
 // Lista de Servicios: cada uno con su precio y cuántos equipos usa.
+// Texto de los equipos que usa un servicio, sumando las cantidades (no la cantidad de
+// tipos distintos): 4 bafles y 2 luces -> "Usa 6 equipos: 4 Bafle, 2 Par LED"
+function textoEquipos(equipos) {
+  if (!equipos?.length) return 'Sin equipos cargados';
+  const total = equipos.reduce((suma, e) => suma + Number(e.cantidad), 0);
+  const nombres = equipos.map((e) => `${e.cantidad} ${e.nombre_equipo}`).join(', ');
+  return `Usa ${total} ${total === 1 ? 'equipo' : 'equipos'}: ${nombres}`;
+}
+
 export default function ServiciosList() {
   // Qué puede hacer el usuario en este módulo según su perfil (si no puede gestionar, solo ve la tabla)
   const { puedeGestionar } = usePermiso('servicios');
@@ -100,7 +109,7 @@ export default function ServiciosList() {
                   <IconoCelda
                     {...iconoServicio(servicio.tipo_servicio)}
                     nombre={servicio.tipo_servicio}
-                    detalle={servicio.equipos_detalle?.length ? `Usa ${servicio.equipos_detalle.length} equipos` : 'Sin equipos cargados'}
+                    detalle={textoEquipos(servicio.equipos_detalle)}
                   />
                 </td>
                 <td>${Number(servicio.precio_servicio).toLocaleString('es-AR')}</td>

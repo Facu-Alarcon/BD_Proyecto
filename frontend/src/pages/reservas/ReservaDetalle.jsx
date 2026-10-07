@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import api from '../../api/client';
 import { usePermiso } from '../../hooks/usePermiso';
 import AnularReservaModal from '../../components/AnularReservaModal';
+import ConfirmModal from '../../components/ConfirmModal';
 import {
   formatearFecha, formatearFechaHora, formatearPesos, formatearTelefono, horaCorta, numeroComprobante,
 } from '../../utils/formato';
@@ -24,6 +25,9 @@ export default function ReservaDetalle() {
   const [reserva, setReserva] = useState(null);
   const [error, setError] = useState('');
   const [anulando, setAnulando] = useState(false);
+  // Ventana de "¿Confirmar la reserva?" abierta, y si se está esperando la respuesta
+  const [preguntandoConfirmar, setPreguntandoConfirmar] = useState(false);
+  const [confirmando, setConfirmando] = useState(false);
 
   function cargar() {
     api
@@ -33,6 +37,20 @@ export default function ReservaDetalle() {
   }
 
   useEffect(cargar, [id]);
+
+  // Pasa la reserva de Pendiente a Confirmada y vuelve a cargar el detalle
+  async function confirmarReserva() {
+    setConfirmando(true);
+    try {
+      await api.post(`/reservas/${id}/confirmar/`);
+      setPreguntandoConfirmar(false);
+      cargar();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'No se pudo confirmar la reserva.');
+    } finally {
+      setConfirmando(false);
+    }
+  }
 
   if (error) return <div className="alert alert-error">{error}</div>;
   if (!reserva) return <p>Cargando...</p>;
@@ -57,6 +75,10 @@ export default function ReservaDetalle() {
         </div>
         <div className="detalle-acciones">
           <Link to={`/reservas/${reserva.id_reserva}/comprobante`} className="btn btn-primary">Comprobante</Link>
+          {/* Confirmar: solo las pendientes y con permiso de gestionar reservas */}
+          {puedeGestionar && reserva.estado_reserva === 'PENDIENTE' && (
+            <button type="button" className="btn btn-primary" onClick={() => setPreguntandoConfirmar(true)}>Confirmar</button>
+          )}
           {editable && <Link to={`/reservas/${reserva.id_reserva}/editar`} className="btn btn-outline">Editar</Link>}
           {anulable && <button type="button" className="btn btn-danger" onClick={() => setAnulando(true)}>Anular</button>}
         </div>
@@ -178,6 +200,17 @@ export default function ReservaDetalle() {
             setAnulando(false);
             cargar();
           }}
+        />
+      )}
+      {preguntandoConfirmar && (
+        <ConfirmModal
+          titulo="Confirmar reserva"
+          mensaje={`¿Confirmar la reserva N° ${numeroComprobante(reserva.id_reserva)}?`}
+          textoConfirmar="Confirmar"
+          claseBoton="btn-primary"
+          confirmando={confirmando}
+          onCancelar={() => setPreguntandoConfirmar(false)}
+          onConfirmar={confirmarReserva}
         />
       )}
     </div>

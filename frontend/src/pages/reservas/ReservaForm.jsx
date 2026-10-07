@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/client';
 import FormModal from '../../components/FormModal';
@@ -57,6 +57,10 @@ export default function ReservaForm() {
   const [guardadoOk, setGuardadoOk] = useState(false);
   // Fecha que tenía la reserva al abrirla para editar (sirve para no trabar las reservas que ya pasaron)
   const [fechaOriginal, setFechaOriginal] = useState('');
+  // Unidades libres de cada equipo en la fecha elegida: { id_equipo: libres } (null hasta elegir fecha)
+  const [libresDelDia, setLibresDelDia] = useState(null);
+  // Servicio cuyo detalle de equipos está abierto con el botón "Ver equipos"
+  const [servicioAbierto, setServicioAbierto] = useState(null);
 
   // Al abrir: clientes, servicios y empleados para elegir; si se está editando, también los
   // datos de la reserva con los servicios y empleados que ya tiene
@@ -89,6 +93,50 @@ export default function ReservaForm() {
       setCargando(false);
     });
   }, [id, editando]);
+
+  // Cada vez que cambia la fecha se pide al backend cuántas unidades de cada equipo quedan
+  // libres ese día (descontando las otras reservas pendientes y confirmadas). Al editar se
+  // excluye la propia reserva, así no se cuenta a sí misma.
+  useEffect(() => {
+    if (!form.fecha_evento) {
+      setLibresDelDia(null);
+      return;
+    }
+    const params = { fecha: form.fecha_evento, ...(editando ? { excluir: id } : {}) };
+    api
+      .get('/reservas/disponibilidad/', { params })
+      .then(({ data }) => setLibresDelDia(Object.fromEntries(data.equipos.map((e) => [e.id_equipo, e.libres]))))
+      .catch(() => setLibresDelDia(null));
+  }, [form.fecha_evento, editando, id]);
+
+  // Para cada servicio: ¿alcanzan los equipos ese día si además se lo suma a los ya tildados?
+  // Se devuelve { id_servicio: null si alcanza, o el texto de lo que falta }.
+  // Así un servicio que solo no tiene problema pero junto con otro ya tildado se pasa del
+  // stock, también aparece como no disponible.
+  const faltantesPorServicio = useMemo(() => {
+    if (!libresDelDia) return {};
+    // Unidades que ya piden los servicios tildados
+    const pedidosTildados = {};
+    for (const s of servicios) {
+      if (!serviciosSel.has(Number(s.id_servicio))) continue;
+      for (const eq of s.equipos_detalle || []) {
+        pedidosTildados[eq.id_equipo] = (pedidosTildados[eq.id_equipo] || 0) + eq.cantidad;
+      }
+    }
+    const resultado = {};
+    for (const s of servicios) {
+      const tildado = serviciosSel.has(Number(s.id_servicio));
+      const faltan = [];
+      for (const eq of s.equipos_detalle || []) {
+        // Si ya está tildado, sus unidades ya están dentro de pedidosTildados
+        const pedido = (pedidosTildados[eq.id_equipo] || 0) + (tildado ? 0 : eq.cantidad);
+        const libres = libresDelDia[eq.id_equipo] ?? 0;
+        if (pedido > libres) faltan.push(`${eq.nombre_equipo} (quedan ${libres})`);
+      }
+      resultado[s.id_servicio] = faltan.length ? `Sin equipos suficientes ese día: ${faltan.join(', ')}` : null;
+    }
+    return resultado;
+  }, [libresDelDia, servicios, serviciosSel]);
 
   // En el calendario no se pueden elegir días anteriores a hoy.
   // Si estamos editando una reserva que ya pasó, el mínimo pasa a ser su propia fecha,
@@ -270,17 +318,46 @@ export default function ReservaForm() {
 
       <div className="form-field">
         <label>Servicios</label>
+        {/* Hasta que no se elige la fecha no se sabe qué equipos hay libres */}
+        {!form.fecha_evento && <span className="form-hint">Elegí la fecha para ver qué servicios están disponibles ese día.</span>}
         <div className="checkbox-list">
           {servicios.length === 0 && <p className="form-hint">No hay servicios cargados todavía.</p>}
-          {servicios.map((s) => (
-            <label key={s.id_servicio}>
-              <span>{s.tipo_servicio}</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ color: 'var(--text-muted)' }}>${Number(s.precio_servicio).toLocaleString('es-AR')}</span>
-                <input type="checkbox" checked={serviciosSel.has(Number(s.id_servicio))} onChange={() => toggleServicio(s.id_servicio)} />
-              </span>
-            </label>
-          ))}
+          {servicios.map((s) => {
+            const tildado = serviciosSel.has(Number(s.id_servicio));
+            const faltante = faltantesPorServicio[s.id_servicio];
+            // Un servicio sin equipos libres ese día no se puede tildar. Si ya estaba tildado
+            // (al editar) se deja destildar, pero no volver a tildar.
+            const bloqueado = Boolean(faltante) && !tildado;
+            const abierto = servicioAbierto === s.id_servicio;
+            return (
+              <div key={s.id_servicio} className={`servicio-fila${bloqueado ? ' servicio-no-disponible' : ''}`}>
+                <div className="servicio-fila-principal">
+                  <label className="servicio-nombre">
+                    <input type="checkbox" checked={tildado} disabled={bloqueado} onChange={() => toggleServicio(s.id_servicio)} />
+                    <span>{s.tipo_servicio}</span>
+                    {bloqueado && <span className="badge badge-red badge-chica">No disponible</span>}
+                  </label>
+                  <span className="servicio-precio">${Number(s.precio_servicio).toLocaleString('es-AR')}</span>
+                  {/* Muestra u oculta qué equipos trae el servicio */}
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => setServicioAbierto(abierto ? null : s.id_servicio)}>
+                    {abierto ? 'Ocultar' : 'Ver equipos'}
+                  </button>
+                </div>
+                {faltante && <span className="form-error">{faltante}</span>}
+                {abierto && (
+                  <ul className="servicio-equipos">
+                    {(s.equipos_detalle || []).length === 0 && <li>Este servicio no tiene equipos cargados.</li>}
+                    {(s.equipos_detalle || []).map((eq) => (
+                      <li key={eq.id_equipo}>
+                        {eq.cantidad} × {eq.nombre_equipo}
+                        {libresDelDia && <span className="servicio-equipos-libres"> · libres ese día: {libresDelDia[eq.id_equipo] ?? 0}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

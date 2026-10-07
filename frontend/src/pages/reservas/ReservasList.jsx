@@ -6,7 +6,8 @@ import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
 import { useFiltros } from '../../hooks/useFiltros';
 import Paginacion from '../../components/Paginacion';
 import { usePaginacion } from '../../hooks/usePaginacion';
-import { IconAnular, IconEditar, IconVer } from '../../components/icons';
+import { IconAnular, IconConfirmar, IconEditar, IconVer } from '../../components/icons';
+import ConfirmModal from '../../components/ConfirmModal';
 import AnularReservaModal from '../../components/AnularReservaModal';
 import { PersonaCelda } from '../../components/Avatar';
 
@@ -34,6 +35,8 @@ export default function ReservasList() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [aAnular, setAAnular] = useState(null); // reserva que se está por anular
+  const [aConfirmar, setAConfirmar] = useState(null); // reserva que se está por confirmar
+  const [confirmando, setConfirmando] = useState(false);
 
   // Trae todos los registros del backend y los guarda para la tabla
   function cargar() {
@@ -47,6 +50,21 @@ export default function ReservasList() {
 
   // Se cargan una sola vez, al abrir la pantalla
   useEffect(cargar, []);
+
+  // Confirmar: la reserva pasa de Pendiente a Confirmada (el backend vuelve a controlar
+  // que haya equipos; si no alcanzan, avisa y no la confirma)
+  async function confirmarReserva() {
+    setConfirmando(true);
+    try {
+      await api.post(`/reservas/${aConfirmar.id_reserva}/confirmar/`);
+      setAConfirmar(null);
+      cargar();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'No se pudo confirmar la reserva.');
+    } finally {
+      setConfirmando(false);
+    }
+  }
 
   // Filtros de esta pantalla (ver hooks/useFiltros.js)
   const configFiltros = [
@@ -118,6 +136,7 @@ export default function ReservasList() {
                 <td>
                   {/* Ver: todos los que pueden ver reservas (detalle y comprobante).
                       Editar: con permiso de gestionar y si no está anulada.
+                      Confirmar: con permiso de gestionar y solo si está Pendiente.
                       Anular: con el permiso "Anular Reservas" y solo si está Pendiente o Confirmada */}
                   {(() => {
                     const editable = puedeGestionar && reserva.estado_reserva !== 'ANULADA';
@@ -127,6 +146,9 @@ export default function ReservasList() {
                         <Link to={`/reservas/${reserva.id_reserva}`} className="btn btn-secondary btn-sm" title="Ver detalle y comprobante"><IconVer /></Link>
                         {editable && (
                           <Link to={`/reservas/${reserva.id_reserva}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
+                        )}
+                        {puedeGestionar && reserva.estado_reserva === 'PENDIENTE' && (
+                          <button type="button" className="btn btn-primary btn-sm" onClick={() => setAConfirmar(reserva)} title="Confirmar reserva"><IconConfirmar /></button>
                         )}
                         {anulable && (
                           <button type="button" className="btn btn-danger btn-sm" onClick={() => setAAnular(reserva)} title="Anular"><IconAnular /></button>
@@ -141,6 +163,18 @@ export default function ReservasList() {
         </table>
         <Paginacion paginacion={paginacion} />
       </div>
+
+      {aConfirmar && (
+        <ConfirmModal
+          titulo="Confirmar reserva"
+          mensaje={`¿Confirmar la reserva de ${aConfirmar.cliente_nombre}${aConfirmar.nombre_evento ? ` (${aConfirmar.nombre_evento})` : ''}?`}
+          textoConfirmar="Confirmar"
+          claseBoton="btn-primary"
+          confirmando={confirmando}
+          onCancelar={() => setAConfirmar(null)}
+          onConfirmar={confirmarReserva}
+        />
+      )}
 
       {aAnular && (
         <AnularReservaModal reserva={aAnular} onCancelar={() => setAAnular(null)} onAnulada={terminarAnulacion} />

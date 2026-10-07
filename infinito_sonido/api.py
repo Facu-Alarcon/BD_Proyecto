@@ -15,6 +15,7 @@
 # Nada se borra de la base: los ViewSets con BajaLogicaMixin dan de baja (activo=False)
 # en lugar de eliminar, y cada uno define en validar_baja() cuándo no se puede (ver
 # baja_logica.py). Las reservas tampoco se borran: se anulan.
+import datetime
 import hashlib
 import secrets
 from datetime import timedelta
@@ -56,6 +57,7 @@ from .permissions import permiso_codigo, permiso_modulo, permisos_del_usuario
 from .correos import enviar_contraseña_temporal, enviar_link_recuperacion
 from .registro import RegistrarActividadMixin, registrar
 from .baja_logica import BajaLogicaMixin
+from .disponibilidad import disponibilidad_del_dia, equipos_faltantes
 from .seguridad import generar_contraseña_temporal, validar_contraseña_segura
 
 
@@ -615,6 +617,47 @@ class ReservasViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
             status=status.HTTP_405_METHOD_NOT_ALLOWED,
         )
 
+    @action(detail=True, methods=['post'], url_path='confirmar')
+    def confirmar(self, request, pk=None):
+        """
+        Confirmar: el cliente aceptó la reserva y pasa de Pendiente a Confirmada.
+        Lo puede hacer quien tiene permiso de gestionar reservas (es un POST).
+        Los equipos ya estaban apartados desde que se cargó la reserva (las pendientes
+        también ocupan equipos), pero se vuelve a controlar por si mientras tanto cambió
+        algo, por ejemplo un equipo que pasó a "En reparación".
+        """
+        reserva = self.get_object()
+        if reserva.estado_reserva != 'PENDIENTE':
+            return Response({'detail': f'Solo se pueden confirmar reservas pendientes (esta está {reserva.get_estado_reserva_display()}).'},
+                            status=status.HTTP_409_CONFLICT)
+
+        servicios = list(Reservas_x_Servicios.objects.filter(id_reserva=reserva).values_list('id_servicio_id', flat=True))
+        faltantes = equipos_faltantes(servicios, reserva.fecha_evento, excluir_reserva=reserva)
+        if faltantes:
+            return Response({'detail': f'No se puede confirmar: no hay equipos suficientes el {reserva.fecha_evento:%d/%m/%Y}: '
+                                       + '; '.join(faltantes) + '.'}, status=status.HTTP_409_CONFLICT)
+
+        reserva.estado_reserva = 'CONFIRMADA'
+        reserva.save(update_fields=['estado_reserva'])
+        registrar(request, Registro_Actividad.MODIFICACION, f'Confirmó {reserva}', 'Reservas', reserva.pk)
+        return Response(self.get_serializer(reserva).data)
+
+    @action(detail=False, methods=['get'], url_path='disponibilidad')
+    def disponibilidad(self, request):
+        """
+        /api/reservas/disponibilidad/?fecha=2026-10-18[&excluir=12]
+        Cuántas unidades de cada equipo quedan libres ese día. La usa el formulario de
+        reserva para marcar los servicios que no se pueden contratar esa fecha.
+        "excluir" es la reserva que se está editando, para que no se cuente a sí misma.
+        """
+        try:
+            fecha = datetime.date.fromisoformat(request.query_params.get('fecha', ''))
+        except ValueError:
+            return Response({'fecha': 'Mandá la fecha como AAAA-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
+        excluir = request.query_params.get('excluir')
+        excluir = int(excluir) if excluir and excluir.isdigit() else None
+        return Response({'fecha': fecha, 'equipos': disponibilidad_del_dia(fecha, excluir)})
+
     @action(detail=True, methods=['post'], url_path='anular', permission_classes=[permiso_codigo('anular_reservas')])
     def anular(self, request, pk=None):
         """
@@ -719,6 +762,21 @@ class DashboardResumenView(APIView):
 
         # Reservas de hoy (sin contar las anuladas) y las próximas 5, para la lista de Inicio
         hoy = timezone.localdate()
+
+        # Equipos HOY (contando cada equipo, ej: 6 bafles = 6): libres, en uso por reservas de hoy y en reparación
+        # (ver disponibilidad.py). Es lo que muestran la tarjeta y las barras de Inicio.
+        dia = disponibilidad_del_dia(hoy)
+        equipos_hoy = {
+            'total': sum(e['total'] for e in dia),
+            'libres': sum(e['libres'] for e in dia),
+            'ocupadas': sum(min(e['ocupadas'], e['total']) for e in dia if not e['en_reparacion']),
+            'en_reparacion': sum(e['total'] for e in dia if e['en_reparacion']),
+            # Qué equipos están en uso hoy y cuántos de cada uno (ej: 4 Bafle)
+            'en_uso': [{'nombre_equipo': e['nombre_equipo'], 'cantidad': min(e['ocupadas'], e['total'])}
+                       for e in dia if e['ocupadas'] > 0 and not e['en_reparacion']],
+            # Los equipos que hoy no tienen ninguno libre, para listarlos por nombre
+            'agotados': [e['nombre_equipo'] for e in dia if e['libres'] == 0 and e['total'] > 0],
+        }
         reservas_hoy_qs = Reservas.objects.filter(fecha_evento=hoy).exclude(estado_reserva='ANULADA')
 
         proximas_qs = (
@@ -745,6 +803,7 @@ class DashboardResumenView(APIView):
                 'total': total,
                 'por_estado': por_estado,
             },
+            'equipos_hoy': equipos_hoy,
             'usuarios_total': Usuarios.objects.filter(activo=True).count(),
             'perfiles_total': Perfiles.objects.activos().count(),
             'reservas_hoy': reservas_hoy_qs.count(),

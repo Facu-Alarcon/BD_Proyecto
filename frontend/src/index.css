@@ -889,3 +889,38 @@ button {
   margin-top: 12px;
   font-size: 14px;
 }
+
+/* Filas de servicios del formulario de reserva (ver ReservaForm.jsx): casilla, nombre,
+   precio y el botón "Ver equipos", con la lista de equipos abajo cuando se abre */
+.servicio-fila {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 2px;
+  border-bottom: 1px solid var(--border);
+}
+.servicio-fila:last-child { border-bottom: none; }
+.servicio-fila-principal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* Dentro de la lista de casillas los label van a lo ancho; acá el nombre ocupa el espacio que sobra */
+.checkbox-list .servicio-nombre {
+  flex: 1;
+  justify-content: flex-start;
+  padding: 0;
+}
+.servicio-precio { color: var(--text-muted); font-size: 14px; }
+/* Servicio sin equipos libres ese día: se ve apagado y no se puede tildar */
+.servicio-no-disponible .servicio-nombre,
+.servicio-no-disponible .servicio-precio { opacity: 0.55; }
+.servicio-equipos {
+  margin: 2px 0 4px 28px;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.servicio-equipos li { padding: 2px 0; }
+.servicio-equipos-libres { color: var(--navy-accent); }

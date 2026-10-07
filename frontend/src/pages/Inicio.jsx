@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/client';
-import { colorEstadoEquipo } from '../utils/estadoEquipo';
 import './Inicio.css';
 import Avatar from '../components/Avatar';
 
@@ -34,19 +33,9 @@ export default function Inicio() {
       .catch(() => setError('No se pudo cargar el resumen.'));
   }, []);
 
-  // Porcentaje de equipos de cada estado sobre el total, para el largo de las barras
-  const eq = resumen?.equipos;
-  const totalEquipos = eq?.total || 0;
-  const pct = (n) => (totalEquipos ? Math.round((n / totalEquipos) * 100) : 0);
-
-  // Busca la cantidad de equipos de un estado por una parte del nombre ("dispon", "repar"),
-  // así funciona aunque el estado se llame "Disponible" o "Disponibles"
-  function cantidadPorEstado(palabraClave) {
-    const fila = eq?.por_estado?.find((e) => e.nombre_estadoeq.toLowerCase().includes(palabraClave));
-    return fila?.cantidad ?? 0;
-  }
-  const disponibles = cantidadPorEstado('dispon');
-  const enReparacion = cantidadPorEstado('repar');
+  // Equipos de hoy (los calcula el backend con las reservas del día, ver disponibilidad.py)
+  const hoyEq = resumen?.equipos_hoy;
+  const pctHoy = (n) => (hoyEq?.total ? Math.round((n / hoyEq.total) * 100) : 0);
 
   return (
     <div>
@@ -68,13 +57,14 @@ export default function Inicio() {
           </span>
         </div>
         <div className="card stat-card">
-          <span className="stat-label">Equipos disponibles</span>
-          <span className="stat-value">{eq ? `${disponibles} / ${eq.total}` : '—'}</span>
-          <span className="stat-hint">sobre el total del inventario</span>
+          {/* Equipos libres hoy: se descuentan los que usan las reservas de hoy y los que están en reparación */}
+          <span className="stat-label">Equipos disponibles hoy</span>
+          <span className="stat-value">{hoyEq ? `${hoyEq.libres} / ${hoyEq.total}` : '—'}</span>
+          <span className="stat-hint">{hoyEq ? `${hoyEq.ocupadas} ${hoyEq.ocupadas === 1 ? 'equipo en uso' : 'equipos en uso'} por reservas de hoy` : ''}</span>
         </div>
         <div className="card stat-card">
           <span className="stat-label">Equipos en reparación</span>
-          <span className="stat-value">{eq ? enReparacion : '—'}</span>
+          <span className="stat-value">{hoyEq ? hoyEq.en_reparacion : '—'}</span>
           <span className="stat-hint">fuera de servicio temporalmente</span>
         </div>
         <div className="card stat-card">
@@ -110,25 +100,34 @@ export default function Inicio() {
         </div>
 
         <div className="card inicio-panel">
-          {/* Una barra por estado; el color sale de colorEstadoEquipo (verde disponible, rojo reparación...) */}
-          <h2>Estado de equipos</h2>
-          {eq && eq.por_estado.length === 0 && (
-            <p className="form-hint">No hay equipos cargados todavía.</p>
-          )}
-          {eq?.por_estado.map((e) => (
-            <div className="progress-row" key={e.id_estadoeq}>
+          {/* Estado de los equipos hoy: libres, en uso por reservas de hoy y en reparación.
+              Un equipo ocupado por una reserva no figura como disponible. */}
+          <h2>Estado de equipos hoy</h2>
+          {hoyEq && hoyEq.total > 0 && [
+            { nombre: 'Disponibles', cantidad: hoyEq.libres, color: 'fill-green' },
+            { nombre: 'En uso por reservas', cantidad: hoyEq.ocupadas, color: 'fill-blue' },
+            { nombre: 'En reparación', cantidad: hoyEq.en_reparacion, color: 'fill-red' },
+          ].map((fila) => (
+            <div className="progress-row" key={fila.nombre}>
               <div className="progress-head">
-                <span>{e.nombre_estadoeq}</span>
-                <span>{e.cantidad}/{eq.total}</span>
+                <span>{fila.nombre}</span>
+                <span>{fila.cantidad}/{hoyEq.total}</span>
               </div>
               <div className="progress-track">
-                <div
-                  className={`progress-fill ${colorEstadoEquipo(e.nombre_estadoeq).bar}`}
-                  style={{ width: `${pct(e.cantidad)}%` }}
-                />
+                <div className={`progress-fill ${fila.color}`} style={{ width: `${pctHoy(fila.cantidad)}%` }} />
               </div>
             </div>
           ))}
+          {/* Nombre y cantidad de lo que se está usando hoy (ej: "4 Bafle, 2 Par LED") */}
+          {hoyEq?.en_uso.length > 0 && (
+            <p className="form-hint">En uso hoy: {hoyEq.en_uso.map((e) => `${e.cantidad} ${e.nombre_equipo}`).join(', ')}.</p>
+          )}
+          {hoyEq?.agotados.length > 0 && (
+            <p className="form-hint">Sin equipos libres hoy: {hoyEq.agotados.join(', ')}.</p>
+          )}
+          {hoyEq && hoyEq.total === 0 && (
+            <p className="form-hint">No hay equipos cargados todavía.</p>
+          )}
         </div>
       </div>
     </div>

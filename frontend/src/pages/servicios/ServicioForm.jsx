@@ -47,7 +47,8 @@ export default function ServicioForm() {
   }
 
   // Cuántos equipos distintos usa el servicio, para mostrarlo en el título de la sección
-  const equiposElegidos = Object.values(cantidades).filter((c) => Number(c) > 0).length;
+  // Total de equipos que usa el servicio: se suman las cantidades (4 bafles + 2 luces = 6)
+  const equiposElegidos = Object.values(cantidades).reduce((suma, c) => suma + (Number(c) > 0 ? Number(c) : 0), 0);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -110,7 +111,7 @@ export default function ServicioForm() {
 
       {/* Equipos que usa el servicio: se escribe cuántas unidades de cada uno (0 = no lo usa) */}
       <div className="form-field">
-        <label>Equipos que usa {equiposElegidos > 0 && <span className="form-hint">({equiposElegidos} elegidos)</span>}</label>
+        <label>Equipos que usa {equiposElegidos > 0 && <span className="form-hint">({equiposElegidos} {equiposElegidos === 1 ? 'equipo' : 'equipos'} en total)</span>}</label>
         <div className="checkbox-list equipos-servicio">
           {equipos.length === 0 && <p className="form-hint">No hay equipos cargados todavía.</p>}
           {equipos.map((equipo) => {

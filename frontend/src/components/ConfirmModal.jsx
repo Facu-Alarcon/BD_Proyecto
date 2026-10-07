@@ -10,6 +10,8 @@ export default function ConfirmModal({
   confirmando = false,
   onConfirmar,
   onCancelar,
+  // Clase del botón de la acción: rojo por defecto; Confirmar reserva lo usa verde (btn-primary)
+  claseBoton = 'btn-danger',
 }) {
   return (
     <div className="confirm-backdrop" onClick={onCancelar}>
@@ -21,7 +23,7 @@ export default function ConfirmModal({
           <button type="button" className="btn btn-secondary" onClick={onCancelar} disabled={confirmando}>
             Cancelar
           </button>
-          <button type="button" className="btn btn-danger" onClick={onConfirmar} disabled={confirmando}>
+          <button type="button" className={`btn ${claseBoton}`} onClick={onConfirmar} disabled={confirmando}>
             {confirmando ? 'Eliminando...' : textoConfirmar}
           </button>
         </div>
