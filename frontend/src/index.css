@@ -924,3 +924,17 @@ button {
 }
 .servicio-equipos li { padding: 2px 0; }
 .servicio-equipos-libres { color: var(--navy-accent); }
+
+/* Personal del formulario de reserva agrupado por puesto (ver ReservaForm.jsx) */
+.personal-grupo + .personal-grupo { margin-top: 8px; }
+.personal-grupo-titulo {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--verde);
+  padding: 6px 2px 2px;
+  border-bottom: 1px solid var(--border);
+}
+/* Empleado que ya trabaja en otra reserva ese día: apagado y sin poder tildarse */
+.checkbox-list label.personal-no-disponible > span { opacity: 0.55; }

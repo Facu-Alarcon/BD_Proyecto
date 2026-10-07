@@ -59,6 +59,8 @@ export default function ReservaForm() {
   const [fechaOriginal, setFechaOriginal] = useState('');
   // Unidades libres de cada equipo en la fecha elegida: { id_equipo: libres } (null hasta elegir fecha)
   const [libresDelDia, setLibresDelDia] = useState(null);
+  // Empleados que ya trabajan en otra reserva la fecha elegida (Set de ids; null hasta elegir fecha)
+  const [empleadosOcupados, setEmpleadosOcupados] = useState(null);
   // Servicio cuyo detalle de equipos está abierto con el botón "Ver equipos"
   const [servicioAbierto, setServicioAbierto] = useState(null);
 
@@ -100,13 +102,20 @@ export default function ReservaForm() {
   useEffect(() => {
     if (!form.fecha_evento) {
       setLibresDelDia(null);
+      setEmpleadosOcupados(null);
       return;
     }
     const params = { fecha: form.fecha_evento, ...(editando ? { excluir: id } : {}) };
     api
       .get('/reservas/disponibilidad/', { params })
-      .then(({ data }) => setLibresDelDia(Object.fromEntries(data.equipos.map((e) => [e.id_equipo, e.libres]))))
-      .catch(() => setLibresDelDia(null));
+      .then(({ data }) => {
+        setLibresDelDia(Object.fromEntries(data.equipos.map((e) => [e.id_equipo, e.libres])));
+        setEmpleadosOcupados(new Set(data.empleados_ocupados));
+      })
+      .catch(() => {
+        setLibresDelDia(null);
+        setEmpleadosOcupados(null);
+      });
   }, [form.fecha_evento, editando, id]);
 
   // Para cada servicio: ¿alcanzan los equipos ese día si además se lo suma a los ya tildados?
@@ -137,6 +146,22 @@ export default function ReservaForm() {
     }
     return resultado;
   }, [libresDelDia, servicios, serviciosSel]);
+
+  // Personal agrupado por puesto (DJ, Operadores...), con los grupos en orden alfabético y
+  // "Sin puesto asignado" al final. Por ahora cada empleado tiene un solo puesto; si tuviera
+  // más de uno, aparece en el primero (por orden alfabético).
+  const empleadosPorPuesto = useMemo(() => {
+    const grupos = {};
+    for (const e of empleados) {
+      const puesto = e.puestos?.[0] || 'Sin puesto asignado';
+      (grupos[puesto] = grupos[puesto] || []).push(e);
+    }
+    return Object.entries(grupos).sort(([a], [b]) => {
+      if (a === 'Sin puesto asignado') return 1;
+      if (b === 'Sin puesto asignado') return -1;
+      return a.localeCompare(b, 'es');
+    });
+  }, [empleados]);
 
   // En el calendario no se pueden elegir días anteriores a hoy.
   // Si estamos editando una reserva que ya pasó, el mínimo pasa a ser su propia fecha,
@@ -370,15 +395,34 @@ export default function ReservaForm() {
 
       <div className="form-field">
         <label>Personal asignado</label>
+        {!form.fecha_evento && <span className="form-hint">Elegí la fecha para ver qué personal está disponible ese día.</span>}
         <div className="checkbox-list">
           {empleados.length === 0 && <p className="form-hint">No hay empleados cargados todavía.</p>}
-          {empleados.map((e) => (
-            <label key={e.id_empleado}>
-              <span>{e.nombre_emp} {e.apellido_emp}</span>
-              <input type="checkbox" checked={empleadosSel.has(Number(e.id_empleado))} onChange={() => toggleEmpleado(e.id_empleado)} />
-            </label>
+          {/* Un bloque por puesto, con su título (ej: DJ, Operador de iluminación) */}
+          {empleadosPorPuesto.map(([puesto, lista]) => (
+            <div key={puesto} className="personal-grupo">
+              <div className="personal-grupo-titulo">{puesto}</div>
+              {lista.map((e) => {
+                const tildado = empleadosSel.has(Number(e.id_empleado));
+                // Si ya trabaja en otra reserva ese día no se puede elegir. Si ya estaba tildado
+                // (al editar) se deja destildar, pero no volver a tildar.
+                const ocupado = Boolean(empleadosOcupados?.has(Number(e.id_empleado))) && !tildado;
+                return (
+                  <label key={e.id_empleado} className={ocupado ? 'personal-no-disponible' : ''}>
+                    <span>
+                      {e.nombre_emp} {e.apellido_emp}
+                      {ocupado && <span className="badge badge-red badge-chica" style={{ marginLeft: 8 }}>No disponible</span>}
+                    </span>
+                    <input type="checkbox" checked={tildado} disabled={ocupado} onChange={() => toggleEmpleado(e.id_empleado)} />
+                  </label>
+                );
+              })}
+            </div>
           ))}
         </div>
+        {empleadosOcupados?.size > 0 && (
+          <span className="form-hint">Los marcados como "No disponible" ya trabajan en otra reserva ese día.</span>
+        )}
       </div>
 
       <button type="submit" className="btn btn-primary" disabled={guardando}>

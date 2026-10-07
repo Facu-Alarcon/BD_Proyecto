@@ -16,7 +16,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from rest_framework import serializers
 
-from .disponibilidad import equipos_faltantes
+from .disponibilidad import empleados_ocupados, equipos_faltantes
 from .nombres_usuario import generar_nombre_usuario
 from .seguridad import generar_contraseña_temporal, validar_contraseña_segura
 
@@ -26,7 +26,7 @@ from .models import (
     Permisos, Permisos_x_Perfiles,
     Clientes, Empleados, Servicios, Equipos_x_Servicios,
     Reservas, Reservas_x_Servicios, Detalles_Reservas,
-    Sueldos, Puestos,
+    Sueldos, Puestos, Puestos_x_Empleados,
     Horarios, Metodo_Pagos, Pagos, Detalles_de_Pago,
     Registro_Actividad,
 )
@@ -214,12 +214,22 @@ class ClientesSerializer(serializers.ModelSerializer):
 class EmpleadosSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empleados
-        fields = ['id_empleado', 'dni', 'nombre_emp', 'apellido_emp', 'telefono_emp', 'email_emp', 'tiene_usuario']
+        fields = ['id_empleado', 'dni', 'nombre_emp', 'apellido_emp', 'telefono_emp', 'email_emp', 'tiene_usuario', 'puestos']
         # En la base el DNI puede estar vacío (empleados viejos), pero desde el formulario se pide siempre
         extra_kwargs = {'dni': {'required': True, 'allow_null': False, 'allow_blank': False}}
 
     # Para la pantalla de Usuarios: así se sabe qué empleados todavía no tienen cuenta
     tiene_usuario = serializers.SerializerMethodField()
+
+    # Nombres de los puestos activos del empleado (ej: ["DJ"]). El formulario de reservas
+    # los usa para mostrar el personal agrupado por puesto.
+    puestos = serializers.SerializerMethodField()
+
+    def get_puestos(self, obj):
+        return sorted(
+            Puestos_x_Empleados.objects.filter(id_empleado=obj, id_puesto__activo=True)
+            .values_list('id_puesto__nombre_puesto', flat=True)
+        )
 
     def get_tiene_usuario(self, obj):
         # Si el empleado tiene usuario, Django le agrega el atributo 'usuario' (es el related_name de la relación uno a uno)
@@ -455,14 +465,11 @@ class ReservasSerializer(serializers.ModelSerializer):
     def _validar_empleados(self, empleados, fecha_evento, excluir_reserva=None):
         if not empleados:
             return
-        conflictos = Detalles_Reservas.objects.filter(
-            id_empleado__in=empleados,
-            id_reserva__fecha_evento=fecha_evento,
-        ).exclude(id_reserva__estado_reserva='ANULADA').select_related('id_empleado')
-        if excluir_reserva is not None:
-            conflictos = conflictos.exclude(id_reserva=excluir_reserva)
-        if conflictos.exists():
-            nombres = sorted({str(c.id_empleado) for c in conflictos})
+        # Misma cuenta que usa el formulario para marcarlos como no disponibles (disponibilidad.py)
+        ocupados = empleados_ocupados(fecha_evento, excluir_reserva)
+        conflictos = [e for e in empleados if e.pk in ocupados]
+        if conflictos:
+            nombres = sorted(str(e) for e in conflictos)
             raise serializers.ValidationError({
                 'empleados': f'Ya tienen otra reserva ese día: {", ".join(nombres)}.'
             })

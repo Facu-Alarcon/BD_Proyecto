@@ -20,10 +20,13 @@
 #   - /api/reservas/disponibilidad/: el formulario de reserva marca qué servicios no se
 #     pueden contratar el día elegido.
 #   - El resumen de Inicio: cuántas unidades están ocupadas hoy.
+#
+# El personal sigue la misma idea (más simple): un empleado asignado a una reserva
+# pendiente o confirmada está ocupado todo ese día y no se lo puede asignar a otra.
 
 from collections import Counter
 
-from .models import Equipos, Equipos_x_Servicios, Reservas_x_Servicios
+from .models import Detalles_Reservas, Equipos, Equipos_x_Servicios, Reservas_x_Servicios
 
 
 # Un equipo está fuera de servicio si su estado físico es "En reparación"
@@ -88,3 +91,14 @@ def equipos_faltantes(servicios, fecha, excluir_reserva=None):
         if pedidos[equipo.pk] > libres:
             faltantes.append(f'{equipo.nombre_equipo} (se necesitan {pedidos[equipo.pk]}, quedan {max(libres, 0)} libres)')
     return faltantes
+
+
+# Empleados que ya trabajan en alguna reserva ese día (sin contar las anuladas): {id_empleado}.
+# Lo usan el control al guardar una reserva y el formulario, que los muestra como no disponibles.
+def empleados_ocupados(fecha, excluir_reserva=None):
+    ocupados = Detalles_Reservas.objects.filter(id_reserva__fecha_evento=fecha).exclude(
+        id_reserva__estado_reserva='ANULADA'
+    )
+    if excluir_reserva is not None:
+        ocupados = ocupados.exclude(id_reserva=excluir_reserva)
+    return set(ocupados.values_list('id_empleado_id', flat=True))

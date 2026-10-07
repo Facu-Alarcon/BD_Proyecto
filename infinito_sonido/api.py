@@ -57,7 +57,7 @@ from .permissions import permiso_codigo, permiso_modulo, permisos_del_usuario
 from .correos import enviar_contraseña_temporal, enviar_link_recuperacion
 from .registro import RegistrarActividadMixin, registrar
 from .baja_logica import BajaLogicaMixin
-from .disponibilidad import disponibilidad_del_dia, equipos_faltantes
+from .disponibilidad import disponibilidad_del_dia, empleados_ocupados, equipos_faltantes
 from .seguridad import generar_contraseña_temporal, validar_contraseña_segura
 
 
@@ -646,8 +646,9 @@ class ReservasViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     def disponibilidad(self, request):
         """
         /api/reservas/disponibilidad/?fecha=2026-10-18[&excluir=12]
-        Cuántas unidades de cada equipo quedan libres ese día. La usa el formulario de
-        reserva para marcar los servicios que no se pueden contratar esa fecha.
+        Cuántas unidades de cada equipo quedan libres ese día y qué empleados ya trabajan
+        ese día. La usa el formulario de reserva para marcar los servicios y el personal
+        que no se pueden elegir esa fecha.
         "excluir" es la reserva que se está editando, para que no se cuente a sí misma.
         """
         try:
@@ -656,7 +657,11 @@ class ReservasViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
             return Response({'fecha': 'Mandá la fecha como AAAA-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
         excluir = request.query_params.get('excluir')
         excluir = int(excluir) if excluir and excluir.isdigit() else None
-        return Response({'fecha': fecha, 'equipos': disponibilidad_del_dia(fecha, excluir)})
+        return Response({
+            'fecha': fecha,
+            'equipos': disponibilidad_del_dia(fecha, excluir),
+            'empleados_ocupados': sorted(empleados_ocupados(fecha, excluir)),
+        })
 
     @action(detail=True, methods=['post'], url_path='anular', permission_classes=[permiso_codigo('anular_reservas')])
     def anular(self, request, pk=None):
