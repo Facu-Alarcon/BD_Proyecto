@@ -47,8 +47,8 @@ export default function UsuarioForm() {
     setForm((f) => ({ ...f, [campo]: valor }));
   }
 
-  // Solo se pueden elegir empleados que todavía no tienen usuario
-  const disponibles = empleados.filter((e) => !e.tiene_usuario);
+  // Solo se pueden elegir empleados activos que todavía no tienen usuario
+  const disponibles = empleados.filter((e) => e.activo && !e.tiene_usuario);
   const empleadoElegido = empleados.find((e) => String(e.id_empleado) === String(form.id_empleado));
   // Si al empleado le falta el correo no se puede crear el usuario (ahí le llega la contraseña): se avisa antes de enviar
   const faltanDatos = Boolean(empleadoElegido && !empleadoElegido.email_emp);

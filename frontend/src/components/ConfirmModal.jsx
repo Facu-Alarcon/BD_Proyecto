@@ -7,6 +7,8 @@ export default function ConfirmModal({
   titulo = 'Confirmar',
   mensaje,
   textoConfirmar = 'Eliminar',
+  // Lo que dice el botón mientras esperamos la respuesta del backend (ej: "Desactivando...")
+  textoConfirmando = 'Eliminando...',
   confirmando = false,
   onConfirmar,
   onCancelar,
@@ -24,7 +26,7 @@ export default function ConfirmModal({
             Cancelar
           </button>
           <button type="button" className={`btn ${claseBoton}`} onClick={onConfirmar} disabled={confirmando}>
-            {confirmando ? 'Eliminando...' : textoConfirmar}
+            {confirmando ? textoConfirmando : textoConfirmar}
           </button>
         </div>
       </div>

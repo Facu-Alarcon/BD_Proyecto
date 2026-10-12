@@ -4,7 +4,13 @@
 -- Crea todas las tablas (vacías) con sus claves primarias, claves
 -- foráneas, índices y restricciones de unicidad.
 -- Generado desde la base después de aplicar todas las migraciones de
--- Django (hasta la 0023). Motor: MySQL 8.0, codificación utf8mb4.
+-- Django (hasta la 0023) y actualizado a mano con los cambios de la 0024
+-- (baja física). Motor: MySQL 8.0, codificación utf8mb4.
+--
+-- Bajas: eliminar borra el registro, salvo que tenga algo asociado (las
+-- claves foráneas lo impiden). Solo conservan las columnas activo y
+-- fecha_baja las tablas que se pueden desactivar (empleados, servicios,
+-- metodo_pagos), pagos (activo=0 es pago anulado) y usuarios.
 --
 -- Orden de carga (sobre una base vacía):
 --   1. 01_estructura.sql        -> tablas
@@ -172,8 +178,6 @@ CREATE TABLE `infinito_sonido_clientes` (
   `domicilio_cliente` varchar(60) NOT NULL,
   `telefono_cliente` varchar(12) NOT NULL,
   `email_cliente` varchar(100) NOT NULL,
-  `activo` tinyint(1) NOT NULL DEFAULT '1',
-  `fecha_baja` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id_cliente`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -226,8 +230,6 @@ CREATE TABLE `infinito_sonido_equipos` (
   `cantidad_equipo` int unsigned NOT NULL,
   `id_tipoeq` int NOT NULL,
   `id_estadoeq` int NOT NULL,
-  `activo` tinyint(1) NOT NULL DEFAULT '1',
-  `fecha_baja` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id_equipo`),
   KEY `infinito_sonido_equi_id_tipoeq_f5e0a991_fk_infinito_` (`id_tipoeq`),
   KEY `infinito_sonido_equi_id_estadoeq_0374702a_fk_infinito_` (`id_estadoeq`),
@@ -256,8 +258,6 @@ CREATE TABLE `infinito_sonido_equipos_x_servicios` (
 CREATE TABLE `infinito_sonido_estado_equipos` (
   `id_estadoeq` int NOT NULL AUTO_INCREMENT,
   `nombre_estadoeq` varchar(50) NOT NULL,
-  `activo` tinyint(1) NOT NULL DEFAULT '1',
-  `fecha_baja` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id_estadoeq`),
   UNIQUE KEY `nombre_estadoeq` (`nombre_estadoeq`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -267,8 +267,6 @@ CREATE TABLE `infinito_sonido_estado_equipos` (
 CREATE TABLE `infinito_sonido_horarios` (
   `id_horario` int NOT NULL AUTO_INCREMENT,
   `cantidad_horas` double NOT NULL,
-  `activo` tinyint(1) NOT NULL DEFAULT '1',
-  `fecha_baja` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id_horario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -304,9 +302,13 @@ CREATE TABLE `infinito_sonido_pagos` (
   `id_reserva` int NOT NULL,
   `activo` tinyint(1) NOT NULL DEFAULT '1',
   `fecha_baja` datetime(6) DEFAULT NULL,
+  `motivo_anulacion` varchar(255) NOT NULL DEFAULT '',
+  `id_usuario_anulacion` int DEFAULT NULL,
   PRIMARY KEY (`id_pago`),
   KEY `infinito_sonido_pago_id_reserva_d67b2ef5_fk_infinito_` (`id_reserva`),
-  CONSTRAINT `infinito_sonido_pago_id_reserva_d67b2ef5_fk_infinito_` FOREIGN KEY (`id_reserva`) REFERENCES `infinito_sonido_reservas` (`id_reserva`)
+  KEY `infinito_sonido_pago_id_usuario_anulacion_fk_infinito_` (`id_usuario_anulacion`),
+  CONSTRAINT `infinito_sonido_pago_id_reserva_d67b2ef5_fk_infinito_` FOREIGN KEY (`id_reserva`) REFERENCES `infinito_sonido_reservas` (`id_reserva`),
+  CONSTRAINT `infinito_sonido_pago_id_usuario_anulacion_fk_infinito_` FOREIGN KEY (`id_usuario_anulacion`) REFERENCES `infinito_sonido_usuarios` (`id_usuario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -314,8 +316,6 @@ CREATE TABLE `infinito_sonido_pagos` (
 CREATE TABLE `infinito_sonido_perfiles` (
   `id_perfil` int NOT NULL AUTO_INCREMENT,
   `tipo_perfil` varchar(50) NOT NULL,
-  `activo` tinyint(1) NOT NULL DEFAULT '1',
-  `fecha_baja` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id_perfil`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -327,8 +327,6 @@ CREATE TABLE `infinito_sonido_permisos` (
   `descripcion_permiso` varchar(150) NOT NULL,
   `estado_permiso` tinyint(1) NOT NULL,
   `codigo` varchar(60) NOT NULL,
-  `activo` tinyint(1) NOT NULL DEFAULT '1',
-  `fecha_baja` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id_permiso`),
   UNIQUE KEY `nombre_permiso` (`nombre_permiso`),
   UNIQUE KEY `infinito_sonido_permisos_codigo_05c0dfed_uniq` (`codigo`),
@@ -354,8 +352,6 @@ CREATE TABLE `infinito_sonido_puestos` (
   `id_puesto` int NOT NULL AUTO_INCREMENT,
   `nombre_puesto` varchar(50) NOT NULL,
   `id_sueldo` int NOT NULL,
-  `activo` tinyint(1) NOT NULL DEFAULT '1',
-  `fecha_baja` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id_puesto`),
   KEY `infinito_sonido_pues_id_sueldo_70a39883_fk_infinito_` (`id_sueldo`),
   CONSTRAINT `infinito_sonido_pues_id_sueldo_70a39883_fk_infinito_` FOREIGN KEY (`id_sueldo`) REFERENCES `infinito_sonido_sueldos` (`id_sueldo`)
@@ -463,8 +459,6 @@ CREATE TABLE `infinito_sonido_sesiontoken` (
 CREATE TABLE `infinito_sonido_sueldos` (
   `id_sueldo` int NOT NULL AUTO_INCREMENT,
   `monto_sueldo` double NOT NULL,
-  `activo` tinyint(1) NOT NULL DEFAULT '1',
-  `fecha_baja` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id_sueldo`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -473,8 +467,6 @@ CREATE TABLE `infinito_sonido_sueldos` (
 CREATE TABLE `infinito_sonido_tipo_equipos` (
   `id_tipoeq` int NOT NULL AUTO_INCREMENT,
   `nombre_tipoeq` varchar(50) NOT NULL,
-  `activo` tinyint(1) NOT NULL DEFAULT '1',
-  `fecha_baja` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id_tipoeq`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

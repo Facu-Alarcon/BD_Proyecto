@@ -73,11 +73,25 @@ def _cambios(antes, despues):
     return '\n'.join(lineas)
 
 
+# Arma un texto con todos los datos de un registro, un renglón por cada campo
+# (por ejemplo "monto_sueldo: 500000.0"). Se guarda cuando se elimina algo: como se
+# borra de la base, esto es lo único que queda para saber qué era lo que se eliminó.
+# La contraseña nunca se incluye.
+def _datos(campos):
+    return '\n'.join(
+        f'{campo}: {valor if valor not in (None, "") else "(vacío)"}'
+        for campo, valor in campos.items() if campo not in CAMPOS_OCULTOS
+    )
+
+
 # Texto para las acciones especiales de algunos módulos (las que no son crear/editar/borrar)
 ACCIONES_ESPECIALES = {
     'permisos': (Registro_Actividad.MODIFICACION, 'Actualizó los permisos del perfil'),
     'puestos': (Registro_Actividad.MODIFICACION, 'Actualizó los puestos del empleado'),
-    'reactivar': (Registro_Actividad.MODIFICACION, 'Reactivó al usuario'),
+    # Estos dos sirven para Usuarios, Empleados, Servicios y Métodos de pago
+    # (en el registro, la columna Módulo dice de cuál se trata)
+    'desactivar': (Registro_Actividad.MODIFICACION, 'Desactivó'),
+    'reactivar': (Registro_Actividad.MODIFICACION, 'Reactivó'),
     'restablecer_clave': (Registro_Actividad.CLAVE, 'Restableció la contraseña del usuario'),
 }
 
@@ -99,6 +113,8 @@ class RegistrarActividadMixin:
     def get_object(self):
         objeto = super().get_object()
         self._objeto_registro = objeto
+        # El número (id) lo guardamos aparte, porque después de eliminarlo se pierde
+        self._pk_registro = objeto.pk
         self._antes_registro = model_to_dict(objeto)
         self._texto_registro = str(objeto)
         return objeto
@@ -130,14 +146,16 @@ class RegistrarActividadMixin:
             registrar(request, Registro_Actividad.MODIFICACION, str(objeto), modulo, objeto.pk,
                       detalle or 'Se guardó sin cambios en los datos principales.')
 
-        # Baja: se usa el texto que guardamos antes de borrarlo (después ya no existe)
+        # Baja: usamos el nombre y los datos que habíamos guardado antes de eliminarlo,
+        # porque a esta altura ya no está en la base
         elif accion == 'destroy':
-            registrar(request, Registro_Actividad.BAJA, self._texto_registro, modulo, self._objeto_registro.pk)
+            registrar(request, Registro_Actividad.BAJA, self._texto_registro, modulo, self._pk_registro,
+                      detalle=_datos(self._antes_registro))
 
         # Acciones especiales (asignar permisos, puestos, reactivar, restablecer clave)
         elif accion in ACCIONES_ESPECIALES:
             tipo, texto = ACCIONES_ESPECIALES[accion]
-            registrar(request, tipo, f'{texto}: {self._texto_registro}', modulo, self._objeto_registro.pk)
+            registrar(request, tipo, f'{texto}: {self._texto_registro}', modulo, self._pk_registro)
 
 
 class RegistroErroresMiddleware:

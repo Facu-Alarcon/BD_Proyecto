@@ -74,8 +74,13 @@ export default function ReservaForm() {
       editando ? api.get(`/reservas/${id}/`) : Promise.resolve(null),
     ]).then(([clientesRes, serviciosRes, empleadosRes, reservaRes]) => {
       setClientes(clientesRes.data);
-      setServicios(serviciosRes.data);
-      setEmpleados(empleadosRes.data);
+      // Solo se muestran para elegir los servicios y empleados activos. Los desactivados
+      // aparecen únicamente si la reserva que se está editando ya los tenía, así se
+      // pueden ver y destildar.
+      const serviciosDeLaReserva = new Set((reservaRes?.data.servicios_detalle || []).map((s) => Number(s.id_servicio)));
+      const empleadosDeLaReserva = new Set((reservaRes?.data.empleados_detalle || []).map((e) => Number(e.id_empleado)));
+      setServicios(serviciosRes.data.filter((s) => s.activo || serviciosDeLaReserva.has(Number(s.id_servicio))));
+      setEmpleados(empleadosRes.data.filter((e) => e.activo || empleadosDeLaReserva.has(Number(e.id_empleado))));
 
       if (reservaRes) {
         const r = reservaRes.data;

@@ -51,12 +51,12 @@ def unidades_ocupadas(fecha, excluir_reserva=None):
     return ocupadas
 
 
-# Estado de todos los equipos activos en un día: cuántas unidades tiene, cuántas están
+# Estado de todos los equipos en un día: cuántas unidades tiene, cuántas están
 # ocupadas por reservas y cuántas quedan libres
 def disponibilidad_del_dia(fecha, excluir_reserva=None):
     ocupadas = unidades_ocupadas(fecha, excluir_reserva)
     resultado = []
-    for equipo in Equipos.objects.activos().select_related('id_estadoeq').order_by('nombre_equipo'):
+    for equipo in Equipos.objects.select_related('id_estadoeq').order_by('nombre_equipo'):
         reparacion = fuera_de_servicio(equipo)
         usadas = ocupadas[equipo.pk]
         resultado.append({

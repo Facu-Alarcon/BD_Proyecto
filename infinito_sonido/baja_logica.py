@@ -1,40 +1,37 @@
-# BAJA LÓGICA: en este sistema no se borra nada de la base desde la aplicación.
+# QUÉ PASA CUANDO SE TOCA EL TACHITO (eliminar, desactivar y anular)
 #
-# Para el usuario del sistema es "Eliminar" (el tachito de las tablas) y así se le muestra
-# siempre: a propósito, el frontend no le dice que se puede recuperar, para que use el
-# botón con cuidado. Por dentro, el registro no se elimina:
-# se marca activo=False y se guarda la fecha en fecha_baja. Desde ese momento la API ya no lo
-# devuelve, así que desaparece de todas las pantallas y desplegables del frontend, pero sigue
-# estando en la base.
+# Lo normal: eliminar borra el registro de la base de datos y no se puede recuperar.
+# Pero solo se puede borrar si no tiene nada asociado. Por ejemplo, un cliente que ya
+# tiene reservas no se puede eliminar, porque esas reservas se quedarían sin cliente.
+# En ese caso el sistema no borra nada y le avisa al usuario por qué.
 #
-# ¿Para qué? Si el dueño elimina algo por error, el programador lo puede recuperar desde
-# el panel /admin de Django: cada tabla tiene el filtro "Activo" y la acción "Reactivar los
-# seleccionados" (ver admin.py). También queda anotado en el Registro de actividad quién lo
-# dio de baja y cuándo.
+# Hay algunas cosas que NO se borran nunca, aunque se pida:
 #
-# Qué tablas la usan: todas las que tienen botón de borrar (Clientes, Empleados, Equipos,
-# Tipos y Estados de equipo, Servicios, Puestos, Sueldos, Horarios, Perfiles, Permisos,
-# Métodos de pago y Pagos). Las que no la usan:
-#   - Usuarios: ya tenía su propia baja lógica (activo + fecha_baja), visible en la pantalla
-#     de Usuarios con los botones "Dar de baja" y "Reactivar".
-#   - Reservas: no se dan de baja, se ANULAN con motivo (acción "anular" en api.py).
-#   - Tablas intermedias (Puestos_x_Empleados, Permisos_x_Perfiles, etc.): son asignaciones
-#     que se tildan y destildan, no registros que se den de baja.
+#   - Empleados, Servicios y Métodos de pago: si nunca se usaron se eliminan como
+#     cualquier otro. Pero si ya tienen historia (un empleado que trabajó en eventos,
+#     un servicio que se contrató, un método con el que se cobró) no se pueden borrar,
+#     así que se DESACTIVAN: siguen guardados y se ven en su lista como "Inactivo",
+#     pero ya no aparecen para elegirlos en las reservas y pagos nuevos.
+#     Si hace falta, se pueden volver a activar.
 #
-# Cómo se usa en el código:
-#   - Modelos: heredan de BajaLogica (en models.py) en lugar de models.Model.
-#   - Consultas: Modelo.objects.activos() en vez de Modelo.objects.all() cuando solo
-#     interesan los que están en uso (ej: los pagos que cuentan para el saldo).
-#   - ViewSets: llevan BajaLogicaMixin (abajo) y, si hay que impedir la baja en algún caso,
-#     redefinen validar_baja().
+#   - Pagos: no se eliminan, se ANULAN escribiendo el motivo. Es plata que se cobró,
+#     así que tiene que quedar anotado qué pasó.
+#
+#   - Reservas: tampoco se eliminan, se anulan con motivo (eso ya estaba de antes).
+#
+#   - Usuarios: se dan de baja y se reactivan desde la pantalla de Usuarios. Es para
+#     que no puedan entrar más al sistema, no para borrarlos.
+#
+# En este archivo está lo que necesitan las tablas que se pueden desactivar: los dos
+# campos (activo y fecha_baja) y las funciones para desactivar y reactivar.
+# Lo que hace la API cuando alguien aprieta eliminar o desactivar está en eliminar.py.
 
 from django.db import models
 from django.utils import timezone
-from rest_framework import status
-from rest_framework.response import Response
 
 
-# Agrega a todas las consultas el atajo .activos(): Clientes.objects.activos()
+# Nos deja pedir solo los que están activos escribiendo .activos()
+# Por ejemplo: Servicios.objects.activos() trae los servicios que se pueden contratar
 class BajaLogicaQuerySet(models.QuerySet):
     def activos(self):
         return self.filter(activo=True)
@@ -42,12 +39,14 @@ class BajaLogicaQuerySet(models.QuerySet):
 
 class BajaLogica(models.Model):
     """
-    Modelo base (abstracto: no crea una tabla propia) que les suma a las tablas los dos
-    campos de la baja lógica y el método para darlas de baja.
+    Las tablas que se pueden desactivar se arman a partir de esta clase, y así todas
+    tienen los mismos dos campos sin tener que escribirlos en cada una.
+    No es una tabla de verdad: solo sirve de base para las otras.
+    Ojo: en Pagos, activo en False quiere decir que el pago está anulado.
     """
-    # True mientras está en uso; False cuando se dio de baja (ya no se muestra en el sistema)
+    # True = está en uso. False = se desactivó (o se anuló, si es un pago)
     activo = models.BooleanField(default=True)
-    # Cuándo se dio de baja (vacío mientras está activo)
+    # La fecha en que se desactivó o anuló. Mientras está activo queda vacía
     fecha_baja = models.DateTimeField(null=True, blank=True)
 
     objects = BajaLogicaQuerySet.as_manager()
@@ -55,46 +54,14 @@ class BajaLogica(models.Model):
     class Meta:
         abstract = True
 
-    # "Borrar" en este sistema: se marca inactivo y se guarda cuándo, sin tocar el resto de los datos
-    def dar_de_baja(self):
+    # Desactivar: lo marca como inactivo y anota la fecha. Los demás datos no se tocan
+    def desactivar(self):
         self.activo = False
         self.fecha_baja = timezone.now()
         self.save(update_fields=['activo', 'fecha_baja'])
 
-    # Lo contrario: lo vuelve a poner en uso (lo usa la acción "Reactivar" del panel /admin)
+    # Reactivar: lo vuelve a dejar activo y borra la fecha
     def reactivar(self):
         self.activo = True
         self.fecha_baja = None
         self.save(update_fields=['activo', 'fecha_baja'])
-
-
-class BajaLogicaMixin:
-    """
-    Se agrega a los ViewSets de las tablas con baja lógica. Hace dos cosas:
-      - La API solo trabaja con los registros activos: los dados de baja no aparecen en la
-        lista, y si alguien pide uno por su id recibe "no encontrado" (404).
-      - DELETE ya no borra la fila: la da de baja.
-    """
-
-    def get_queryset(self):
-        return super().get_queryset().filter(activo=True)
-
-    def validar_baja(self, objeto):
-        """
-        Cada ViewSet lo redefine si hay casos en los que no se puede dar de baja (por ejemplo,
-        un cliente con reservas pendientes). Devuelve el mensaje para el usuario, o None si se puede.
-        """
-        return None
-
-    def destroy(self, request, *args, **kwargs):
-        objeto = self.get_object()
-        motivo = self.validar_baja(objeto)
-        if motivo:
-            # El mensaje le llega al usuario (dice "No se puede eliminar..."). 409 = conflicto: el pedido es válido pero el estado de los datos no lo permite
-            return Response({'detail': motivo}, status=status.HTTP_409_CONFLICT)
-        objeto.dar_de_baja()
-        self.despues_de_baja(objeto)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    def despues_de_baja(self, objeto):
-        """Por si un módulo tiene que hacer algo más después de la baja (ej: Pagos recalcula saldos)."""

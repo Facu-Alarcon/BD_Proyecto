@@ -6,19 +6,20 @@ import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
 import { useFiltros, opcionesDe } from '../../hooks/useFiltros';
 import Paginacion from '../../components/Paginacion';
 import { usePaginacion } from '../../hooks/usePaginacion';
-import { IconEditar, IconEliminar } from '../../components/icons';
-import ConfirmModal from '../../components/ConfirmModal';
+import { IconAnular, IconEditar } from '../../components/icons';
+import AnularPagoModal from '../../components/AnularPagoModal';
 import { PersonaCelda } from '../../components/Avatar';
 
 // Lista de Pagos: cada pago con su reserva, monto, saldo pendiente y métodos usados.
+// Los pagos no se eliminan: se anulan con motivo, y quedan en la lista marcados como Anulado.
 export default function PagosList() {
   // Qué puede hacer el usuario en este módulo según su perfil (si no puede gestionar, solo ve la tabla)
   const { puedeGestionar } = usePermiso('pagos');
   const [pagos, setPagos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
-  const [aEliminar, setAEliminar] = useState(null);
-  const [eliminando, setEliminando] = useState(false);
+  // El pago que se está por anular. Cuando tiene algo, se abre la ventana que pide el motivo
+  const [aAnular, setAAnular] = useState(null);
 
   // Trae todos los registros del backend y los guarda para la tabla
   function cargar() {
@@ -33,23 +34,6 @@ export default function PagosList() {
   // Se cargan una sola vez, al abrir la pantalla
   useEffect(cargar, []);
 
-  // Se ejecuta al confirmar en la ventana de "¿Eliminar?". Si el backend no deja borrarlo
-  // (por ejemplo, porque está en uso en otra tabla) se muestra el motivo que devuelve.
-  // Para el usuario es eliminar, pero el backend no lo borra de la base: lo da de baja (activo=False)
-  // y el programador lo puede recuperar desde /admin. Ver infinito_sonido/baja_logica.py.
-  async function confirmarEliminar() {
-    setEliminando(true);
-    try {
-      await api.delete(`/pagos/${aEliminar.id_pago}/`);
-      setAEliminar(null);
-      cargar();
-    } catch (err) {
-      alert(err.response?.data?.detail || 'No se pudo eliminar el pago.');
-    } finally {
-      setEliminando(false);
-    }
-  }
-
   // Filtros de esta pantalla (ver hooks/useFiltros.js)
   const configFiltros = [
     { tipo: 'texto', id: 'texto', placeholder: 'Cliente o nombre del evento', campos: (p) => [p.cliente_nombre, p.evento_nombre] },
@@ -63,6 +47,11 @@ export default function PagosList() {
       opciones: [{ value: 'pendiente', label: 'Con saldo pendiente' }, { value: 'saldado', label: 'Saldados' }],
     },
     { tipo: 'rango', id: 'monto', label: 'Monto', input: 'number', valor: (p) => p.monto },
+    // Filtro para ver solo los pagos vigentes o solo los anulados
+    {
+      tipo: 'select', id: 'estado', label: 'Estado', valor: (p) => (p.anulado ? 'anulado' : 'vigente'),
+      opciones: [{ value: 'vigente', label: 'Vigentes' }, { value: 'anulado', label: 'Anulados' }],
+    },
   ];
   const filtros = useFiltros(pagos, configFiltros);
   // De las filas filtradas se muestran de a 10 (ver hooks/usePaginacion.js)
@@ -92,17 +81,18 @@ export default function PagosList() {
               <th>Monto</th>
               <th>Saldo pendiente</th>
               <th>Método(s) de pago</th>
+              <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cargando && (
-              <tr><td colSpan={5} style={{ textAlign: 'center' }}>Cargando...</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             )}
             {!cargando && pagos.length === 0 && (
-              <tr><td colSpan={5} style={{ textAlign: 'center' }}>No hay pagos registrados.</td></tr>
+              <tr><td colSpan={6} style={{ textAlign: 'center' }}>No hay pagos registrados.</td></tr>
             )}
-            <FilaSinResultados filtros={filtros} total={pagos.length} cargando={cargando} columnas={5} nombreItems="pagos" />
+            <FilaSinResultados filtros={filtros} total={pagos.length} cargando={cargando} columnas={6} nombreItems="pagos" />
             {paginacion.visibles.map((pago) => (
               <tr key={pago.id_pago}>
                 <td><PersonaCelda nombre={pago.cliente_nombre} detalle={pago.evento_nombre} /></td>
@@ -113,11 +103,21 @@ export default function PagosList() {
                     ? <span className="form-hint">Sin especificar</span>
                     : pago.metodos_pago_detalle.map((m) => m.metodo_pago).join(', ')}
                 </td>
+                {/* Cartelito verde si el pago vale, rojo si está anulado. Dejando el mouse
+                    arriba de "Anulado" se ve el motivo y quién lo anuló */}
                 <td>
-                  {puedeGestionar ? (
+                  {pago.anulado
+                    ? <span className="badge badge-red" title={`${pago.motivo_anulacion}${pago.usuario_anulacion ? ` — ${pago.usuario_anulacion}` : ''}`}>Anulado</span>
+                    : <span className="badge badge-green">Vigente</span>}
+                </td>
+                <td>
+                  {/* Un pago anulado ya no tiene botones: no se puede editar ni anular de nuevo */}
+                  {pago.anulado ? (
+                    <span className="form-hint">Sin acciones</span>
+                  ) : puedeGestionar ? (
                     <div className="actions-cell">
                       <Link to={`/pagos/${pago.id_pago}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
-                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(pago)} title="Eliminar"><IconEliminar /></button>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAAnular(pago)} title="Anular"><IconAnular /></button>
                     </div>
                   ) : (
                     <span className="form-hint">Solo lectura</span>
@@ -130,14 +130,13 @@ export default function PagosList() {
         <Paginacion paginacion={paginacion} />
       </div>
 
-      {/* Ventana para confirmar el borrado (solo aparece cuando se tocó el tachito de alguna fila) */}
-      {aEliminar && (
-        <ConfirmModal
-          titulo="Eliminar pago"
-          mensaje={`¿Eliminar el pago de $${Number(aEliminar.monto).toLocaleString('es-AR')} de ${aEliminar.cliente_nombre}?`}
-          confirmando={eliminando}
-          onCancelar={() => setAEliminar(null)}
-          onConfirmar={confirmarEliminar}
+      {/* Ventana que pide el motivo (aparece al tocar el botón Anular de alguna fila).
+          Cuando termina, se cierra y se vuelve a cargar la lista */}
+      {aAnular && (
+        <AnularPagoModal
+          pago={aAnular}
+          onCancelar={() => setAAnular(null)}
+          onAnulado={() => { setAAnular(null); cargar(); }}
         />
       )}
     </div>

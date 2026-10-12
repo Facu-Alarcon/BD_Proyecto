@@ -140,7 +140,7 @@ class UsuariosSerializer(serializers.ModelSerializer):
     # la contraseña temporal)
     def validate_id_empleado(self, empleado):
         if not empleado.activo:
-            raise serializers.ValidationError(f'{empleado} está dado de baja.')
+            raise serializers.ValidationError(f'{empleado} está desactivado.')
         if self.instance is not None:
             if empleado != self.instance.id_empleado:
                 raise serializers.ValidationError('No se puede cambiar el empleado de un usuario ya creado.')
@@ -214,20 +214,23 @@ class ClientesSerializer(serializers.ModelSerializer):
 class EmpleadosSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empleados
-        fields = ['id_empleado', 'dni', 'nombre_emp', 'apellido_emp', 'telefono_emp', 'email_emp', 'tiene_usuario', 'puestos']
+        fields = ['id_empleado', 'dni', 'nombre_emp', 'apellido_emp', 'telefono_emp', 'email_emp', 'tiene_usuario', 'puestos', 'activo']
+        # 'activo' se manda a la pantalla pero no se puede cambiar desde el formulario:
+        # solo cambia con los botones Desactivar y Reactivar
+        read_only_fields = ['activo']
         # En la base el DNI puede estar vacío (empleados viejos), pero desde el formulario se pide siempre
         extra_kwargs = {'dni': {'required': True, 'allow_null': False, 'allow_blank': False}}
 
     # Para la pantalla de Usuarios: así se sabe qué empleados todavía no tienen cuenta
     tiene_usuario = serializers.SerializerMethodField()
 
-    # Nombres de los puestos activos del empleado (ej: ["DJ"]). El formulario de reservas
+    # Nombres de los puestos del empleado (ej: ["DJ"]). El formulario de reservas
     # los usa para mostrar el personal agrupado por puesto.
     puestos = serializers.SerializerMethodField()
 
     def get_puestos(self, obj):
         return sorted(
-            Puestos_x_Empleados.objects.filter(id_empleado=obj, id_puesto__activo=True)
+            Puestos_x_Empleados.objects.filter(id_empleado=obj)
             .values_list('id_puesto__nombre_puesto', flat=True)
         )
 
@@ -249,7 +252,10 @@ class ServiciosSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Servicios
-        fields = ['id_servicio', 'tipo_servicio', 'precio_servicio', 'equipos', 'equipos_detalle']
+        fields = ['id_servicio', 'tipo_servicio', 'precio_servicio', 'equipos', 'equipos_detalle', 'activo']
+        # 'activo' se manda a la pantalla pero no se puede cambiar desde el formulario:
+        # solo cambia con los botones Desactivar y Reactivar
+        read_only_fields = ['activo']
 
     def get_equipos_detalle(self, obj):
         rels = Equipos_x_Servicios.objects.filter(id_servicio=obj).select_related('id_equipo')
@@ -270,8 +276,7 @@ class ServiciosSerializer(serializers.ModelSerializer):
             if id_equipo in vistos:
                 raise serializers.ValidationError('Hay un equipo repetido en la lista.')
             vistos.add(id_equipo)
-            # Solo equipos activos: uno dado de baja ya no se puede agregar a un servicio
-            equipo = Equipos.objects.activos().filter(pk=id_equipo).first()
+            equipo = Equipos.objects.filter(pk=id_equipo).first()
             if equipo is None:
                 raise serializers.ValidationError(f'No existe el equipo {id_equipo}.')
             if cantidad < 1:
@@ -315,7 +320,7 @@ class ServiciosSerializer(serializers.ModelSerializer):
 #
 def recalcular_saldos(reserva):
     pagado = 0
-    # Solo los pagos activos: uno dado de baja ya no cuenta para el saldo
+    # Solo los pagos vigentes: uno anulado ya no cuenta para el saldo
     for pago in Pagos.objects.activos().filter(id_reserva=reserva).order_by('id_pago'):
         pagado += pago.monto
         nuevo_saldo = max(reserva.monto_total - pagado, 0)
@@ -335,12 +340,14 @@ class ReservasSerializer(serializers.ModelSerializer):
     """
     cliente_nombre = serializers.CharField(source='id_cliente.__str__', read_only=True)
     estado_display = serializers.CharField(source='get_estado_reserva_display', read_only=True)
+    # Los servicios y empleados desactivados no se pueden agregar a una reserva, salvo
+    # que la reserva ya los tuviera de antes (se controla más abajo, en validate_servicios
+    # y validate_empleados)
     servicios = serializers.PrimaryKeyRelatedField(
-        # Solo se pueden elegir servicios y empleados activos (los dados de baja no aparecen)
-        queryset=Servicios.objects.activos(), many=True, write_only=True, required=False
+        queryset=Servicios.objects.all(), many=True, write_only=True, required=False
     )
     empleados = serializers.PrimaryKeyRelatedField(
-        queryset=Empleados.objects.activos(), many=True, write_only=True, required=False
+        queryset=Empleados.objects.all(), many=True, write_only=True, required=False
     )
     servicios_detalle = serializers.SerializerMethodField()
     empleados_detalle = serializers.SerializerMethodField()
@@ -452,6 +459,30 @@ class ReservasSerializer(serializers.ModelSerializer):
         if valor == 'ANULADA' and (self.instance is None or self.instance.estado_reserva != 'ANULADA'):
             raise serializers.ValidationError('Para anular una reserva usá la opción "Anular".')
         return valor
+
+    # No se puede agregar a la reserva un servicio desactivado. Pero si la reserva ya lo
+    # tenía (lo desactivaron después), se lo deja: si no, no se podría editar una reserva vieja.
+    def validate_servicios(self, servicios):
+        # Los servicios que la reserva ya tenía guardados (si es una reserva nueva, ninguno)
+        ya_estaban = set()
+        if self.instance is not None:
+            ya_estaban = set(Reservas_x_Servicios.objects.filter(id_reserva=self.instance).values_list('id_servicio_id', flat=True))
+        # De los elegidos, nos quedamos con los que están desactivados y son nuevos en la reserva
+        desactivados = sorted(s.tipo_servicio for s in servicios if not s.activo and s.pk not in ya_estaban)
+        if desactivados:
+            raise serializers.ValidationError(f'Estos servicios están desactivados: {", ".join(desactivados)}.')
+        return servicios
+
+    # Lo mismo con el personal: no se puede asignar a un empleado desactivado, salvo que
+    # ya estuviera en la reserva
+    def validate_empleados(self, empleados):
+        ya_estaban = set()
+        if self.instance is not None:
+            ya_estaban = set(Detalles_Reservas.objects.filter(id_reserva=self.instance).values_list('id_empleado_id', flat=True))
+        desactivados = sorted(str(e) for e in empleados if not e.activo and e.pk not in ya_estaban)
+        if desactivados:
+            raise serializers.ValidationError(f'Estos empleados están desactivados: {", ".join(desactivados)}.')
+        return empleados
 
     # La duración tiene que ser de al menos un minuto, 00:00 no tiene sentido
     def validate_duracion_evento(self, valor):
@@ -601,7 +632,10 @@ class HorariosSerializer(serializers.ModelSerializer):
 class MetodoPagosSerializer(serializers.ModelSerializer):
     class Meta:
         model = Metodo_Pagos
-        fields = ['id_metodo_pago', 'metodo_pago']
+        fields = ['id_metodo_pago', 'metodo_pago', 'activo']
+        # 'activo' se manda a la pantalla pero no se puede cambiar desde el formulario:
+        # solo cambia con los botones Desactivar y Reactivar
+        read_only_fields = ['activo']
 
 
 class PagosSerializer(serializers.ModelSerializer):
@@ -615,19 +649,50 @@ class PagosSerializer(serializers.ModelSerializer):
     """
     cliente_nombre = serializers.CharField(source='id_reserva.id_cliente.__str__', read_only=True)
     evento_nombre = serializers.CharField(source='id_reserva.nombre_evento', read_only=True)
+    # Los métodos de pago desactivados no se pueden elegir (se controla en validate_metodos_pago)
     metodos_pago = serializers.PrimaryKeyRelatedField(
-        # Solo métodos de pago activos
-        queryset=Metodo_Pagos.objects.activos(), many=True, write_only=True, required=False
+        queryset=Metodo_Pagos.objects.all(), many=True, write_only=True, required=False
     )
     metodos_pago_detalle = serializers.SerializerMethodField()
+    # Datos de la anulación, para mostrarlos en la pantalla. En la tabla se llaman activo
+    # y fecha_baja, pero a la pantalla se los mandamos con un nombre más claro:
+    # anulado (sí o no) y fecha_anulacion
+    anulado = serializers.SerializerMethodField()
+    fecha_anulacion = serializers.DateTimeField(source='fecha_baja', read_only=True)
+    usuario_anulacion = serializers.SerializerMethodField()
 
     class Meta:
         model = Pagos
         fields = [
             'id_pago', 'id_reserva', 'cliente_nombre', 'evento_nombre',
             'monto', 'saldo_pendiente', 'metodos_pago', 'metodos_pago_detalle',
+            'anulado', 'fecha_anulacion', 'motivo_anulacion', 'usuario_anulacion',
         ]
-        read_only_fields = ['saldo_pendiente']
+        # Estos no se pueden cambiar desde el formulario: el saldo se calcula solo y el
+        # motivo se carga únicamente al anular
+        read_only_fields = ['saldo_pendiente', 'motivo_anulacion']
+
+    # Un pago está anulado cuando NO está activo
+    def get_anulado(self, obj):
+        return not obj.activo
+
+    # Quién anuló el pago, escrito como "Nombre Apellido (usuario)". Si no está anulado, nada
+    def get_usuario_anulacion(self, obj):
+        usuario = obj.id_usuario_anulacion
+        if usuario is None:
+            return None
+        return f'{usuario.nombre} {usuario.apellido} ({usuario.usuario})'
+
+    # No se puede elegir un método de pago desactivado. Pero si el pago ya lo tenía
+    # (lo desactivaron después), se lo deja.
+    def validate_metodos_pago(self, metodos):
+        ya_estaban = set()
+        if self.instance is not None:
+            ya_estaban = set(Detalles_de_Pago.objects.filter(id_pago=self.instance).values_list('id_metodo_pago_id', flat=True))
+        desactivados = sorted(m.metodo_pago for m in metodos if not m.activo and m.pk not in ya_estaban)
+        if desactivados:
+            raise serializers.ValidationError(f'Estos métodos de pago están desactivados: {", ".join(desactivados)}.')
+        return metodos
 
     # No se registran pagos de reservas anuladas
     def validate_id_reserva(self, reserva):
@@ -638,6 +703,9 @@ class PagosSerializer(serializers.ModelSerializer):
     # Un pago no puede superar lo que falta pagar de la reserva. Lo que falta se calcula con
     # los demás pagos de esa reserva (al editar un pago, el mismo pago no se cuenta)
     def validate(self, attrs):
+        # Un pago anulado ya no se puede modificar, solo mirar
+        if self.instance is not None and not self.instance.activo:
+            raise serializers.ValidationError({'detail': 'Un pago anulado no se puede modificar.'})
         reserva = attrs.get('id_reserva', getattr(self.instance, 'id_reserva', None))
         monto = attrs.get('monto', getattr(self.instance, 'monto', 0))
         if reserva is not None:

@@ -35,7 +35,10 @@ export default function PagoForm() {
       editando ? api.get(`/pagos/${id}/`) : Promise.resolve(null),
     ]).then(([reservasRes, metodosRes, pagoRes]) => {
       setReservas(reservasRes.data);
-      setMetodos(metodosRes.data);
+      // Solo se muestran para elegir los métodos de pago activos. Los desactivados aparecen
+      // únicamente si el pago que se está editando ya los tenía, así se pueden ver y destildar.
+      const metodosDelPago = new Set((pagoRes?.data.metodos_pago_detalle || []).map((m) => Number(m.id_metodo_pago)));
+      setMetodos(metodosRes.data.filter((m) => m.activo || metodosDelPago.has(Number(m.id_metodo_pago))));
 
       if (pagoRes) {
         const p = pagoRes.data;

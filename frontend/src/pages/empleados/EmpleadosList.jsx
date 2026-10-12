@@ -6,7 +6,7 @@ import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
 import { useFiltros } from '../../hooks/useFiltros';
 import Paginacion from '../../components/Paginacion';
 import { usePaginacion } from '../../hooks/usePaginacion';
-import { IconEditar, IconEliminar } from '../../components/icons';
+import { IconAnular, IconEditar, IconEliminar, IconReactivar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import { PersonaCelda } from '../../components/Avatar';
 import ContactoCelda from '../../components/ContactoCelda';
@@ -21,6 +21,10 @@ export default function EmpleadosList() {
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
+  // El que se está por desactivar. Cuando tiene algo, se abre la ventana que pregunta "¿Desactivar?"
+  const [aDesactivar, setADesactivar] = useState(null);
+  // Se pone en true mientras esperamos la respuesta del backend, para que no aprieten dos veces
+  const [procesando, setProcesando] = useState(false);
 
   // Trae todos los registros del backend y los guarda para la tabla
   function cargar() {
@@ -37,8 +41,9 @@ export default function EmpleadosList() {
 
   // Se ejecuta al confirmar en la ventana de "¿Eliminar?". Si el backend no deja borrarlo
   // (por ejemplo, porque está en uso en otra tabla) se muestra el motivo que devuelve.
-  // Para el usuario es eliminar, pero el backend no lo borra de la base: lo da de baja (activo=False)
-  // y el programador lo puede recuperar desde /admin. Ver infinito_sonido/baja_logica.py.
+  // Eliminar lo borra de la base y no se puede recuperar. Si el empleado ya se usó en
+  // las reservas, el backend no deja eliminarlo y el mensaje avisa que se puede desactivar.
+  // Está explicado en infinito_sonido/baja_logica.py.
   async function confirmarEliminar() {
     setEliminando(true);
     try {
@@ -52,8 +57,43 @@ export default function EmpleadosList() {
     }
   }
 
+  // Se ejecuta al confirmar en la ventana de "¿Desactivar?". El empleado no se borra: queda
+  // en esta lista con el cartel "Inactivo" y deja de aparecer para elegirlo en
+  // las reservas nuevas. Si el backend no deja desactivarlo, se muestra el motivo.
+  async function confirmarDesactivar() {
+    setProcesando(true);
+    try {
+      await api.post(`/empleados/${aDesactivar.id_empleado}/desactivar/`);
+      setADesactivar(null);
+      cargar();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'No se pudo desactivar.');
+    } finally {
+      setProcesando(false);
+    }
+  }
+
+  // Botón Reactivar (solo lo tienen los inactivos): lo vuelve a dejar activo.
+  // No pide confirmación porque no se pierde nada.
+  async function reactivar(x) {
+    setProcesando(true);
+    try {
+      await api.post(`/empleados/${x.id_empleado}/reactivar/`);
+      cargar();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'No se pudo reactivar.');
+    } finally {
+      setProcesando(false);
+    }
+  }
+
   // Filtros de esta pantalla (ver hooks/useFiltros.js)
   const configFiltros = [
+    // Filtro para ver solo los activos o solo los inactivos
+    {
+      tipo: 'select', id: 'estado', label: 'Estado', valor: (x) => (x.activo ? 'activo' : 'inactivo'),
+      opciones: [{ value: 'activo', label: 'Activos' }, { value: 'inactivo', label: 'Inactivos' }],
+    },
     {
       tipo: 'texto', id: 'texto', placeholder: 'Nombre, apellido, DNI, teléfono o email',
       // DNI y teléfono van también con formato, así se encuentran escribiéndolos como se ven en la tabla
@@ -86,17 +126,18 @@ export default function EmpleadosList() {
             <tr>
               <th>Empleado</th>
               <th>Contacto</th>
+              <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cargando && (
-              <tr><td colSpan={3} style={{ textAlign: 'center' }}>Cargando...</td></tr>
+              <tr><td colSpan={4} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             )}
             {!cargando && empleados.length === 0 && (
-              <tr><td colSpan={3} style={{ textAlign: 'center' }}>No hay empleados cargados.</td></tr>
+              <tr><td colSpan={4} style={{ textAlign: 'center' }}>No hay empleados cargados.</td></tr>
             )}
-            <FilaSinResultados filtros={filtros} total={empleados.length} cargando={cargando} columnas={3} nombreItems="empleados" />
+            <FilaSinResultados filtros={filtros} total={empleados.length} cargando={cargando} columnas={4} nombreItems="empleados" />
             {paginacion.visibles.map((empleado) => (
               <tr key={empleado.id_empleado}>
                 {/* Abajo del nombre va el DNI con puntos; si no lo tiene, una etiqueta ámbar para que se note */}
@@ -109,11 +150,22 @@ export default function EmpleadosList() {
                 </td>
                 {/* Mail y teléfono juntos en una sola columna */}
                 <td><ContactoCelda email={empleado.email_emp} telefono={empleado.telefono_emp} /></td>
+                {/* Cartelito verde si está activo, rojo si está desactivado */}
+                <td>
+                  {empleado.activo
+                    ? <span className="badge badge-green">Activo</span>
+                    : <span className="badge badge-red">Inactivo</span>}
+                </td>
                 <td>
                   {puedeGestionar ? (
                     <div className="actions-cell">
                       <Link to={`/empleados/${empleado.id_empleado}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
                       <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(empleado)} title="Eliminar"><IconEliminar /></button>
+                      {empleado.activo ? (
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setADesactivar(empleado)} title="Desactivar"><IconAnular /></button>
+                      ) : (
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => reactivar(empleado)} title="Reactivar" disabled={procesando}><IconReactivar /></button>
+                      )}
                     </div>
                   ) : (
                     <span className="form-hint">Solo lectura</span>
@@ -134,6 +186,19 @@ export default function EmpleadosList() {
           confirmando={eliminando}
           onCancelar={() => setAEliminar(null)}
           onConfirmar={confirmarEliminar}
+        />
+      )}
+
+      {/* Ventana que pregunta si de verdad se quiere desactivar (aparece al tocar el botón Desactivar) */}
+      {aDesactivar && (
+        <ConfirmModal
+          titulo="Desactivar empleado"
+          mensaje={`¿Desactivar al empleado "${aDesactivar.nombre_emp} ${aDesactivar.apellido_emp}"? Va a dejar de ofrecerse en las reservas nuevas, pero se conserva su historial y se puede volver a activar.`}
+          textoConfirmar="Desactivar"
+          textoConfirmando="Desactivando..."
+          confirmando={procesando}
+          onCancelar={() => setADesactivar(null)}
+          onConfirmar={confirmarDesactivar}
         />
       )}
     </div>
