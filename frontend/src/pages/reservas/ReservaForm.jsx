@@ -4,6 +4,7 @@ import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
 import SelectBuscable from '../../components/SelectBuscable';
+import { IconVolver } from '../../components/icons';
 
 // Estados que se pueden elegir al editar (Anulada no: para eso está el botón "Anular")
 const ESTADOS = [
@@ -257,7 +258,7 @@ export default function ReservaForm() {
 
   // Los campos del formulario (los mismos para crear y para editar)
   const formulario = (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="reserva-form">
       {errores.detail && <div className="alert alert-error">{errores.detail}</div>}
       {errores.empleados && <div className="alert alert-error">{errores.empleados}</div>}
       {/* Errores de los servicios elegidos (por ejemplo, equipos no disponibles ese día) */}
@@ -308,7 +309,9 @@ export default function ReservaForm() {
           {errores.hora_evento && <span className="form-error">{errores.hora_evento}</span>}
         </div>
         <div className="form-field">
-          <label htmlFor="duracion_evento">Duración</label>
+          {/* La aclaración va al lado del nombre del campo (y no abajo) para que esta fila
+              no quede más alta que las demás */}
+          <label htmlFor="duracion_evento">Duración <span className="label-aclaracion">(horas:minutos, ej: 04:30)</span></label>
           <input
             id="duracion_evento"
             type="time"
@@ -316,7 +319,6 @@ export default function ReservaForm() {
             onChange={(e) => actualizar('duracion_evento', e.target.value)}
             required
           />
-          <span className="form-hint">Horas:minutos (ej: 04:30)</span>
           {errores.duracion_evento && <span className="form-error">{errores.duracion_evento}</span>}
         </div>
       </div>
@@ -451,11 +453,15 @@ export default function ReservaForm() {
   return (
     <div>
       <div className="page-header">
-        <div>
+        {/* Flecha para volver a la lista de reservas, al lado del título */}
+        <div className="titulo-con-volver">
+          <button type="button" className="btn-volver" onClick={() => navigate('/reservas')} title="Volver a Reservas" aria-label="Volver a Reservas">
+            <IconVolver />
+          </button>
           <h1>Nueva Reserva</h1>
         </div>
       </div>
-      <div className="card" style={{ padding: 28, maxWidth: 640 }}>
+      <div className="card" style={{ padding: 28 }}>
         {formulario}
       </div>
     </div>
