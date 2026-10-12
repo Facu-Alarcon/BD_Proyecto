@@ -29,7 +29,7 @@ from django.utils import timezone
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import SAFE_METHODS, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import (
@@ -316,17 +316,35 @@ class MetodoPagosViewSet(RegistrarActividadMixin, EliminarMixin, DesactivarMixin
                     'Podés desactivarlo para que deje de ofrecerse en los pagos nuevos.')
 
 
+# Quién puede usar los Estados de equipo. Es como en los demás módulos (hace falta
+# "Ver Estados de equipo" para mirar y "Gestionar Estados de equipo" para cambiar), con
+# un agregado: el que tiene permiso sobre Equipos también puede VER la lista de estados,
+# porque el formulario de Equipos la necesita para armar el desplegable "Estado del equipo".
+class PermisoEstadosEquipo(permiso_modulo('estados_equipo')):
+    def has_permission(self, request, view):
+        # Primero el control normal del módulo
+        if super().has_permission(request, view):
+            return True
+        # Si no lo pasó: se lo deja solo mirar (nunca cambiar) si tiene permiso sobre Equipos
+        if request.method in SAFE_METHODS and getattr(request.user, 'is_authenticated', False):
+            permisos = permisos_del_usuario(request.user)
+            return 'ver_equipos' in permisos or 'gestionar_equipos' in permisos
+        return False
+
+
 class EstadoEquiposViewSet(RegistrarActividadMixin, EliminarMixin, viewsets.ModelViewSet):
     """
-    Catálogo editable de estados de equipo (antes era una lista fija
-    DISPONIBLE/EN_USO/EN_REPARACION hardcodeada). Se puede crear un
-    estado nuevo desde acá, incluido el botón "+" del formulario de Equipos.
+    Estados de equipo (Disponible, En uso, En reparación...). Es un módulo aparte, con su
+    propia pantalla en el menú: ahí se agregan, se cambian de nombre y se eliminan.
+    En el formulario de Equipos solo se elige uno de la lista.
+    Ojo con el estado "En reparación": el sistema reconoce por el nombre que esos equipos
+    no se pueden reservar (ver disponibilidad.py), así que conviene no cambiarle el nombre.
     """
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Estados de equipo'
     queryset = Estado_Equipos.objects.all().order_by('nombre_estadoeq')
     serializer_class = EstadoEquiposSerializer
-    permission_classes = [permiso_modulo('equipos')]
+    permission_classes = [PermisoEstadosEquipo]
 
     # No se elimina un estado que tiene algún equipo
     def validar_eliminacion(self, estado):

@@ -4,7 +4,7 @@
 -- Como usarlo:
 --   1. Levantar los contenedores (docker compose up -d). El contenedor web
 --      corre las migraciones solo, asi que las tablas ya estan creadas y
---      ya tienen cargados los 30 permisos y los 3 estados de equipo.
+--      ya tienen cargados los 33 permisos y los 3 estados de equipo.
 --   2. Entrar a phpMyAdmin (http://localhost:8080), elegir la base del
 --      proyecto, ir a la pestana SQL, pegar TODO este archivo y Continuar.
 --      Tiene que ejecutarse todo junto de una sola vez: los ids se van
@@ -45,7 +45,7 @@ SET @usr_admin = LAST_INSERT_ID();
 INSERT INTO infinito_sonido_perfiles (tipo_perfil) VALUES ('Empleado');
 SET @perfil_empleado = LAST_INSERT_ID();
 INSERT INTO infinito_sonido_permisos_x_perfiles (id_perfil, id_permiso)
-  SELECT @perfil_empleado, id_permiso FROM infinito_sonido_permisos WHERE codigo IN ('ver_reservas','ver_clientes','ver_equipos','ver_servicios','ver_tipos_equipo','ver_horarios');
+  SELECT @perfil_empleado, id_permiso FROM infinito_sonido_permisos WHERE codigo IN ('ver_reservas','ver_clientes','ver_equipos','ver_servicios','ver_tipos_equipo','ver_estados_equipo','ver_horarios');
 
 -- ======================================================================
 -- 5. SUELDOS

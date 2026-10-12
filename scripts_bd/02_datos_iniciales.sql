@@ -3,8 +3,8 @@
 -- =====================================================================
 -- Datos que el sistema necesita para funcionar, que normalmente cargan
 -- las migraciones de Django:
---   - infinito_sonido_permisos: los 30 permisos (ver_/gestionar_ de cada
---     módulo, ver_registro y anular_reservas)
+--   - infinito_sonido_permisos: los 33 permisos (ver_/gestionar_ de cada
+--     módulo, ver_registro, anular_reservas y ver_reportes)
 --   - infinito_sonido_estado_equipos: Disponible, En uso, En reparación
 --   - django_migrations, django_content_type, auth_permission: control
 --     interno de Django, para que sepa que la base ya está al día y no
@@ -56,6 +56,9 @@ INSERT INTO `infinito_sonido_permisos` (`id_permiso`, `nombre_permiso`, `descrip
 INSERT INTO `infinito_sonido_permisos` (`id_permiso`, `nombre_permiso`, `descripcion_permiso`, `estado_permiso`, `codigo`) VALUES (28,'Gestionar Pagos','Permite crear, editar y eliminar en Pagos.',1,'gestionar_pagos');
 INSERT INTO `infinito_sonido_permisos` (`id_permiso`, `nombre_permiso`, `descripcion_permiso`, `estado_permiso`, `codigo`) VALUES (29,'Ver Registro de actividad','Permite ver quién hizo cada alta, modificación y baja, los inicios de sesión y los errores del sistema.',1,'ver_registro');
 INSERT INTO `infinito_sonido_permisos` (`id_permiso`, `nombre_permiso`, `descripcion_permiso`, `estado_permiso`, `codigo`) VALUES (30,'Anular Reservas','Permite anular una reserva indicando el motivo. La reserva no se borra: queda como Anulada.',1,'anular_reservas');
+INSERT INTO `infinito_sonido_permisos` (`id_permiso`, `nombre_permiso`, `descripcion_permiso`, `estado_permiso`, `codigo`) VALUES (31,'Ver Reportes','Permite ver los reportes del sistema (uso de equipos, etc.).',1,'ver_reportes');
+INSERT INTO `infinito_sonido_permisos` (`id_permiso`, `nombre_permiso`, `descripcion_permiso`, `estado_permiso`, `codigo`) VALUES (32,'Ver Estados de equipo','Permite ver el listado de Estados de equipo.',1,'ver_estados_equipo');
+INSERT INTO `infinito_sonido_permisos` (`id_permiso`, `nombre_permiso`, `descripcion_permiso`, `estado_permiso`, `codigo`) VALUES (33,'Gestionar Estados de equipo','Permite crear, editar y eliminar en Estados de equipo.',1,'gestionar_estados_equipo');
 /*!40000 ALTER TABLE `infinito_sonido_permisos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -276,6 +279,8 @@ INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (39,'inf
 INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (40,'infinito_sonido','0023_baja_logica','2026-10-07 03:23:08.811309');
 INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (41,'sessions','0001_initial','2026-10-07 03:23:08.861887');
 INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (42,'infinito_sonido','0024_baja_fisica','2026-10-12 00:00:00.000000');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (43,'infinito_sonido','0025_permiso_reportes','2026-10-12 00:00:00.000000');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (44,'infinito_sonido','0026_permisos_estados_equipo','2026-10-12 00:00:00.000000');
 /*!40000 ALTER TABLE `django_migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

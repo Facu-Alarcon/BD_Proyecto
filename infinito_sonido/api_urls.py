@@ -1,7 +1,7 @@
 # Direcciones de la API. Todas cuelgan de /api/ (ver core/urls.py).
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import api 
+from . import api, reportes
 
 # El router arma solo las URLs de cada ViewSet. Por ejemplo, para "clientes" crea:
 #   /api/clientes/        -> GET lista, POST crea
@@ -35,6 +35,8 @@ urlpatterns = [
     path('recuperar-clave/', api.RecuperarClaveView.as_view(), name='api_recuperar_clave'),
     path('restablecer-clave/<str:token>/', api.RestablecerConLinkView.as_view(), name='api_restablecer_con_link'),
     path('dashboard/resumen/', api.DashboardResumenView.as_view(), name='api_dashboard_resumen'),
+    # Reportes (ver reportes.py). Cada reporte nuevo se agrega acá con su propia dirección
+    path('reportes/uso-equipos/', reportes.ReporteUsoEquiposView.as_view(), name='api_reporte_uso_equipos'),
     # Al final, todas las URLs que armó el router
     path('', include(router.urls)),
 ]

@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  IconInicio, IconClientes, IconReservas, IconServicios, IconEquipos, IconTiposEquipo,
+  IconInicio, IconClientes, IconReservas, IconServicios, IconEquipos, IconTiposEquipo, IconEstadosEquipo,
   IconEmpleados, IconPuestos, IconHorarios, IconSueldos, IconUsuarios, IconPerfiles,
-  IconPermisos, IconMetodosPago, IconPagos, IconRegistro,
+  IconPermisos, IconMetodosPago, IconPagos, IconRegistro, IconReportes,
 } from './icons';
 import './Sidebar.css';
 
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { to: '/servicios', label: 'Servicios', icon: IconServicios, modulo: 'servicios' },
   { to: '/equipos', label: 'Equipos', icon: IconEquipos, modulo: 'equipos' },
   { to: '/tipos-equipo', label: 'Tipos de equipo', icon: IconTiposEquipo, modulo: 'tipos_equipo' },
+  { to: '/estados-equipo', label: 'Estados de equipo', icon: IconEstadosEquipo, modulo: 'estados_equipo' },
   { to: '/empleados', label: 'Empleados', icon: IconEmpleados, modulo: 'empleados' },
   { to: '/puestos', label: 'Puestos', icon: IconPuestos, modulo: 'puestos' },
   { to: '/horarios', label: 'Horarios', icon: IconHorarios, modulo: 'horarios' },
@@ -26,6 +27,8 @@ const NAV_ITEMS = [
   { to: '/permisos', label: 'Permisos', icon: IconPermisos, modulo: 'permisos' },
   { to: '/metodos-pago', label: 'Métodos de pago', icon: IconMetodosPago, modulo: 'metodos_pago' },
   { to: '/pagos', label: 'Pagos', icon: IconPagos, modulo: 'pagos' },
+  // Solo lo ven los perfiles con el permiso "Ver Reportes" (por defecto, el Administrador)
+  { to: '/reportes', label: 'Reportes', icon: IconReportes, modulo: 'reportes' },
   // Solo lo ven los perfiles con el permiso "Ver Registro de actividad" (por defecto, el Administrador)
   { to: '/registro', label: 'Registro de actividad', icon: IconRegistro, modulo: 'registro' },
 ];

@@ -51,6 +51,9 @@ import ReservaComprobante from './pages/reservas/ReservaComprobante';
 import TiposEquipoList from './pages/tiposequipo/TiposEquipoList';
 import TipoEquipoForm from './pages/tiposequipo/TipoEquipoForm';
 
+import EstadosEquipoList from './pages/estadosequipo/EstadosEquipoList';
+import EstadoEquipoForm from './pages/estadosequipo/EstadoEquipoForm';
+
 import HorariosList from './pages/horarios/HorariosList';
 import HorarioForm from './pages/horarios/HorarioForm';
 
@@ -62,6 +65,8 @@ import PagoForm from './pages/pagos/PagoForm';
 
 import CambiarClave from './pages/CambiarClave';
 import RegistroActividad from './pages/registro/RegistroActividad';
+import ReportesInicio from './pages/reportes/ReportesInicio';
+import ReporteUsoEquipos from './pages/reportes/ReporteUsoEquipos';
 import RecuperarClave from './pages/RecuperarClave';
 import RestablecerConLink from './pages/RestablecerConLink';
 
@@ -97,6 +102,12 @@ export default function App() {
               <Route index element={<TiposEquipoList />} />
               <Route path="nuevo" element={<TipoEquipoForm />} />
               <Route path=":id/editar" element={<TipoEquipoForm />} />
+            </Route>
+
+            <Route path="estados-equipo" element={<RequierePermiso modulo="estados_equipo"><Outlet /></RequierePermiso>}>
+              <Route index element={<EstadosEquipoList />} />
+              <Route path="nuevo" element={<EstadoEquipoForm />} />
+              <Route path=":id/editar" element={<EstadoEquipoForm />} />
             </Route>
 
             <Route path="perfiles" element={<RequierePermiso modulo="perfiles"><Outlet /></RequierePermiso>}>
@@ -172,6 +183,12 @@ export default function App() {
               <Route index element={<PagosList />} />
               <Route path="nuevo" element={<PagoForm />} />
               <Route path=":id/editar" element={<PagoForm />} />
+            </Route>
+
+            {/* Reportes: la lista de reportes y una pantalla por cada uno. Solo se consultan */}
+            <Route path="reportes" element={<RequierePermiso modulo="reportes"><Outlet /></RequierePermiso>}>
+              <Route index element={<ReportesInicio />} />
+              <Route path="uso-equipos" element={<ReporteUsoEquipos />} />
             </Route>
 
             {/* Registro de actividad: solo consulta, no tiene alta ni edición */}

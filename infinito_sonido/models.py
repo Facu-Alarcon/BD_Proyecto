@@ -296,8 +296,8 @@ class Tipo_Equipos(models.Model):
         return self.nombre_tipoeq
 
 
-# Estados posibles de un equipo (Disponible, En uso, En reparación). Es un catálogo
-# editable: desde el formulario de Equipos se puede agregar uno nuevo con el botón "+".
+# Estados posibles de un equipo (Disponible, En uso, En reparación). Se pueden agregar,
+# cambiar y eliminar desde su propia pantalla del menú, "Estados de equipo".
 # Los equipos En reparación no se pueden reservar.
 class Estado_Equipos(models.Model):
     id_estadoeq = models.AutoField(primary_key=True)

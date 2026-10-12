@@ -176,6 +176,16 @@ export function IconTiposEquipo(props) {
   );
 }
 
+// Estados de equipo: un círculo con un tilde adentro
+export function IconEstadosEquipo(props) {
+  return (
+    <IconMenu {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="8 12.5 11 15.5 16 9.5" />
+    </IconMenu>
+  );
+}
+
 export function IconEmpleados(props) {
   return (
     <IconMenu {...props}>
@@ -258,6 +268,18 @@ export function IconPagos(props) {
       <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
       <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
       <path d="M12 17.5v-11" />
+    </IconMenu>
+  );
+}
+
+// Reportes: gráfico de barras
+export function IconReportes(props) {
+  return (
+    <IconMenu {...props}>
+      <line x1="3" y1="21" x2="21" y2="21" />
+      <rect x="5" y="11" width="3" height="7" />
+      <rect x="10.5" y="6" width="3" height="12" />
+      <rect x="16" y="14" width="3" height="4" />
     </IconMenu>
   );
 }

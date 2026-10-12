@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
+import { usePermiso } from '../../hooks/usePermiso';
 
 // Formulario de Equipos (alta y edición): nombre, tipo, estado y cantidad de unidades.
+// El tipo y el estado se eligen de una lista. Para agregar un tipo o un estado nuevo hay
+// que ir a sus módulos del menú (Tipos de equipo y Estados de equipo).
 // Es el mismo componente para crear y para editar: si la URL trae un id (/.../5/editar)
 // se está editando y se abre como ventana emergente; si no, es una pantalla de alta común.
 export default function EquipoForm() {
@@ -29,24 +32,13 @@ export default function EquipoForm() {
   const [cargando, setCargando] = useState(editando);
   const [guardando, setGuardando] = useState(false);
 
-  // Para el botón "+" que permite crear un estado de equipo nuevo sin salir del formulario
-  const [mostrarNuevoEstado, setMostrarNuevoEstado] = useState(false);
-  const [nuevoEstado, setNuevoEstado] = useState('');
-  const [guardandoEstado, setGuardandoEstado] = useState(false);
-  const [errorEstado, setErrorEstado] = useState('');
-
-  // Trae los estados de equipo (se vuelve a llamar después de crear uno nuevo)
-  function cargarEstados() {
-    return api.get('/estado-equipos/').then(({ data }) => {
-      setEstados(data);
-      return data;
-    });
-  }
+  // Para saber si a este usuario le mostramos el link al módulo Estados de equipo
+  const { puedeGestionar: puedeGestionarEstados } = usePermiso('estados_equipo');
 
   // Al abrir: tipos y estados para los desplegables
   useEffect(() => {
     api.get('/tipo-equipos/').then(({ data }) => setTipos(data));
-    cargarEstados();
+    api.get('/estado-equipos/').then(({ data }) => setEstados(data));
   }, []);
 
   // Al editar: se traen los datos del equipo
@@ -66,25 +58,6 @@ export default function EquipoForm() {
   // Cambia un solo campo del formulario y deja los demás como estaban
   function actualizar(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }));
-  }
-
-  // Crea un estado nuevo, recarga la lista de estados y lo deja elegido en el formulario
-  async function agregarEstado(e) {
-    e.preventDefault();
-    if (!nuevoEstado.trim()) return;
-    setGuardandoEstado(true);
-    setErrorEstado('');
-    try {
-      const { data } = await api.post('/estado-equipos/', { nombre_estadoeq: nuevoEstado.trim() });
-      await cargarEstados();
-      actualizar('id_estadoeq', data.id_estadoeq);
-      setNuevoEstado('');
-      setMostrarNuevoEstado(false);
-    } catch (err) {
-      setErrorEstado(err.response?.data?.nombre_estadoeq?.[0] || 'No se pudo agregar el estado.');
-    } finally {
-      setGuardandoEstado(false);
-    }
   }
 
   // Guardar: si se está editando hace PUT y muestra la ventana de éxito; si es un alta hace
@@ -161,48 +134,25 @@ export default function EquipoForm() {
 
       <div className="form-field">
         <label htmlFor="id_estadoeq">Estado del Equipo</label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <select
-            id="id_estadoeq"
-            value={form.id_estadoeq}
-            onChange={(e) => actualizar('id_estadoeq', e.target.value)}
-            required
-            style={{ flex: 1 }}
-          >
-            <option value="">Seleccionar...</option>
-            {estados.map((estado) => (
-              <option key={estado.id_estadoeq} value={estado.id_estadoeq}>{estado.nombre_estadoeq}</option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => setMostrarNuevoEstado((v) => !v)}
-            title="Agregar un estado nuevo"
-          >
-            +
-          </button>
-        </div>
+        <select
+          id="id_estadoeq"
+          value={form.id_estadoeq}
+          onChange={(e) => actualizar('id_estadoeq', e.target.value)}
+          required
+        >
+          <option value="">Seleccionar...</option>
+          {estados.map((estado) => (
+            <option key={estado.id_estadoeq} value={estado.id_estadoeq}>{estado.nombre_estadoeq}</option>
+          ))}
+        </select>
         {errores.id_estadoeq && <span className="form-error">{errores.id_estadoeq}</span>}
-
-        {mostrarNuevoEstado && (
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <input
-              autoFocus
-              placeholder="Nombre del estado nuevo (ej: Reservado)"
-              value={nuevoEstado}
-              onChange={(e) => setNuevoEstado(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') agregarEstado(e);
-              }}
-              style={{ flex: 1 }}
-            />
-            <button type="button" className="btn btn-primary btn-sm" onClick={agregarEstado} disabled={guardandoEstado}>
-              {guardandoEstado ? 'Agregando...' : 'Agregar'}
-            </button>
-          </div>
+        {/* Los estados ya no se agregan desde acá: se le avisa al usuario dónde se hace
+            (solo a los que tienen permiso para gestionarlos) */}
+        {puedeGestionarEstados && (
+          <span className="form-hint">
+            ¿Falta un estado? Se agregan desde <Link to="/estados-equipo">Estados de equipo</Link>.
+          </span>
         )}
-        {errorEstado && <span className="form-error">{errorEstado}</span>}
       </div>
 
       <div className="form-field">
