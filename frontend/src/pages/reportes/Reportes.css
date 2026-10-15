@@ -73,6 +73,23 @@
   margin-bottom: 16px;
 }
 
+/* Texto del período, arriba del gráfico */
+.reporte-periodo {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* El gráfico es una imagen que arma el backend (matplotlib). Como mucho 900px de ancho,
+   centrado en la tarjeta, y en pantallas chicas se achica sola sin deformarse */
+.reporte-grafico {
+  display: block;
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  margin: 0 auto;
+}
+
 .reporte-subtitulo {
   margin: 0 0 8px;
   font-size: 16px;

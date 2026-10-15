@@ -3,10 +3,17 @@
 # REPORTE 1 - USO DE EQUIPOS POR MES
 
 
+import base64
 import calendar
 import datetime
+import io
 from collections import defaultdict
 
+import matplotlib
+# 'Agg' dibuja directo a una imagen, sin abrir ventanas (en el servidor no hay pantalla)
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import pandas as pd
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -46,6 +53,42 @@ def _meses_entre(desde, hasta):
         if mes == 13:  # después de diciembre viene enero del año siguiente
             anio, mes = anio + 1, 1
     return meses
+
+
+# Dibuja el gráfico de barras (una barra por mes) con pandas y matplotlib y lo devuelve
+# como imagen PNG en texto base64, para mandarlo dentro de la respuesta JSON. El frontend
+# lo muestra con <img src="data:image/png;base64,...">.
+def _grafico_uso_por_mes(columnas):
+    # pandas: una tabla con una fila por mes. El índice es lo que va debajo de cada barra
+    # (ej: "ene\n2026", el \n pone el año en un segundo renglón)
+    tabla = pd.DataFrame(columnas)
+    tabla.index = [f"{MESES[m - 1]}\n{a}" for a, m in zip(tabla['anio'], tabla['mes'])]
+
+    # matplotlib: figsize es el tamaño en pulgadas (7 x 3 = un gráfico chico y apaisado).
+    # dpi = puntos por pulgada: 7 x 150 = 1050px de ancho, así se ve nítido en pantalla
+    fig, ax = plt.subplots(figsize=(7, 3), dpi=150)
+    tabla['unidades'].plot(kind='bar', ax=ax, color='#4e7246', width=0.6, rot=0)
+
+    # El número arriba de cada barra (en los meses sin uso no se escribe nada)
+    ax.bar_label(ax.containers[0], labels=[v if v else '' for v in tabla['unidades']], fontsize=8, padding=2)
+
+    ax.set_title('Unidades de equipos comprometidas en eventos, por mes', fontsize=10, color='#05284c')
+    ax.set_xlabel('Mes del evento', fontsize=8, color='#6b7590')
+    ax.set_ylabel('Unidades', fontsize=8, color='#6b7590')
+    ax.tick_params(labelsize=7, colors='#142042')
+    # Sin el borde de arriba y de la derecha, y con líneas guía suaves detrás de las barras
+    ax.spines[['top', 'right']].set_visible(False)
+    ax.grid(axis='y', color='#e4e8f1')
+    ax.set_axisbelow(True)
+    # Deja un poco de aire arriba para que entre el número de la barra más alta
+    ax.margins(y=0.15)
+    fig.tight_layout()
+
+    # Guardamos la imagen en memoria (no en un archivo) y la pasamos a texto
+    buffer = io.BytesIO()
+    fig.savefig(buffer, format='png')
+    plt.close(fig)  # libera la memoria del gráfico
+    return base64.b64encode(buffer.getvalue()).decode('ascii')
 
 
 class ReporteUsoEquiposView(APIView):
@@ -160,11 +203,15 @@ class ReporteUsoEquiposView(APIView):
             for anio, mes in meses
         ]
 
+        total_unidades = sum(c['unidades'] for c in columnas)
+
         return Response({
             'periodo': {'desde': f'{desde[0]}-{desde[1]:02d}', 'hasta': f'{hasta[0]}-{hasta[1]:02d}'},
             'meses': columnas,
+            # La imagen del gráfico (si no hubo uso en el período no se dibuja)
+            'grafico': _grafico_uso_por_mes(columnas) if total_unidades else None,
             'equipos': filas,
-            'total_unidades': sum(c['unidades'] for c in columnas),
+            'total_unidades': total_unidades,
             # Reservas del período (no anuladas) que usan alguno de los equipos elegidos
             'total_reservas': len(set().union(*reservas_del_mes.values())) if reservas_del_mes else 0,
             # Las listas para armar los filtros de la pantalla. Van acá para que quien tiene

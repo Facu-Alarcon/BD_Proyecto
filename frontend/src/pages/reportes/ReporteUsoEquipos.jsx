@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
-import GraficoBarras from '../../components/GraficoBarras';
 import './Reportes.css';
 
 // REPORTE: USO DE EQUIPOS POR MES
@@ -162,20 +161,19 @@ export default function ReporteUsoEquipos() {
 
       {!error && datos && !sinDatos && (
         <>
-          {/* ---- Gráfico: una barra por mes con el total de unidades ---- */}
+          {/* ---- Gráfico: una barra por mes con el total de unidades ----
+               La imagen la dibuja el backend con pandas y matplotlib (ver reportes.py) */}
           <div className="card reporte-bloque">
-            <GraficoBarras
-              titulo="Unidades de equipos comprometidas en eventos, por mes"
-              periodo={`${periodo} · ${datos.total_unidades} unidades en ${datos.total_reservas} ${datos.total_reservas === 1 ? 'reserva' : 'reservas'}`}
-              unidad="unidades"
-              ejeX="Mes del evento"
-              datos={datos.meses.map((m) => ({
-                anio: m.anio,
-                mes: m.mes,
-                valor: m.unidades,
-                detalle: `${m.reservas} ${m.reservas === 1 ? 'reserva' : 'reservas'}`,
-              }))}
-            />
+            <p className="reporte-periodo">
+              {`${periodo} · ${datos.total_unidades} unidades en ${datos.total_reservas} ${datos.total_reservas === 1 ? 'reserva' : 'reservas'}`}
+            </p>
+            {datos.grafico && (
+              <img
+                className="reporte-grafico"
+                src={`data:image/png;base64,${datos.grafico}`}
+                alt="Gráfico de barras: unidades de equipos comprometidas en eventos, por mes"
+              />
+            )}
           </div>
 
           {/* ---- Interpretación: qué nos dicen los números ---- */}
