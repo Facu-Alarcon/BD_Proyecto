@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
+import GraficoBarras from '../../components/GraficoBarras';
+import { IconVolver } from '../../components/icons';
 import './Reportes.css';
 
 // REPORTE: USO DE EQUIPOS POR MES
@@ -45,6 +47,7 @@ function SelectorMes({ id, label, valor, onChange }) {
 }
 
 export default function ReporteUsoEquipos() {
+  const navigate = useNavigate();
   // Lo que está elegido en los filtros. Al entrar se muestra el año actual completo
   const [desde, setDesde] = useState({ anio: ANIO_ACTUAL, mes: 1 });
   const [hasta, setHasta] = useState({ anio: ANIO_ACTUAL, mes: 12 });
@@ -116,7 +119,13 @@ export default function ReporteUsoEquipos() {
     <div>
       <div className="page-header page-header-con-ruta">
         <div>
-          <h1>Uso de equipos por mes</h1>
+          {/* Flecha para volver a la pantalla principal de Reportes, al lado del título */}
+          <div className="titulo-con-volver">
+            <button type="button" className="btn-volver" onClick={() => navigate('/reportes')} title="Volver a Reportes" aria-label="Volver a Reportes">
+              <IconVolver />
+            </button>
+            <h1>Uso de equipos por mes</h1>
+          </div>
           <div className="ruta"><Link to="/reportes">Reportes</Link> / <strong>Uso de equipos por mes</strong></div>
         </div>
       </div>
@@ -161,19 +170,20 @@ export default function ReporteUsoEquipos() {
 
       {!error && datos && !sinDatos && (
         <>
-          {/* ---- Gráfico: una barra por mes con el total de unidades ----
-               La imagen la dibuja el backend con pandas y matplotlib (ver reportes.py) */}
+          {/* ---- Gráfico: una barra por mes con el total de unidades ---- */}
           <div className="card reporte-bloque">
-            <p className="reporte-periodo">
-              {`${periodo} · ${datos.total_unidades} unidades en ${datos.total_reservas} ${datos.total_reservas === 1 ? 'reserva' : 'reservas'}`}
-            </p>
-            {datos.grafico && (
-              <img
-                className="reporte-grafico"
-                src={`data:image/png;base64,${datos.grafico}`}
-                alt="Gráfico de barras: unidades de equipos comprometidas en eventos, por mes"
-              />
-            )}
+            <GraficoBarras
+              titulo="Unidades de equipos comprometidas en eventos, por mes"
+              periodo={`${periodo} · ${datos.total_unidades} unidades en ${datos.total_reservas} ${datos.total_reservas === 1 ? 'reserva' : 'reservas'}`}
+              grafico={datos.grafico}
+              unidad="unidades"
+              datos={datos.meses.map((m) => ({
+                anio: m.anio,
+                mes: m.mes,
+                valor: m.unidades,
+                detalle: `${m.reservas} ${m.reservas === 1 ? 'reserva' : 'reservas'}`,
+              }))}
+            />
           </div>
 
           {/* ---- Interpretación: qué nos dicen los números ---- */}

@@ -37,6 +37,9 @@ urlpatterns = [
     path('dashboard/resumen/', api.DashboardResumenView.as_view(), name='api_dashboard_resumen'),
     # Reportes (ver reportes.py). Cada reporte nuevo se agrega acá con su propia dirección
     path('reportes/uso-equipos/', reportes.ReporteUsoEquiposView.as_view(), name='api_reporte_uso_equipos'),
+    path('reportes/demanda-servicios/', reportes.ReporteDemandaServiciosView.as_view(), name='api_reporte_demanda_servicios'),
+    path('reportes/evolucion-ingresos/', reportes.ReporteEvolucionIngresosView.as_view(), name='api_reporte_evolucion_ingresos'),
+    path('reportes/comparacion-periodos/', reportes.ReporteComparacionPeriodosView.as_view(), name='api_reporte_comparacion_periodos'),
     # Al final, todas las URLs que armó el router
     path('', include(router.urls)),
 ]
