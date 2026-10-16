@@ -10,8 +10,8 @@ export default function Login() {
   const [usuario, setUsuario] = useState('');
   const [contraseña, setContraseña] = useState('');
   const [verContraseña, setVerContraseña] = useState(false);
-  // OJO: "Recordarme" todavía no hace nada; la sesión siempre queda guardada en el navegador
-  // hasta cerrar sesión (ver AuthContext). Está para cuando se implemente.
+  // "Recordarme": si está tildado la sesión sigue abierta aunque se cierre el navegador;
+  // si no, se cierra sola al cerrarlo (ver api/sesion.js)
   const [recordarme, setRecordarme] = useState(false);
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -25,7 +25,7 @@ export default function Login() {
     setError('');
     setEnviando(true);
     try {
-      await login(usuario, contraseña);
+      await login(usuario, contraseña, recordarme);
       navigate('/', { replace: true });
     } catch (err) {
       if (err.response?.status === 401 || err.response?.status === 400) {
