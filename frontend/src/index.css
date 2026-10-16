@@ -753,6 +753,81 @@ button {
   overflow-wrap: anywhere;
 }
 
+/* Columna "Cambios": los primeros campos que cambiaron, con el valor anterior tachado */
+.registro-cambios {
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.registro-cambios li {
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.registro-antes {
+  color: var(--red);
+  text-decoration: line-through;
+}
+
+.registro-despues {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.registro-vacio {
+  color: var(--text-muted);
+}
+
+/* Tabla Campo / Antes / Después que se abre con "Ver detalle" */
+.registro-tabla-cambios {
+  width: 100%;
+  margin-bottom: 6px;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.registro-tabla-cambios th,
+.registro-tabla-cambios td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.registro-tabla-cambios th {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.registro-tabla-cambios th:first-child {
+  width: 22%;
+}
+
+/* En las listas (servicios, personal, puestos...) qué se agregó y qué se quitó */
+.registro-lista-cambio {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.registro-lista-cambio.agregado {
+  color: var(--green);
+}
+
+.registro-lista-cambio.quitado {
+  color: var(--red);
+}
+
 /* Celda "Contacto" de Empleados y Clientes (ver components/ContactoCelda.jsx):
    el mail arriba y el teléfono abajo en gris, cada uno con su iconito */
 .contacto-celda {

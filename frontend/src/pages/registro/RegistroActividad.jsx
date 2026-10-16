@@ -31,6 +31,71 @@ function diaLocal(iso) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// Cuántos cambios se muestran directamente en la fila; el resto se ve con "Ver detalle"
+const CAMBIOS_EN_FILA = 2;
+
+// true si en el registro hay algo que pasó de un valor a otro (una modificación, una
+// anulación...). En un alta o una baja común solo hay datos de un lado.
+function tieneAntesYDespues(r) {
+  return r.cambios.some((c) => c.anterior !== null && c.nuevo !== null) || r.accion === 'MODIFICACION' || r.accion === 'CLAVE';
+}
+
+// Lo que va en la columna "Cambios" de la fila: en una modificación, los primeros campos
+// que cambiaron con lo que decían antes (tachado) y lo que dicen ahora. En un alta o una
+// baja, cuántos datos tiene.
+function CambiosResumen({ registro }) {
+  const { cambios } = registro;
+  if (!tieneAntesYDespues(registro)) {
+    const texto = registro.accion === 'ALTA' ? 'datos cargados' : 'datos que tenía';
+    return <span className="form-hint">{cambios.length} {texto}</span>;
+  }
+  return (
+    <ul className="registro-cambios">
+      {cambios.slice(0, CAMBIOS_EN_FILA).map((c) => (
+        <li key={c.campo}>
+          <strong>{c.campo}:</strong>{' '}
+          <span className="registro-antes">{c.anterior ?? '(vacío)'}</span>
+          {' → '}
+          <span className="registro-despues">{c.nuevo ?? '(vacío)'}</span>
+        </li>
+      ))}
+      {cambios.length > CAMBIOS_EN_FILA && (
+        <li className="form-hint">y {cambios.length - CAMBIOS_EN_FILA} cambio(s) más</li>
+      )}
+    </ul>
+  );
+}
+
+// La tabla completa que se abre con "Ver detalle": cada campo con su valor anterior y el
+// nuevo. En las listas (servicios, personal, puestos, permisos...) dice además qué se
+// agregó y qué se quitó.
+function CambiosTabla({ registro }) {
+  return (
+    <table className="registro-tabla-cambios">
+      <thead>
+        <tr>
+          <th>Campo</th>
+          <th>Antes</th>
+          <th>Después</th>
+        </tr>
+      </thead>
+      <tbody>
+        {registro.cambios.map((c) => (
+          <tr key={c.campo}>
+            <td><strong>{c.campo}</strong></td>
+            <td className={c.anterior === null ? 'registro-vacio' : 'registro-antes'}>{c.anterior ?? '—'}</td>
+            <td className={c.nuevo === null ? 'registro-vacio' : 'registro-despues'}>
+              {c.nuevo ?? '—'}
+              {c.agregados?.length > 0 && <div className="registro-lista-cambio agregado">Se agregó: {c.agregados.join(', ')}</div>}
+              {c.quitados?.length > 0 && <div className="registro-lista-cambio quitado">Se quitó: {c.quitados.join(', ')}</div>}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 // Pantalla "Registro de actividad": quién hizo qué y cuándo dentro del sistema.
 // Es solo de consulta. Tiene dos pestañas: la actividad de los usuarios (altas,
 // modificaciones, bajas, sesiones) y los errores del servidor (para el programador).
@@ -126,7 +191,7 @@ export default function RegistroActividad() {
                 <th>Acción</th>
                 <th>Módulo</th>
                 <th>Registro</th>
-                <th>Detalle</th>
+                <th>Cambios</th>
               </tr>
             ) : (
               <tr>
@@ -166,20 +231,26 @@ export default function RegistroActividad() {
                   <td>{pestaña === 'actividad' ? r.modulo : <code className="registro-ruta">{r.modulo}</code>}</td>
                   <td>{r.descripcion}</td>
                   <td>
-                    {r.detalle ? (
+                    {/* En Actividad, un resumen de lo que cambió; los registros viejos (de antes de
+                        guardar los cambios ordenados) y los errores solo tienen el detalle en texto */}
+                    {pestaña === 'actividad' && r.cambios?.length > 0 && <CambiosResumen registro={r} />}
+                    {r.detalle || r.cambios?.length > 0 ? (
                       <button type="button" className="btn btn-secondary btn-sm" onClick={() => setExpandido(expandido === r.id_registro ? null : r.id_registro)}>
-                        {expandido === r.id_registro ? 'Ocultar' : 'Ver'}
+                        {expandido === r.id_registro ? 'Ocultar' : 'Ver detalle'}
                       </button>
                     ) : (
                       <span className="form-hint">—</span>
                     )}
                   </td>
                 </tr>
-                {/* Fila extra con el detalle: qué campos cambiaron, o el error completo */}
+                {/* Fila extra con el detalle: la tabla de cambios (campo, antes y después),
+                    o el texto del detalle en los registros viejos y en los errores */}
                 {expandido === r.id_registro && (
                   <tr className="registro-detalle-fila">
                     <td colSpan={columnas}>
-                      <pre className="registro-detalle">{r.detalle}</pre>
+                      {r.cambios?.length > 0
+                        ? <CambiosTabla registro={r} />
+                        : <pre className="registro-detalle">{r.detalle}</pre>}
                       {r.ip && <span className="form-hint">IP: {r.ip}</span>}
                     </td>
                   </tr>

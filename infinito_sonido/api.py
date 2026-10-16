@@ -56,7 +56,7 @@ from .serializers import (
 )
 from .permissions import permiso_codigo, permiso_modulo, permisos_del_usuario
 from .correos import enviar_contraseña_temporal, enviar_link_recuperacion
-from .registro import RegistrarActividadMixin, registrar
+from .registro import RegistrarActividadMixin, registrar, texto_cambios, texto_valor
 from .eliminar import DesactivarMixin, EliminarMixin
 from .disponibilidad import disponibilidad_del_dia, empleados_ocupados, equipos_faltantes
 from .seguridad import generar_contraseña_temporal, validar_contraseña_segura
@@ -382,6 +382,12 @@ class PerfilesViewSet(RegistrarActividadMixin, EliminarMixin, viewsets.ModelView
     serializer_class = PerfilesSerializer
     permission_classes = [permiso_modulo('perfiles')]
 
+    # En el registro de actividad también se anota qué permisos tenía el perfil
+    def datos_extra_registro(self, perfil):
+        return {'Permisos': sorted(
+            Permisos_x_Perfiles.objects.filter(id_perfil=perfil).values_list('id_permiso__nombre_permiso', flat=True)
+        )}
+
     # No se elimina un perfil que tiene algún usuario (aunque el usuario esté dado de baja).
     # Si se elimina, los permisos que tenía tildados se desasignan solos.
     def validar_eliminacion(self, perfil):
@@ -547,6 +553,16 @@ class EmpleadosViewSet(RegistrarActividadMixin, EliminarMixin, DesactivarMixin, 
     serializer_class = EmpleadosSerializer
     permission_classes = [permiso_modulo('empleados')]
 
+    # En el registro de actividad también se anotan los puestos y el horario del empleado
+    def datos_extra_registro(self, empleado):
+        horario = Horarios_x_Empleados.objects.filter(id_empleado=empleado).select_related('id_horario').first()
+        return {
+            'Puestos': sorted(
+                Puestos_x_Empleados.objects.filter(id_empleado=empleado).values_list('id_puesto__nombre_puesto', flat=True)
+            ),
+            'Horario': f'{texto_valor(horario.id_horario.cantidad_horas)} horas' if horario else None,
+        }
+
     # No se elimina un empleado que tiene usuario (aunque esté dado de baja) ni uno que
     # trabajó en alguna reserva. En esos casos el mensaje avisa que se puede desactivar.
     # Si se elimina, los puestos y horarios que tenía asignados se desasignan solos.
@@ -681,6 +697,13 @@ class ServiciosViewSet(RegistrarActividadMixin, EliminarMixin, DesactivarMixin, 
     serializer_class = ServiciosSerializer
     permission_classes = [permiso_modulo('servicios')]
 
+    # En el registro de actividad también se anotan los equipos que usa (ej: "Bafle JBL x 4")
+    def datos_extra_registro(self, servicio):
+        return {'Equipos que usa': sorted(
+            f'{e.id_equipo.nombre_equipo} x {e.cantidad}'
+            for e in Equipos_x_Servicios.objects.filter(id_servicio=servicio).select_related('id_equipo')
+        )}
+
     # No se elimina un servicio que está en alguna reserva, sin importar el estado: si lo
     # borramos no se sabría qué contrató el cliente. El mensaje avisa que se puede desactivar.
     # Si se elimina, la lista de equipos que usaba se borra con él (los equipos no).
@@ -710,6 +733,19 @@ class ReservasViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     )
     serializer_class = ReservasSerializer
     permission_classes = [permiso_modulo('reservas')]
+
+    # En el registro de actividad también se anotan los servicios contratados (con el
+    # precio cobrado) y el personal asignado
+    def datos_extra_registro(self, reserva):
+        return {
+            'Servicios': sorted(
+                f'{s.id_servicio.tipo_servicio} ($ {texto_valor(s.precio_servicio)})'
+                for s in Reservas_x_Servicios.objects.filter(id_reserva=reserva).select_related('id_servicio')
+            ),
+            'Personal': sorted(
+                str(d.id_empleado) for d in Detalles_Reservas.objects.filter(id_reserva=reserva).select_related('id_empleado')
+            ),
+        }
 
     # Las reservas no se borran nunca de la base (pedido del Hito 3): se anulan con la
     # acción "anular" de abajo, que deja registrado quién, cuándo y por qué.
@@ -741,7 +777,10 @@ class ReservasViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
 
         reserva.estado_reserva = 'CONFIRMADA'
         reserva.save(update_fields=['estado_reserva'])
-        registrar(request, Registro_Actividad.MODIFICACION, f'Confirmó {reserva}', 'Reservas', reserva.pk)
+        # Qué cambió (el estado, de Pendiente a Confirmada), comparando con cómo estaba antes
+        _, cambios = self._cambios_desde_antes()
+        registrar(request, Registro_Actividad.MODIFICACION, f'Confirmó {reserva}', 'Reservas', reserva.pk,
+                  texto_cambios(cambios, Registro_Actividad.MODIFICACION), cambios=cambios)
         return Response(self.get_serializer(reserva).data)
 
     @action(detail=False, methods=['get'], url_path='disponibilidad')
@@ -804,8 +843,10 @@ class ReservasViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
             reserva.motivo_anulacion = motivo[:255]
             reserva.id_usuario_anulacion = request.user
             reserva.save(update_fields=['estado_reserva', 'fecha_anulacion', 'motivo_anulacion', 'id_usuario_anulacion'])
+            # Qué cambió: el estado y los datos de la anulación (fecha, motivo y quién)
+            _, cambios = self._cambios_desde_antes()
             registrar(request, Registro_Actividad.BAJA, f'Anuló {reserva}', 'Reservas', reserva.pk,
-                      detalle=f'Motivo: {motivo}')
+                      texto_cambios(cambios, Registro_Actividad.MODIFICACION), cambios=cambios)
 
         return Response(self.get_serializer(reserva).data)
 
@@ -823,6 +864,12 @@ class PagosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     )
     serializer_class = PagosSerializer
     permission_classes = [permiso_modulo('pagos')]
+
+    # En el registro de actividad también se anotan los métodos con los que se pagó
+    def datos_extra_registro(self, pago):
+        return {'Métodos de pago': sorted(
+            Detalles_de_Pago.objects.filter(id_pago=pago).values_list('id_metodo_pago__metodo_pago', flat=True)
+        )}
 
     # Los pagos no se pueden eliminar porque es plata que se cobró. Si alguien lo intenta,
     # se le avisa que tiene que usar "Anular"
@@ -865,9 +912,12 @@ class PagosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
             pago.id_usuario_anulacion = request.user  # quién
             pago.save(update_fields=['activo', 'fecha_baja', 'motivo_anulacion', 'id_usuario_anulacion'])
             recalcular_saldos(pago.id_reserva)
-            # Se anota en el registro de actividad con el monto y el motivo
+            # Se anota en el registro de actividad con lo que cambió (activo, fecha, motivo
+            # y quién lo anuló) y el monto del pago anulado
+            _, cambios = self._cambios_desde_antes()
             registrar(request, Registro_Actividad.BAJA, f'Anuló {pago}', 'Pagos', pago.pk,
-                      detalle=f'Monto: {pago.monto}\nMotivo: {motivo}')
+                      f'Monto: {texto_valor(pago.monto)}\n' + texto_cambios(cambios, Registro_Actividad.MODIFICACION),
+                      cambios=cambios)
 
         # Devolvemos el pago ya anulado para que la pantalla lo muestre actualizado
         return Response(self.get_serializer(pago).data)

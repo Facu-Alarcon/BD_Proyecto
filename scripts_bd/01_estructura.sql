@@ -5,7 +5,8 @@
 -- foráneas, índices y restricciones de unicidad.
 -- Generado desde la base después de aplicar todas las migraciones de
 -- Django (hasta la 0023) y actualizado a mano con los cambios de la 0024
--- (baja física). Motor: MySQL 8.0, codificación utf8mb4.
+-- (baja física) y de la 0027 (columna cambios del registro de actividad).
+-- Motor: MySQL 8.0, codificación utf8mb4.
 --
 -- Bajas: eliminar borra el registro, salvo que tenga algo asociado (las
 -- claves foráneas lo impiden). Solo conservan las columnas activo y
@@ -383,6 +384,7 @@ CREATE TABLE `infinito_sonido_registro_actividad` (
   `detalle` longtext NOT NULL,
   `ip` char(39) DEFAULT NULL,
   `id_usuario` int DEFAULT NULL,
+  `cambios` json NOT NULL DEFAULT (_utf8mb4'[]'),
   PRIMARY KEY (`id_registro`),
   KEY `infinito_sonido_regi_id_usuario_830c79df_fk_infinito_` (`id_usuario`),
   KEY `infinito_sonido_registro_actividad_fecha_e8608b1e` (`fecha`),

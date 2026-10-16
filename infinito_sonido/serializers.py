@@ -776,7 +776,7 @@ class RegistroActividadSerializer(serializers.ModelSerializer):
         model = Registro_Actividad
         fields = [
             'id_registro', 'fecha', 'usuario_texto', 'persona', 'accion', 'accion_display',
-            'modulo', 'id_objeto', 'descripcion', 'detalle', 'ip',
+            'modulo', 'id_objeto', 'descripcion', 'detalle', 'cambios', 'ip',
         ]
 
     def get_persona(self, obj):

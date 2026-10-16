@@ -281,6 +281,7 @@ INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (41,'ses
 INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (42,'infinito_sonido','0024_baja_fisica','2026-10-12 00:00:00.000000');
 INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (43,'infinito_sonido','0025_permiso_reportes','2026-10-12 00:00:00.000000');
 INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (44,'infinito_sonido','0026_permisos_estados_equipo','2026-10-12 00:00:00.000000');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (45,'infinito_sonido','0027_registro_actividad_cambios','2026-10-16 00:00:00.000000');
 /*!40000 ALTER TABLE `django_migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

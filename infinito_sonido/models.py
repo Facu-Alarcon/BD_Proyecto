@@ -599,6 +599,9 @@ class Registro_Actividad(models.Model):
     id_objeto = models.CharField(max_length=20, blank=True)        # id del registro afectado
     descripcion = models.CharField(max_length=255)                 # ej: "Juan Pérez"
     detalle = models.TextField(blank=True)                         # qué campos cambiaron, o el error completo
+    # Lo mismo que 'detalle' pero ordenado, para mostrarlo como tabla en la pantalla:
+    # [{"campo": "Teléfono", "anterior": "3871111111", "nuevo": "3872222222"}, ...]
+    cambios = models.JSONField(default=list, blank=True)
     ip = models.GenericIPAddressField(null=True, blank=True)
 
     class Meta:
