@@ -1,6 +1,7 @@
 # REPORTES DEL SISTEMA
 
 # REPORTE 1 - USO DE EQUIPOS POR MES
+# REPORTE 2 - DEMANDA POR SERVICIO POR MES (reporte táctico)
 
 
 import calendar
@@ -12,7 +13,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Equipos, Equipos_x_Servicios, Reservas, Reservas_x_Servicios, Tipo_Equipos
+from .graficos import barras_por_mes, pesos_corto
+from .models import Equipos, Equipos_x_Servicios, Reservas, Reservas_x_Servicios, Servicios, Tipo_Equipos
 from .permissions import permiso_modulo
 
 # Nombres cortos de los meses, para las etiquetas del gráfico
@@ -48,6 +50,33 @@ def _meses_entre(desde, hasta):
     return meses
 
 
+# Lee el período que eligió el usuario (?desde=2026-01&hasta=2026-12). Si no viene, es el año
+# actual completo. Devuelve (desde, hasta, meses, error): si algo está mal, error trae la
+# respuesta con el mensaje para mostrar y lo demás viene en None.
+# La usan todos los reportes que muestran un número por mes.
+def _leer_periodo(request):
+    hoy = timezone.localdate()
+    desde = _leer_mes(request.query_params.get('desde')) or (hoy.year, 1)
+    hasta = _leer_mes(request.query_params.get('hasta')) or (hoy.year, 12)
+
+    if desde > hasta:
+        return None, None, None, Response({'detail': 'El mes "Desde" no puede ser posterior al mes "Hasta".'},
+                                          status=status.HTTP_400_BAD_REQUEST)
+    meses = _meses_entre(desde, hasta)
+    if len(meses) > MAXIMO_MESES:
+        return None, None, None, Response({'detail': f'El período no puede tener más de {MAXIMO_MESES} meses.'},
+                                          status=status.HTTP_400_BAD_REQUEST)
+    return desde, hasta, meses, None
+
+
+# Las reservas del período, sin las anuladas (una reserva anulada no es demanda real)
+def _reservas_del_periodo(desde, hasta):
+    primer_dia = datetime.date(desde[0], desde[1], 1)
+    # monthrange dice cuántos días tiene el mes (28, 29, 30 o 31)
+    ultimo_dia = datetime.date(hasta[0], hasta[1], calendar.monthrange(hasta[0], hasta[1])[1])
+    return Reservas.objects.filter(fecha_evento__range=(primer_dia, ultimo_dia)).exclude(estado_reserva='ANULADA')
+
+
 class ReporteUsoEquiposView(APIView):
     """
     Reporte "Uso de equipos por mes".
@@ -61,17 +90,9 @@ class ReporteUsoEquiposView(APIView):
 
     def get(self, request):
         # ---------- 1) Leemos lo que eligió el usuario en los filtros ----------
-        hoy = timezone.localdate()
-        desde = _leer_mes(request.query_params.get('desde')) or (hoy.year, 1)
-        hasta = _leer_mes(request.query_params.get('hasta')) or (hoy.year, 12)
-
-        if desde > hasta:
-            return Response({'detail': 'El mes "Desde" no puede ser posterior al mes "Hasta".'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        meses = _meses_entre(desde, hasta)
-        if len(meses) > MAXIMO_MESES:
-            return Response({'detail': f'El período no puede tener más de {MAXIMO_MESES} meses.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+        desde, hasta, meses, error = _leer_periodo(request)
+        if error:
+            return error
 
         tipo = request.query_params.get('tipo')
         equipo = request.query_params.get('equipo')
@@ -87,10 +108,7 @@ class ReporteUsoEquiposView(APIView):
         equipos = {e.pk: e for e in equipos_qs}
 
         # ---------- 3) Las reservas del período (sin las anuladas) ----------
-        primer_dia = datetime.date(desde[0], desde[1], 1)
-        # monthrange dice cuántos días tiene el mes (28, 29, 30 o 31)
-        ultimo_dia = datetime.date(hasta[0], hasta[1], calendar.monthrange(hasta[0], hasta[1])[1])
-        reservas = Reservas.objects.filter(fecha_evento__range=(primer_dia, ultimo_dia)).exclude(estado_reserva='ANULADA')
+        reservas = _reservas_del_periodo(desde, hasta)
 
         # Los servicios de esas reservas: por cada uno, de qué reserva es y qué día es el evento
         servicios_reservados = Reservas_x_Servicios.objects.filter(id_reserva__in=reservas).values_list(
@@ -163,6 +181,8 @@ class ReporteUsoEquiposView(APIView):
         return Response({
             'periodo': {'desde': f'{desde[0]}-{desde[1]:02d}', 'hasta': f'{hasta[0]}-{hasta[1]:02d}'},
             'meses': columnas,
+            # El gráfico ya dibujado (pandas + matplotlib) y dónde quedó cada barra (ver graficos.py)
+            'grafico': barras_por_mes(columnas, [c['unidades'] for c in columnas], 'Unidades'),
             'equipos': filas,
             'total_unidades': sum(c['unidades'] for c in columnas),
             # Reservas del período (no anuladas) que usan alguno de los equipos elegidos
@@ -174,6 +194,132 @@ class ReporteUsoEquiposView(APIView):
                 'equipos': [
                     {'id': e.pk, 'nombre': e.nombre_equipo, 'tipo': e.id_tipoeq_id}
                     for e in Equipos.objects.order_by('nombre_equipo')
+                ],
+            },
+        })
+
+
+class ReporteDemandaServiciosView(APIView):
+    """
+    Reporte táctico "Demanda por servicio por mes".
+    Se pide así: /api/reportes/demanda-servicios/?desde=2026-01&hasta=2026-12
+    Opcionalmente se le puede agregar &servicio=<id> para ver un solo servicio.
+    Si no se manda el período, muestra el año actual completo.
+
+    Por cada servicio y cada mes cuenta:
+      - contrataciones: en cuántas reservas se contrató ese servicio
+      - ingresos: la suma de lo que se cobró por ese servicio. Se usa el precio guardado en
+        la reserva (Reservas_x_Servicios.precio_servicio), no el precio de hoy del servicio,
+        para que si el precio cambió los meses viejos no se modifiquen.
+    Sirve para planificar: qué servicios promocionar, en qué meses reforzar personal y
+    equipos, y qué servicios casi no se piden.
+    """
+    # Solo entran los perfiles que tienen el permiso "Ver Reportes"
+    permission_classes = [permiso_modulo('reportes')]
+
+    def get(self, request):
+        # ---------- 1) Leemos lo que eligió el usuario en los filtros ----------
+        desde, hasta, meses, error = _leer_periodo(request)
+        if error:
+            return error
+
+        servicio = request.query_params.get('servicio')
+        servicio = int(servicio) if servicio and servicio.isdigit() else None
+
+        # ---------- 2) Los servicios que entran en el reporte ----------
+        # Van también los desactivados: pudieron haberse contratado en el período
+        servicios_qs = Servicios.objects.order_by('tipo_servicio')
+        if servicio:
+            servicios_qs = servicios_qs.filter(pk=servicio)
+        servicios = {s.pk: s for s in servicios_qs}
+
+        # ---------- 3) Los servicios contratados en las reservas del período ----------
+        # Por cada uno: de qué reserva es, qué día es el evento, qué servicio y a qué precio se cobró
+        contratados = Reservas_x_Servicios.objects.filter(
+            id_reserva__in=_reservas_del_periodo(desde, hasta), id_servicio__in=servicios.keys()
+        ).values_list('id_reserva_id', 'id_reserva__fecha_evento', 'id_servicio_id', 'precio_servicio')
+
+        # ---------- 4) Sumamos ----------
+        # contrataciones[servicio][(año, mes)] = cuántas veces se contrató ese servicio ese mes
+        contrataciones = defaultdict(lambda: defaultdict(int))
+        # ingresos[servicio][(año, mes)] = cuánta plata dejó ese servicio ese mes
+        ingresos = defaultdict(lambda: defaultdict(float))
+        # reservas_del_mes[(año, mes)] = las reservas de ese mes que contrataron alguno de los servicios elegidos
+        reservas_del_mes = defaultdict(set)
+
+        for id_reserva, fecha, id_servicio, precio in contratados:
+            mes = (fecha.year, fecha.month)
+            contrataciones[id_servicio][mes] += 1
+            ingresos[id_servicio][mes] += precio
+            reservas_del_mes[mes].add(id_reserva)
+
+        # ---------- 5) Armamos la respuesta ----------
+        total_contrataciones = sum(sum(c.values()) for c in contrataciones.values())
+        total_ingresos = sum(sum(i.values()) for i in ingresos.values())
+
+        # Una fila por servicio, con sus números mes por mes
+        filas = []
+        for id_servicio, s in servicios.items():
+            por_mes = [contrataciones[id_servicio][m] for m in meses]
+            ingresos_por_mes = [round(ingresos[id_servicio][m], 2) for m in meses]
+            total = sum(por_mes)
+            total_plata = round(sum(ingresos_por_mes), 2)
+            # El mes en que más se pidió este servicio (si empatan, el primero)
+            mes_pico = None
+            if total > 0:
+                anio, mes = meses[por_mes.index(max(por_mes))]
+                mes_pico = {'anio': anio, 'mes': mes, 'contrataciones': max(por_mes)}
+            filas.append({
+                'id_servicio': id_servicio,
+                'nombre_servicio': s.tipo_servicio,
+                'activo': s.activo,
+                # El precio de hoy, para compararlo con el que se cobró en promedio
+                'precio_actual': s.precio_servicio,
+                'por_mes': por_mes,
+                'ingresos_por_mes': ingresos_por_mes,
+                'total': total,
+                'ingresos': total_plata,
+                'precio_promedio': round(total_plata / total, 2) if total else None,
+                # Qué parte de toda la demanda del período se llevó este servicio
+                'porcentaje': round(total * 100 / total_contrataciones, 1) if total_contrataciones else 0,
+                'mes_pico': mes_pico,
+            })
+        # Primero los más pedidos; si empatan, el que más plata dejó, y después por nombre
+        filas.sort(key=lambda f: (-f['total'], -f['ingresos'], f['nombre_servicio']))
+
+        # Una columna del gráfico por mes: el total de todos los servicios elegidos
+        columnas = [
+            {
+                'anio': anio,
+                'mes': mes,
+                'etiqueta': f'{MESES[mes - 1]} {anio}',
+                'contrataciones': sum(contrataciones[id_servicio][(anio, mes)] for id_servicio in servicios),
+                'ingresos': round(sum(ingresos[id_servicio][(anio, mes)] for id_servicio in servicios), 2),
+                'reservas': len(reservas_del_mes[(anio, mes)]),
+            }
+            for anio, mes in meses
+        ]
+
+        return Response({
+            'periodo': {'desde': f'{desde[0]}-{desde[1]:02d}', 'hasta': f'{hasta[0]}-{hasta[1]:02d}'},
+            'meses': columnas,
+            # Los dos gráficos ya dibujados (pandas + matplotlib, ver graficos.py), uno para cada opción de
+            # "Ver por". Van los dos para que la pantalla cambie de uno a otro sin volver a pedir.
+            'graficos': {
+                'contrataciones': barras_por_mes(columnas, [c['contrataciones'] for c in columnas], 'Contrataciones'),
+                'ingresos': barras_por_mes(columnas, [c['ingresos'] for c in columnas], 'Ingresos', pesos_corto),
+            },
+            'servicios': filas,
+            'total_contrataciones': total_contrataciones,
+            'total_ingresos': round(total_ingresos, 2),
+            # Reservas del período (no anuladas) que contrataron alguno de los servicios elegidos
+            'total_reservas': len(set().union(*reservas_del_mes.values())) if reservas_del_mes else 0,
+            # La lista para armar el filtro de la pantalla. Va acá para que quien tiene
+            # permiso de ver reportes no necesite además el permiso de Servicios.
+            'opciones': {
+                'servicios': [
+                    {'id': s.pk, 'nombre': s.tipo_servicio, 'activo': s.activo}
+                    for s in Servicios.objects.order_by('tipo_servicio')
                 ],
             },
         })

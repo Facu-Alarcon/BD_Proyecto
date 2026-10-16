@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
+import { IconVolver } from '../../components/icons';
 import SelectBuscable from '../../components/SelectBuscable';
 import AvisoContraseñaTemporal from '../../components/AvisoContraseñaTemporal';
 import { usuarioSugerido } from '../../utils/nombreUsuario';
@@ -98,7 +99,7 @@ export default function UsuarioForm() {
             <h1>Usuario creado</h1>
           </div>
         </div>
-        <div className="card" style={{ padding: 28, maxWidth: 560 }}>
+        <div className="card" style={{ padding: 28 }}>
           <p style={{ marginTop: 0 }}>
             Se creó el usuario de <strong>{creado.nombre} {creado.apellido}</strong> con el perfil{' '}
             <strong>{creado.perfil_nombre}</strong>.
@@ -219,11 +220,16 @@ export default function UsuarioForm() {
   return (
     <div>
       <div className="page-header">
-        <div>
+        {/* Flecha para volver a la lista de usuarios, al lado del título */}
+        <div className="titulo-con-volver">
+          <button type="button" className="btn-volver" onClick={() => navigate('/usuarios')} title="Volver a Usuarios" aria-label="Volver a Usuarios">
+            <IconVolver />
+          </button>
           <h1>Nuevo Usuario</h1>
         </div>
       </div>
-      <div className="card" style={{ padding: 28, maxWidth: 560 }}>
+      {/* Sin ancho máximo: el formulario ocupa todo el ancho de la sección, igual que la lista */}
+      <div className="card" style={{ padding: 28 }}>
         {formulario}
       </div>
     </div>

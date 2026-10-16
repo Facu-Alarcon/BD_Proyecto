@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
+import { IconVolver } from '../../components/icons';
 
 const VACIO = { dni: '', nombre_emp: '', apellido_emp: '', telefono_emp: '', email_emp: '' };
 
@@ -188,10 +189,15 @@ export default function EmpleadoForm() {
   return (
     <div>
       <div className="page-header">
-        <div>
+        {/* Flecha para volver a la lista de empleados, al lado del título */}
+        <div className="titulo-con-volver">
+          <button type="button" className="btn-volver" onClick={() => navigate('/empleados')} title="Volver a Empleados" aria-label="Volver a Empleados">
+            <IconVolver />
+          </button>
           <h1>Nuevo Empleado</h1>
         </div>
       </div>
+      {/* Sin ancho máximo: el formulario ocupa todo el ancho de la sección, igual que la lista */}
       <div className="card" style={{ padding: 28 }}>
         {formulario}
       </div>

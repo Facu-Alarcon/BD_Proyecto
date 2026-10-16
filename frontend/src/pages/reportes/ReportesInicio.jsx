@@ -10,6 +10,11 @@ const REPORTES = [
     nombre: 'Uso de equipos por mes',
     descripcion: 'Cuántas unidades de cada equipo se usan en los eventos de cada mes. Sirve para decidir qué equipos comprar, cuáles sobran y cuándo conviene hacer mantenimiento.',
   },
+  {
+    to: '/reportes/demanda-servicios',
+    nombre: 'Demanda por servicio por mes',
+    descripcion: 'Cuántas veces se contrató cada servicio en cada mes y cuánto dejó. Sirve para saber qué servicios promocionar, en qué meses reforzar personal y equipos, y cuáles casi no se piden.',
+  },
 ];
 
 export default function ReportesInicio() {

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
+import { IconVolver } from '../../components/icons';
 
 const VACIO = {
   nombre_cliente: '',
@@ -190,7 +191,13 @@ export default function ClienteForm() {
     <div>
       <div className="page-header page-header-con-ruta">
         <div>
-          <h1>Nuevo cliente</h1>
+          {/* Flecha para volver a la lista de clientes, al lado del título */}
+          <div className="titulo-con-volver">
+            <button type="button" className="btn-volver" onClick={() => navigate('/clientes')} title="Volver a Clientes" aria-label="Volver a Clientes">
+              <IconVolver />
+            </button>
+            <h1>Nuevo cliente</h1>
+          </div>
           {/* Ruta para saber dónde estamos y volver a la lista con un clic */}
           <nav className="ruta" aria-label="Ruta">
             <Link to="/clientes">Clientes</Link> / <strong>Nuevo cliente</strong>

@@ -4,6 +4,7 @@ import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
+import { IconVolver } from '../../components/icons';
 
 // Formulario de Perfiles (alta y edición): el nombre del perfil y qué permisos tiene.
 // Es el mismo componente para crear y para editar: si la URL trae un id (/.../5/editar)
@@ -177,10 +178,15 @@ export default function PerfilForm() {
   return (
     <div>
       <div className="page-header">
-        <div>
+        {/* Flecha para volver a la lista de perfiles, al lado del título */}
+        <div className="titulo-con-volver">
+          <button type="button" className="btn-volver" onClick={() => navigate('/perfiles')} title="Volver a Perfiles" aria-label="Volver a Perfiles">
+            <IconVolver />
+          </button>
           <h1>Nuevo Perfil</h1>
         </div>
       </div>
+      {/* Sin ancho máximo: el formulario ocupa todo el ancho de la sección, igual que la lista */}
       <div className="card" style={{ padding: 28 }}>
         {formulario}
       </div>

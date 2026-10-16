@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
+import { IconVolver } from '../../components/icons';
 
 // Formulario de servicios: nombre, precio y qué equipos usa (y cuántos de cada uno).
 // Los equipos se usan al reservar para controlar que en un mismo día no se pidan
@@ -166,11 +167,16 @@ export default function ServicioForm() {
   return (
     <div>
       <div className="page-header">
-        <div>
+        {/* Flecha para volver a la lista de servicios, al lado del título */}
+        <div className="titulo-con-volver">
+          <button type="button" className="btn-volver" onClick={() => navigate('/servicios')} title="Volver a Servicios" aria-label="Volver a Servicios">
+            <IconVolver />
+          </button>
           <h1>Nuevo Servicio</h1>
         </div>
       </div>
-      <div className="card" style={{ padding: 28, maxWidth: 640 }}>
+      {/* Sin ancho máximo: el formulario ocupa todo el ancho de la sección, igual que la lista */}
+      <div className="card" style={{ padding: 28 }}>
         {formulario}
       </div>
     </div>

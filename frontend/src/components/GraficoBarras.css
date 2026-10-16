@@ -17,76 +17,47 @@
   color: var(--text-muted);
 }
 
-/* La zona del dibujo. position: relative para poder ubicar el cartelito encima */
+/* La zona del dibujo. position: relative para poder ubicar encima las zonas del mouse
+   y el cartelito. Como mucho ocupa el 90% del ancho de la tarjeta (un poco más chico
+   que antes) y queda centrado */
 .grafico-lienzo {
   position: relative;
-  margin-top: 12px;
+  width: 90%;
+  margin: 12px auto 0;
 }
 
-.grafico-lienzo svg {
+/* En pantallas angostas (celular) se usa todo el ancho para que se lean los números */
+@media (max-width: 700px) {
+  .grafico-lienzo {
+    width: 100%;
+  }
+}
+
+/* La imagen que dibuja el backend: se achica sola con la pantalla, sin deformarse */
+.grafico-lienzo img {
   display: block;
   width: 100%;
   height: auto;
 }
 
-/* Líneas de fondo: bien clarita, para que no le ganen a las barras */
-.grafico-grilla {
-  stroke: var(--border);
-  stroke-width: 1;
+/* Zonas invisibles, una por mes, que detectan el mouse */
+.grafico-zona {
+  position: absolute;
+  cursor: default;
 }
 
-/* La línea del piso, un poco más marcada */
-.grafico-base {
-  stroke: #c3cada;
-  stroke-width: 1;
-}
-
-/* Las barras, en el azul institucional. Se aclaran al pasar el mouse */
-.grafico-barra {
-  fill: var(--navy-900);
-  transition: fill 0.12s ease;
-}
-
-.grafico-barra.activa {
-  fill: var(--navy-700);
-}
-
-/* Números del eje y nombres de los meses */
-.grafico-eje {
-  font-size: 12px;
-  fill: var(--text-muted);
-}
-
-/* El número arriba de cada barra */
-.grafico-valor {
-  font-size: 12px;
-  font-weight: 600;
-  fill: var(--text-main);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Nombres de los ejes ("Unidades", "Mes del evento") */
-.grafico-nombre-eje {
-  font-size: 12px;
-  fill: var(--text-muted);
-}
-
-/* El año debajo de los meses */
-.grafico-anio {
-  font-size: 12px;
-  font-weight: 700;
-  fill: var(--navy-900);
-}
-
-.grafico-anio-linea {
-  stroke: #c3cada;
-  stroke-width: 1;
+/* La barra sobre la que está el mouse se oscurece un poco (pasa al verde de los botones
+   cuando se les pasa el mouse) */
+.grafico-resaltado {
+  position: absolute;
+  background: var(--verde-hover);
+  pointer-events: none;
 }
 
 /* Cartelito que aparece al pasar el mouse por un mes */
 .grafico-cartel {
   position: absolute;
-  /* Lo corre para que quede centrado y justo arriba de la barra */
+  /* Lo corre para que quede centrado y justo arriba de la barra (y de su número) */
   transform: translate(-50%, calc(-100% - 26px));
   display: flex;
   flex-direction: column;

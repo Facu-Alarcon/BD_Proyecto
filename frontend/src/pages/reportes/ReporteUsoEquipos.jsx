@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import GraficoBarras from '../../components/GraficoBarras';
+import { IconVolver } from '../../components/icons';
 import './Reportes.css';
 
 // REPORTE: USO DE EQUIPOS POR MES
@@ -46,6 +47,7 @@ function SelectorMes({ id, label, valor, onChange }) {
 }
 
 export default function ReporteUsoEquipos() {
+  const navigate = useNavigate();
   // Lo que está elegido en los filtros. Al entrar se muestra el año actual completo
   const [desde, setDesde] = useState({ anio: ANIO_ACTUAL, mes: 1 });
   const [hasta, setHasta] = useState({ anio: ANIO_ACTUAL, mes: 12 });
@@ -117,7 +119,13 @@ export default function ReporteUsoEquipos() {
     <div>
       <div className="page-header page-header-con-ruta">
         <div>
-          <h1>Uso de equipos por mes</h1>
+          {/* Flecha para volver a la pantalla principal de Reportes, al lado del título */}
+          <div className="titulo-con-volver">
+            <button type="button" className="btn-volver" onClick={() => navigate('/reportes')} title="Volver a Reportes" aria-label="Volver a Reportes">
+              <IconVolver />
+            </button>
+            <h1>Uso de equipos por mes</h1>
+          </div>
           <div className="ruta"><Link to="/reportes">Reportes</Link> / <strong>Uso de equipos por mes</strong></div>
         </div>
       </div>
@@ -167,8 +175,8 @@ export default function ReporteUsoEquipos() {
             <GraficoBarras
               titulo="Unidades de equipos comprometidas en eventos, por mes"
               periodo={`${periodo} · ${datos.total_unidades} unidades en ${datos.total_reservas} ${datos.total_reservas === 1 ? 'reserva' : 'reservas'}`}
+              grafico={datos.grafico}
               unidad="unidades"
-              ejeX="Mes del evento"
               datos={datos.meses.map((m) => ({
                 anio: m.anio,
                 mes: m.mes,
