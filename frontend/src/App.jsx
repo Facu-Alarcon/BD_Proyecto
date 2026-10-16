@@ -67,6 +67,8 @@ import CambiarClave from './pages/CambiarClave';
 import RegistroActividad from './pages/registro/RegistroActividad';
 import ReportesInicio from './pages/reportes/ReportesInicio';
 import ReporteUsoEquipos from './pages/reportes/ReporteUsoEquipos';
+import ReporteEvolucionIngresos from './pages/reportes/ReporteEvolucionIngresos';
+import ReporteComparacionPeriodos from './pages/reportes/ReporteComparacionPeriodos';
 import RecuperarClave from './pages/RecuperarClave';
 import RestablecerConLink from './pages/RestablecerConLink';
 
@@ -189,6 +191,8 @@ export default function App() {
             <Route path="reportes" element={<RequierePermiso modulo="reportes"><Outlet /></RequierePermiso>}>
               <Route index element={<ReportesInicio />} />
               <Route path="uso-equipos" element={<ReporteUsoEquipos />} />
+              <Route path="evolucion-ingresos" element={<ReporteEvolucionIngresos />} />
+              <Route path="comparacion-periodos" element={<ReporteComparacionPeriodos />} />
             </Route>
 
             {/* Registro de actividad: solo consulta, no tiene alta ni edición */}
