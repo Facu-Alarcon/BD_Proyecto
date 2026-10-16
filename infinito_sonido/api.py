@@ -537,7 +537,8 @@ class ClientesViewSet(RegistrarActividadMixin, EliminarMixin, viewsets.ModelView
             return f'No se puede eliminar a "{cliente}" porque tiene {cantidad} reserva(s) registrada(s).'
 
 
-# Empleados. Además del ABM tiene /empleados/<id>/puestos/ para asignarle puestos.
+# Empleados. Además del ABM tiene /empleados/<id>/puestos/ para asignarle puestos
+# y /empleados/<id>/horario/ para asignarle su horario laboral.
 # Se eliminan si no tienen usuario ni trabajaron en reservas; si no, se pueden desactivar.
 class EmpleadosViewSet(RegistrarActividadMixin, EliminarMixin, DesactivarMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
@@ -600,6 +601,41 @@ class EmpleadosViewSet(RegistrarActividadMixin, EliminarMixin, DesactivarMixin, 
             quitados = ids_asignados - ids_seleccionados
             if quitados:
                 Puestos_x_Empleados.objects.filter(id_empleado=empleado, id_puesto_id__in=quitados).delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['get', 'put'], url_path='horario')
+    def horario(self, request, pk=None):
+        """
+        Asignar Horarios: el horario laboral del empleado (tabla Horarios_x_Empleados).
+        Cada empleado tiene un solo horario o ninguno.
+        GET devuelve el horario asignado y la lista de horarios para elegir (así quien edita
+        empleados no necesita además el permiso de Horarios).
+        PUT recibe { "id_horario": 3 } para asignarlo o { "id_horario": null } para quitarlo.
+        """
+        empleado = self.get_object()
+        asignado = Horarios_x_Empleados.objects.filter(id_empleado=empleado).first()
+
+        if request.method == 'GET':
+            horarios_qs = Horarios.objects.order_by('cantidad_horas')
+            return Response({
+                'id_horario': asignado.id_horario_id if asignado else None,
+                'horarios': HorariosSerializer(horarios_qs, many=True).data,
+            })
+
+        # PUT: se reemplaza el horario que tenía por el elegido (o se le quita si viene vacío)
+        id_horario = request.data.get('id_horario')
+        if id_horario in (None, ''):
+            horario = None
+        else:
+            horario = Horarios.objects.filter(pk=id_horario).first() if str(id_horario).isdigit() else None
+            if horario is None:
+                raise ValidationError({'id_horario': 'El horario elegido no existe.'})
+
+        with transaction.atomic():
+            Horarios_x_Empleados.objects.filter(id_empleado=empleado).delete()
+            if horario:
+                Horarios_x_Empleados.objects.create(id_empleado=empleado, id_horario=horario)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 

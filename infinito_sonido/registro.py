@@ -88,6 +88,7 @@ def _datos(campos):
 ACCIONES_ESPECIALES = {
     'permisos': (Registro_Actividad.MODIFICACION, 'Actualizó los permisos del perfil'),
     'puestos': (Registro_Actividad.MODIFICACION, 'Actualizó los puestos del empleado'),
+    'horario': (Registro_Actividad.MODIFICACION, 'Actualizó el horario del empleado'),
     # Estos dos sirven para Usuarios, Empleados, Servicios y Métodos de pago
     # (en el registro, la columna Módulo dice de cuál se trata)
     'desactivar': (Registro_Actividad.MODIFICACION, 'Desactivó'),

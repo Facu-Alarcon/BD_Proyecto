@@ -7,7 +7,8 @@ import { IconVolver } from '../../components/icons';
 
 const VACIO = { dni: '', nombre_emp: '', apellido_emp: '', telefono_emp: '', email_emp: '' };
 
-// Formulario de Empleados (alta y edición): datos personales, DNI y los puestos que ocupa.
+// Formulario de Empleados (alta y edición): datos personales, DNI, los puestos que ocupa
+// y su horario laboral.
 // Es el mismo componente para crear y para editar: si la URL trae un id (/.../5/editar)
 // se está editando y se abre como ventana emergente; si no, es una pantalla de alta común.
 export default function EmpleadoForm() {
@@ -20,6 +21,9 @@ export default function EmpleadoForm() {
   const [puestos, setPuestos] = useState([]);
   // Puestos tildados (un Set de ids para agregar y sacar fácil)
   const [seleccionados, setSeleccionados] = useState(new Set());
+  // Horarios para elegir y el horario laboral del empleado ('' = sin horario asignado)
+  const [horarios, setHorarios] = useState([]);
+  const [horario, setHorario] = useState('');
   // Errores que devuelve el backend, por campo (ej: { telefono_emp: ["..."] })
   const [errores, setErrores] = useState({});
   const [cargando, setCargando] = useState(true);
@@ -27,22 +31,27 @@ export default function EmpleadoForm() {
   // Se prende después de guardar una edición, para mostrar la ventana de éxito
   const [guardadoOk, setGuardadoOk] = useState(false);
 
-  // Al abrir: todos los puestos y, si se está editando, los datos del empleado y qué puestos tiene
+  // Al abrir: todos los puestos y horarios y, si se está editando, los datos del empleado,
+  // qué puestos tiene y cuál es su horario
   useEffect(() => {
     if (editando) {
       Promise.all([
         api.get(`/empleados/${id}/`),
         api.get(`/empleados/${id}/puestos/`),
-      ]).then(([empleadoRes, puestosRes]) => {
+        api.get(`/empleados/${id}/horario/`),
+      ]).then(([empleadoRes, puestosRes, horarioRes]) => {
         // Los empleados cargados antes de agregar el DNI lo tienen vacío (null): se muestra como ''
         setForm({ ...empleadoRes.data, dni: empleadoRes.data.dni || '' });
         setPuestos(puestosRes.data);
         setSeleccionados(new Set(puestosRes.data.filter((p) => p.asignado).map((p) => p.id_puesto)));
+        setHorarios(horarioRes.data.horarios);
+        setHorario(horarioRes.data.id_horario ?? '');
         setCargando(false);
       });
     } else {
-      api.get('/puestos/').then(({ data }) => {
-        setPuestos(data);
+      Promise.all([api.get('/puestos/'), api.get('/horarios/')]).then(([puestosRes, horariosRes]) => {
+        setPuestos(puestosRes.data);
+        setHorarios(horariosRes.data);
         setCargando(false);
       });
     }
@@ -77,6 +86,7 @@ export default function EmpleadoForm() {
         empleadoId = data.id_empleado;
       }
       await api.put(`/empleados/${empleadoId}/puestos/`, { puestos: Array.from(seleccionados) });
+      await api.put(`/empleados/${empleadoId}/horario/`, { id_horario: horario === '' ? null : Number(horario) });
 
       if (editando) {
         setGuardadoOk(true);
@@ -161,6 +171,21 @@ export default function EmpleadoForm() {
             </label>
           ))}
         </div>
+      </div>
+
+      {/* Asignar Horarios: la carga horaria que tiene que cumplir el empleado (uno solo o ninguno) */}
+      <div className="form-field">
+        <label htmlFor="horario">Horario</label>
+        <select id="horario" value={horario} onChange={(e) => setHorario(e.target.value)}>
+          <option value="">Sin horario asignado</option>
+          {horarios.map((h) => (
+            <option key={h.id_horario} value={h.id_horario}>
+              {Number(h.cantidad_horas).toLocaleString('es-AR')} horas
+            </option>
+          ))}
+        </select>
+        {horarios.length === 0 && <span className="form-hint">No hay horarios cargados todavía.</span>}
+        {errores.id_horario && <span className="form-error">{errores.id_horario}</span>}
       </div>
 
       <button type="submit" className="btn btn-primary" disabled={guardando}>
