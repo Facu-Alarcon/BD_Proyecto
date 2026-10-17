@@ -40,6 +40,7 @@ urlpatterns = [
     path('reportes/demanda-servicios/', reportes.ReporteDemandaServiciosView.as_view(), name='api_reporte_demanda_servicios'),
     path('reportes/evolucion-ingresos/', reportes.ReporteEvolucionIngresosView.as_view(), name='api_reporte_evolucion_ingresos'),
     path('reportes/comparacion-periodos/', reportes.ReporteComparacionPeriodosView.as_view(), name='api_reporte_comparacion_periodos'),
+        path('reportes/carga-empleados/', reportes.ReporteCargaEmpleadosView.as_view(), name='api_reporte_carga_empleados'),
     # Al final, todas las URLs que armó el router
     path('', include(router.urls)),
 ]

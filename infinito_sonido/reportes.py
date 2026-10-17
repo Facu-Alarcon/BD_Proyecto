@@ -4,7 +4,7 @@
 # REPORTE 2 - DEMANDA POR SERVICIO POR MES (reporte táctico)
 # REPORTE 3 - EVOLUCIÓN MENSUAL DE INGRESOS Y EVENTOS
 # REPORTE 4 - COMPARACIÓN DE PERÍODOS
-
+# REPORTE 5 - CARGA DE TRABAJO DE LOS EMPLEADOS
 
 import calendar
 import datetime
@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 
 from .graficos import barras_por_mes, pesos_corto
 from .models import Equipos, Equipos_x_Servicios, Reservas, Reservas_x_Servicios, Servicios, Tipo_Equipos
+from .models import Detalles_Reservas, Empleados, Puestos, Puestos_x_Empleados
 from .permissions import permiso_modulo
 
 # Nombres cortos de los meses, para las etiquetas del gráfico
@@ -534,5 +535,174 @@ class ReporteComparacionPeriodosView(APIView):
                 'anterior': {'ingresos': total_anterior, 'contrataciones': contrataciones_anterior},
                 'diferencia_ingresos': round(total_actual - total_anterior, 2),
                 'variacion_ingresos': _variacion(total_actual, total_anterior),
+            },
+        })
+
+# REPORTE 5 - CARGA DE TRABAJO DE LOS EMPLEADOS (reporte táctico)
+
+class ReporteCargaEmpleadosView(APIView):
+    """
+    Reporte táctico "Carga de trabajo de los empleados".
+    Se pide así: /api/reportes/carga-empleados/?desde=2026-01&hasta=2026-12
+    Opcionalmente se le puede agregar &puesto=<id> para ver un solo puesto o
+    &empleado=<id> para ver un solo empleado.
+    Si no se manda el período, muestra el año actual completo.
+
+    Cuenta los eventos a los que fue asignado cada empleado (Detalles_Reservas), mes por mes.
+    Cada evento cuenta en el mes de su fecha de evento y las reservas anuladas no entran.
+    También se puede mirar agrupado por puesto: ahí cada asignación (un empleado en un evento)
+    suma al puesto del empleado. Si un empleado tiene más de un puesto, suma en cada uno.
+    Sirve para repartir mejor el trabajo, ver quién está sobrecargado y en qué meses
+    hace falta más personal.
+    """
+    # Solo entran los perfiles que tienen el permiso "Ver Reportes"
+    permission_classes = [permiso_modulo('reportes')]
+
+    def get(self, request):
+        # ---------- 1) Leemos lo que eligió el usuario en los filtros ----------
+        desde, hasta, meses, error = _leer_periodo(request)
+        if error:
+            return error
+
+        puesto = request.query_params.get('puesto')
+        empleado = request.query_params.get('empleado')
+        puesto = int(puesto) if puesto and puesto.isdigit() else None
+        empleado = int(empleado) if empleado and empleado.isdigit() else None
+
+        # ---------- 2) Los empleados que entran en el reporte ----------
+        # Van también los desactivados: pudieron haber trabajado en el período
+        empleados_qs = Empleados.objects.order_by('apellido_emp', 'nombre_emp')
+        if empleado:
+            empleados_qs = empleados_qs.filter(pk=empleado)
+        if puesto:
+            empleados_qs = empleados_qs.filter(
+                pk__in=Puestos_x_Empleados.objects.filter(id_puesto=puesto).values('id_empleado')
+            )
+        empleados = {e.pk: e for e in empleados_qs}
+
+        # Los puestos de cada empleado: {empleado: [(id_puesto, nombre), ...]}
+        puestos_del_empleado = defaultdict(list)
+        for id_empleado, id_puesto, nombre in Puestos_x_Empleados.objects.order_by(
+            'id_puesto__nombre_puesto'
+        ).values_list('id_empleado_id', 'id_puesto_id', 'id_puesto__nombre_puesto'):
+            puestos_del_empleado[id_empleado].append((id_puesto, nombre))
+
+        # ---------- 3) Las asignaciones de las reservas del período (sin las anuladas) ----------
+        reservas = _reservas_del_periodo(desde, hasta)
+        # Por cada una: en qué reserva, qué día es el evento y qué empleado
+        asignaciones = Detalles_Reservas.objects.filter(
+            id_reserva__in=reservas, id_empleado__in=empleados.keys()
+        ).values_list('id_reserva_id', 'id_reserva__fecha_evento', 'id_empleado_id')
+
+        # ---------- 4) Sumamos ----------
+        # eventos[empleado][(año, mes)] = las reservas de ese mes en las que trabajó el empleado
+        eventos = defaultdict(lambda: defaultdict(set))
+        # reservas_del_mes[(año, mes)] = las reservas de ese mes que tienen personal (de los elegidos)
+        reservas_del_mes = defaultdict(set)
+        for id_reserva, fecha, id_empleado in asignaciones:
+            mes = (fecha.year, fecha.month)
+            eventos[id_empleado][mes].add(id_reserva)
+            reservas_del_mes[mes].add(id_reserva)
+
+        # Cuántos eventos tuvo cada empleado por mes, en el mismo orden que la lista de meses
+        por_mes_del_empleado = {
+            id_empleado: [len(eventos[id_empleado][m]) for m in meses] for id_empleado in empleados
+        }
+        total_asignaciones = sum(sum(v) for v in por_mes_del_empleado.values())
+
+        # El mes en que más trabajó (si empatan, el primero): {anio, mes, eventos} o None
+        def mes_pico(por_mes):
+            if not any(por_mes):
+                return None
+            anio, mes = meses[por_mes.index(max(por_mes))]
+            return {'anio': anio, 'mes': mes, 'eventos': max(por_mes)}
+
+        # ---------- 5) Armamos la respuesta ----------
+        # Una fila por empleado, con sus eventos mes por mes
+        filas_empleados = []
+        for id_empleado, e in empleados.items():
+            por_mes = por_mes_del_empleado[id_empleado]
+            total = sum(por_mes)
+            filas_empleados.append({
+                'id_empleado': id_empleado,
+                'nombre_empleado': f'{e.apellido_emp}, {e.nombre_emp}',
+                'activo': e.activo,
+                'puestos': [nombre for _, nombre in puestos_del_empleado[id_empleado]],
+                'por_mes': por_mes,
+                'total': total,
+                # Qué parte de todo el trabajo del período se llevó este empleado
+                'porcentaje': round(total * 100 / total_asignaciones, 1) if total_asignaciones else 0,
+                'promedio_mensual': round(total / len(meses), 1),
+                'mes_pico': mes_pico(por_mes),
+            })
+        # Primero los que más trabajaron; si empatan, por nombre
+        filas_empleados.sort(key=lambda f: (-f['total'], f['nombre_empleado']))
+
+        # Una fila por puesto: suma lo de todos los empleados que tienen ese puesto
+        empleados_del_puesto = defaultdict(list)
+        nombre_del_puesto = {}
+        for id_empleado in empleados:
+            for id_puesto, nombre in puestos_del_empleado[id_empleado]:
+                empleados_del_puesto[id_puesto].append(id_empleado)
+                nombre_del_puesto[id_puesto] = nombre
+        filas_puestos = []
+        for id_puesto, ids in empleados_del_puesto.items():
+            por_mes = [sum(por_mes_del_empleado[i][n] for i in ids) for n in range(len(meses))]
+            total = sum(por_mes)
+            filas_puestos.append({
+                'id_puesto': id_puesto,
+                'nombre_puesto': nombre_del_puesto[id_puesto],
+                'empleados': len(ids),
+                'por_mes': por_mes,
+                'total': total,
+                'porcentaje': round(total * 100 / total_asignaciones, 1) if total_asignaciones else 0,
+                # Cuántos eventos le tocaron en promedio a cada persona del puesto
+                'promedio_por_empleado': round(total / len(ids), 1),
+                'mes_pico': mes_pico(por_mes),
+            })
+        filas_puestos.sort(key=lambda f: (-f['total'], f['nombre_puesto']))
+
+        # Una columna del gráfico por mes: el total de asignaciones (un empleado en un evento)
+        columnas = []
+        for n, (anio, mes) in enumerate(meses):
+            columnas.append({
+                'anio': anio,
+                'mes': mes,
+                'etiqueta': f'{MESES[mes - 1]} {anio}',
+                'asignaciones': sum(por_mes_del_empleado[i][n] for i in empleados),
+                'reservas': len(reservas_del_mes[(anio, mes)]),
+                # Cuántos empleados distintos trabajaron ese mes
+                'empleados': sum(1 for i in empleados if por_mes_del_empleado[i][n] > 0),
+            })
+
+        # Reservas del período que todavía no tienen ningún empleado asignado
+        # (se calcula sobre todas las reservas, sin importar los filtros)
+        sin_personal = reservas.exclude(pk__in=Detalles_Reservas.objects.values('id_reserva')).count()
+
+        return Response({
+            'periodo': {'desde': f'{desde[0]}-{desde[1]:02d}', 'hasta': f'{hasta[0]}-{hasta[1]:02d}'},
+            'meses': columnas,
+            # El gráfico ya dibujado (pandas + matplotlib) y dónde quedó cada barra (ver graficos.py)
+            'grafico': barras_por_mes(columnas, [c['asignaciones'] for c in columnas], 'Eventos asignados'),
+            'empleados': filas_empleados,
+            'puestos': filas_puestos,
+            'total_asignaciones': total_asignaciones,
+            # Reservas del período (no anuladas) que tienen personal de los elegidos
+            'total_reservas': len(set().union(*reservas_del_mes.values())) if reservas_del_mes else 0,
+            'reservas_sin_personal': sin_personal,
+            # Las listas para armar los filtros de la pantalla. Van acá para que quien tiene
+            # permiso de ver reportes no necesite además los permisos de Empleados y Puestos.
+            'opciones': {
+                'puestos': [{'id': p.pk, 'nombre': p.nombre_puesto} for p in Puestos.objects.order_by('nombre_puesto')],
+                'empleados': [
+                    {
+                        'id': e.pk,
+                        'nombre': f'{e.apellido_emp}, {e.nombre_emp}',
+                        'activo': e.activo,
+                        # Para que la pantalla muestre solo los empleados del puesto elegido
+                        'puestos': [p for p, _ in puestos_del_empleado[e.pk]],
+                    }
+                    for e in Empleados.objects.order_by('apellido_emp', 'nombre_emp')
+                ],
             },
         })

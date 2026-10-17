@@ -25,6 +25,11 @@ const REPORTES = [
     nombre: 'Comparación de períodos',
     descripcion: 'Un trimestre o semestre contra el mismo del año anterior, servicio por servicio. Sirve para decidir en cuáles servicios concentrar los recursos.',
   },
+    {
+    to: '/reportes/carga-empleados',
+    nombre: 'Carga de trabajo de los empleados',
+    descripcion: 'A cuántos eventos fue asignado cada empleado en cada mes. Sirve para repartir mejor el trabajo, ver quién está sobrecargado y en qué meses hace falta más personal.',
+  },
 ];
 
 export default function ReportesInicio() {
