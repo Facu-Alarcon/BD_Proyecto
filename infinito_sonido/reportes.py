@@ -10,6 +10,7 @@ import calendar
 import datetime
 from collections import defaultdict
 
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -570,8 +571,15 @@ class ReporteCargaEmpleadosView(APIView):
         empleado = int(empleado) if empleado and empleado.isdigit() else None
 
         # ---------- 2) Los empleados que entran en el reporte ----------
-        # Van también los desactivados: pudieron haber trabajado en el período
-        empleados_qs = Empleados.objects.order_by('apellido_emp', 'nombre_emp')
+        # Van también los desactivados: pudieron haber trabajado en el período.
+        # Solo cuentan los que tienen algún puesto (o trabajaron en el período aunque hoy no
+        # tengan puesto): así no aparece, por ejemplo, el empleado de la cuenta del
+        # administrador, que no va a eventos y bajaría el promedio.
+        reservas = _reservas_del_periodo(desde, hasta)
+        empleados_qs = Empleados.objects.filter(
+            Q(pk__in=Puestos_x_Empleados.objects.values('id_empleado'))
+            | Q(pk__in=Detalles_Reservas.objects.filter(id_reserva__in=reservas).values('id_empleado'))
+        ).order_by('apellido_emp', 'nombre_emp')
         if empleado:
             empleados_qs = empleados_qs.filter(pk=empleado)
         if puesto:
@@ -588,7 +596,6 @@ class ReporteCargaEmpleadosView(APIView):
             puestos_del_empleado[id_empleado].append((id_puesto, nombre))
 
         # ---------- 3) Las asignaciones de las reservas del período (sin las anuladas) ----------
-        reservas = _reservas_del_periodo(desde, hasta)
         # Por cada una: en qué reserva, qué día es el evento y qué empleado
         asignaciones = Detalles_Reservas.objects.filter(
             id_reserva__in=reservas, id_empleado__in=empleados.keys()
@@ -702,7 +709,12 @@ class ReporteCargaEmpleadosView(APIView):
                         # Para que la pantalla muestre solo los empleados del puesto elegido
                         'puestos': [p for p, _ in puestos_del_empleado[e.pk]],
                     }
-                    for e in Empleados.objects.order_by('apellido_emp', 'nombre_emp')
+                    # Para elegir, los mismos que pueden entrar al reporte: los que tienen
+                    # puesto o alguna vez trabajaron en un evento
+                    for e in Empleados.objects.filter(
+                        Q(pk__in=Puestos_x_Empleados.objects.values('id_empleado'))
+                        | Q(pk__in=Detalles_Reservas.objects.values('id_empleado'))
+                    ).order_by('apellido_emp', 'nombre_emp')
                 ],
             },
         })
