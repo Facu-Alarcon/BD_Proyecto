@@ -626,6 +626,227 @@ INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@
 INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@res30, 360000, 840000); SET @pago = LAST_INSERT_ID();
 INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp4);
 
+-- ======================================================================
+-- 22. RESERVAS DE 2025 (el año anterior): sirven para que los reportes tengan con qué
+--     comparar, sobre todo "Comparación de períodos". Los precios son los de ese año
+--     (un 30% más bajos que los actuales). 23 finalizadas y 2 anuladas.
+-- ======================================================================
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli3, 'Casamiento Alarcón', '2025-01-18', '21:00:00', 'Salón Del Valle', '05:00:00', 455000, 'FINALIZADA', '2024-11-18 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_1 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli7, 'Cumpleaños de 15 Díaz', '2025-02-15', '21:30:00', 'Salón Los Álamos', '05:00:00', 315000, 'FINALIZADA', '2024-12-15 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_2 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli12, 'Aniversario Ojeda', '2025-03-22', '21:00:00', 'Club Gimnasia y Tiro', '04:00:00', 336000, 'FINALIZADA', '2025-01-22 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_3 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli15, 'Conferencia Paz', '2025-04-12', '09:00:00', 'Centro de Convenciones Salta', '04:00:00', 133000, 'FINALIZADA', '2025-02-12 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_4 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli2, 'Cumpleaños de 18 Pérez', '2025-05-10', '22:00:00', 'Salón Golden', '05:00:00', 385000, 'FINALIZADA', '2025-03-10 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_5 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli20, 'Peña Folclórica Funes', '2025-06-14', '21:00:00', 'Club 20 de Febrero', '06:00:00', 560000, 'FINALIZADA', '2025-04-14 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_6 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli24, 'Bautismo Saravia', '2025-06-28', '13:00:00', 'Quinta San Lorenzo', '04:00:00', 126000, 'ANULADA', '2025-04-28 10:30:00', @usr_admin, '2025-05-28 11:00:00', 'El cliente decidió hacer el bautismo en otra fecha.', @usr_admin); SET @r25_7 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli5, 'Fiesta de 15 López', '2025-07-19', '21:30:00', 'Salón Il Divo', '06:00:00', 546000, 'FINALIZADA', '2025-05-19 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_8 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli8, 'Evento Empresarial Morales', '2025-08-09', '20:00:00', 'Hotel Sheraton Salta', '04:00:00', 630000, 'FINALIZADA', '2025-06-09 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_9 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli11, 'Cumpleaños Infantil Cabrera', '2025-08-23', '16:00:00', 'Salón Los Álamos', '03:00:00', 105000, 'FINALIZADA', '2025-06-23 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_10 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli18, 'Fiesta de Egresados Coronel', '2025-09-13', '22:00:00', 'Club 20 de Febrero', '05:00:00', 364000, 'FINALIZADA', '2025-07-13 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_11 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli26, 'Boda Burgos', '2025-09-27', '20:30:00', 'Finca La Encantada', '06:00:00', 840000, 'FINALIZADA', '2025-07-27 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_12 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli1, 'Cumpleaños de 15 Saez', '2025-10-04', '21:30:00', 'Salón Los Álamos', '05:00:00', 455000, 'FINALIZADA', '2025-08-04 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_13 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli9, 'Acto de Graduación Ríos', '2025-10-18', '19:00:00', 'Centro de Convenciones Salta', '03:00:00', 224000, 'FINALIZADA', '2025-08-18 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_14 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli21, 'Festival de Primavera Rivero', '2025-10-25', '18:00:00', 'Club Gimnasia y Tiro', '06:00:00', 560000, 'FINALIZADA', '2025-08-25 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_15 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli4, 'Fiesta de Egresados González', '2025-11-08', '22:00:00', 'Salón Golden', '05:00:00', 364000, 'FINALIZADA', '2025-09-08 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_16 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli23, 'Evento Empresarial Chávez', '2025-11-15', '20:00:00', 'Hotel Sheraton Salta', '04:00:00', 630000, 'FINALIZADA', '2025-09-15 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_17 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli16, 'Cumpleaños de 18 Ibarra', '2025-11-22', '22:00:00', 'Salón Del Valle', '05:00:00', 385000, 'FINALIZADA', '2025-09-22 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_18 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli27, 'Fiesta de Egresados Sulca', '2025-11-29', '22:00:00', 'Club 20 de Febrero', '05:00:00', 364000, 'FINALIZADA', '2025-09-28 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_19 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli6, 'Boda Premium Martínez', '2025-12-06', '20:30:00', 'Finca La Encantada', '06:00:00', 840000, 'FINALIZADA', '2025-10-06 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_20 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli29, 'Cumpleaños Gareca', '2025-12-12', '17:00:00', 'Salón Il Divo', '03:00:00', 105000, 'ANULADA', '2025-10-12 10:30:00', @usr_admin, '2025-11-12 11:00:00', 'Se suspendió el evento por enfermedad del cumpleañero.', @usr_admin); SET @r25_21 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli14, 'Peña Navarro', '2025-12-13', '21:00:00', 'Club Gimnasia y Tiro', '06:00:00', 560000, 'FINALIZADA', '2025-10-13 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_22 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli17, 'Fiesta de Fin de Año Méndez', '2025-12-19', '21:00:00', 'Salón Golden', '06:00:00', 525000, 'FINALIZADA', '2025-10-19 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_23 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli25, 'Evento Empresarial Cornejo', '2025-12-20', '20:00:00', 'Hotel Sheraton Salta', '04:00:00', 630000, 'FINALIZADA', '2025-10-20 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_24 = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_reservas (id_cliente, nombre_evento, fecha_evento, hora_evento, direccion_evento, duracion_evento, monto_total, estado_reserva, fecha_registro, id_usuario_registro, fecha_anulacion, motivo_anulacion, id_usuario_anulacion) VALUES (@cli10, 'Fiesta de Fin de Año Vera', '2025-12-27', '21:00:00', 'Salón Del Valle', '06:00:00', 525000, 'FINALIZADA', '2025-10-27 10:30:00', @usr_admin, NULL, '', NULL); SET @r25_25 = LAST_INSERT_ID();
+
+-- Servicios de cada reserva de 2025 (con el precio de ese momento)
+INSERT INTO infinito_sonido_reservas_x_servicios (id_reserva, id_servicio, precio_servicio) VALUES
+  (@r25_1, @serv2, 455000),
+  (@r25_2, @serv1, 315000),
+  (@r25_3, @serv6, 336000),
+  (@r25_4, @serv20, 133000),
+  (@r25_5, @serv11, 385000),
+  (@r25_6, @serv5, 560000),
+  (@r25_7, @serv4, 126000),
+  (@r25_8, @serv15, 546000),
+  (@r25_9, @serv8, 630000),
+  (@r25_10, @serv7, 105000),
+  (@r25_11, @serv3, 364000),
+  (@r25_12, @serv12, 840000),
+  (@r25_13, @serv1, 315000),
+  (@r25_13, @serv17, 140000),
+  (@r25_14, @serv9, 182000),
+  (@r25_14, @serv18, 42000),
+  (@r25_15, @serv5, 560000),
+  (@r25_16, @serv3, 364000),
+  (@r25_17, @serv8, 630000),
+  (@r25_18, @serv11, 385000),
+  (@r25_19, @serv3, 364000),
+  (@r25_20, @serv12, 840000),
+  (@r25_21, @serv7, 105000),
+  (@r25_22, @serv5, 560000),
+  (@r25_23, @serv10, 525000),
+  (@r25_24, @serv8, 630000),
+  (@r25_25, @serv10, 525000);
+
+-- Empleados asignados a cada reserva de 2025 (cada reserva es en una fecha distinta)
+INSERT INTO infinito_sonido_detalles_reservas (id_reserva, id_empleado) VALUES
+  (@r25_1, @emp8),
+  (@r25_1, @emp13),
+  (@r25_1, @emp18),
+  (@r25_2, @emp15),
+  (@r25_2, @emp20),
+  (@r25_3, @emp22),
+  (@r25_3, @emp2),
+  (@r25_3, @emp7),
+  (@r25_4, @emp4),
+  (@r25_4, @emp9),
+  (@r25_5, @emp11),
+  (@r25_5, @emp16),
+  (@r25_5, @emp21),
+  (@r25_6, @emp18),
+  (@r25_6, @emp23),
+  (@r25_7, @emp25),
+  (@r25_7, @emp5),
+  (@r25_7, @emp10),
+  (@r25_8, @emp7),
+  (@r25_8, @emp12),
+  (@r25_9, @emp14),
+  (@r25_9, @emp19),
+  (@r25_9, @emp24),
+  (@r25_10, @emp21),
+  (@r25_10, @emp1),
+  (@r25_11, @emp3),
+  (@r25_11, @emp8),
+  (@r25_11, @emp13),
+  (@r25_12, @emp10),
+  (@r25_12, @emp15),
+  (@r25_13, @emp17),
+  (@r25_13, @emp22),
+  (@r25_13, @emp2),
+  (@r25_14, @emp24),
+  (@r25_14, @emp4),
+  (@r25_15, @emp6),
+  (@r25_15, @emp11),
+  (@r25_15, @emp16),
+  (@r25_16, @emp13),
+  (@r25_16, @emp18),
+  (@r25_17, @emp20),
+  (@r25_17, @emp25),
+  (@r25_17, @emp5),
+  (@r25_18, @emp2),
+  (@r25_18, @emp7),
+  (@r25_19, @emp9),
+  (@r25_19, @emp14),
+  (@r25_19, @emp19),
+  (@r25_20, @emp16),
+  (@r25_20, @emp21),
+  (@r25_21, @emp23),
+  (@r25_21, @emp3),
+  (@r25_21, @emp8),
+  (@r25_22, @emp5),
+  (@r25_22, @emp10),
+  (@r25_23, @emp12),
+  (@r25_23, @emp17),
+  (@r25_23, @emp22),
+  (@r25_24, @emp19),
+  (@r25_24, @emp24),
+  (@r25_25, @emp1),
+  (@r25_25, @emp6),
+  (@r25_25, @emp11);
+
+-- Pagos de 2025: las reservas finalizadas quedaron totalmente pagas (seña del 50% y el resto)
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_1, 227500, 227500); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp1);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_1, 227500, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp2);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_2, 157500, 157500); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp5);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_2, 157500, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp3);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_3, 168000, 168000); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp4);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_3, 168000, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp2);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_4, 66500, 66500); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp1);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_4, 66500, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp5);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_5, 192500, 192500); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp1);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_5, 192500, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp2);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_6, 280000, 280000); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp5);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_6, 280000, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp3);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_8, 273000, 273000); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp4);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_8, 273000, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp2);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_9, 315000, 315000); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp1);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_9, 315000, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp5);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_10, 52500, 52500); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp1);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_10, 52500, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp2);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_11, 182000, 182000); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp5);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_11, 182000, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp3);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_12, 420000, 420000); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp4);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_12, 420000, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp2);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_13, 227500, 227500); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp1);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_13, 227500, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp5);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_14, 112000, 112000); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp1);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_14, 112000, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp2);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_15, 280000, 280000); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp5);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_15, 280000, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp3);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_16, 182000, 182000); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp4);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_16, 182000, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp2);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_17, 315000, 315000); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp1);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_17, 315000, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp5);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_18, 192500, 192500); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp1);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_18, 192500, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp2);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_19, 182000, 182000); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp5);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_19, 182000, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp3);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_20, 420000, 420000); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp4);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_20, 420000, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp2);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_22, 280000, 280000); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp1);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_22, 280000, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp5);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_23, 262500, 262500); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp1);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_23, 262500, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp2);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_24, 315000, 315000); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp5);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_24, 315000, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp3);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_25, 262500, 262500); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp4);
+INSERT INTO infinito_sonido_pagos (id_reserva, monto, saldo_pendiente) VALUES (@r25_25, 262500, 0); SET @pago = LAST_INSERT_ID();
+INSERT INTO infinito_sonido_detalles_de_pago (id_pago, id_metodo_pago) VALUES (@pago, @mp2);
+
 COMMIT;
 
--- Fin. Pagos cargados: 34
+-- Fin. Pagos cargados: 80 (34 de 2026-2027 y 46 de 2025)
