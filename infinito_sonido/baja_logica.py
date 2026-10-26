@@ -19,8 +19,9 @@
 #
 #   - Reservas: tampoco se eliminan, se anulan con motivo (eso ya estaba de antes).
 #
-#   - Usuarios: se dan de baja y se reactivan desde la pantalla de Usuarios. Es para
-#     que no puedan entrar más al sistema, no para borrarlos.
+#   - Usuarios: igual que los anteriores. Se eliminan solo si nunca se usaron (por
+#     ejemplo, uno creado por error que nunca ingresó). Si ya tienen historial se
+#     DESACTIVAN: no pueden entrar más al sistema, pero se pueden reactivar.
 #
 # En este archivo está lo que necesitan las tablas que se pueden desactivar: los dos
 # campos (activo y fecha_baja) y las funciones para desactivar y reactivar.

@@ -6,12 +6,17 @@ import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
 import { useFiltros } from '../../hooks/useFiltros';
 import Paginacion from '../../components/Paginacion';
 import { usePaginacion } from '../../hooks/usePaginacion';
-import { IconEditar, IconEliminar } from '../../components/icons';
+import { IconDesactivar, IconEditar, IconEliminar, IconReactivar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import IconoCelda from '../../components/IconoCelda';
 import { iconoPermiso } from '../../utils/iconosModulos';
 
-// Lista de Permisos: tabla con filtros por tipo (Ver / Gestionar) y estado.
+// Lista de Permisos: tabla con filtros por tipo (Ver / Gestionar) y estado, y botones para
+// editar, eliminar, desactivar y reactivar.
+
+// Los permisos que dejan entrar a esta pantalla no se pueden desactivar (lo controla
+// también el backend): si se apagaran, nadie podría volver a activarlos
+const NO_DESACTIVABLES = ['ver_permisos', 'gestionar_permisos'];
 export default function PermisosList() {
   // Qué puede hacer el usuario en este módulo según su perfil (si no puede gestionar, solo ve la tabla)
   const { puedeGestionar } = usePermiso('permisos');
@@ -20,6 +25,9 @@ export default function PermisosList() {
   const [error, setError] = useState('');
   const [aEliminar, setAEliminar] = useState(null);
   const [eliminando, setEliminando] = useState(false);
+  // El que se está por desactivar (abre la ventana que pregunta) y si hay algo en curso
+  const [aDesactivar, setADesactivar] = useState(null);
+  const [procesando, setProcesando] = useState(false);
 
   // Trae todos los registros del backend y los guarda para la tabla
   function cargar() {
@@ -48,6 +56,35 @@ export default function PermisosList() {
       alert(err.response?.data?.detail || 'No se pudo eliminar el permiso.');
     } finally {
       setEliminando(false);
+    }
+  }
+
+  // Desactivar: el permiso sigue tildado en los perfiles, pero deja de tener efecto
+  // en todos hasta que se reactive
+  async function confirmarDesactivar() {
+    setProcesando(true);
+    try {
+      await api.post(`/permisos/${aDesactivar.id_permiso}/desactivar/`);
+      setADesactivar(null);
+      cargar();
+    } catch (err) {
+      setADesactivar(null);
+      alert(err.response?.data?.detail || 'No se pudo desactivar el permiso.');
+    } finally {
+      setProcesando(false);
+    }
+  }
+
+  // Reactivar: vuelve a tener efecto en los perfiles que lo tienen. No pide confirmación
+  async function reactivar(permiso) {
+    setProcesando(true);
+    try {
+      await api.post(`/permisos/${permiso.id_permiso}/reactivar/`);
+      cargar();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'No se pudo reactivar el permiso.');
+    } finally {
+      setProcesando(false);
     }
   }
 
@@ -112,13 +149,22 @@ export default function PermisosList() {
                 <td>
                   {permiso.estado_permiso
                     ? <span className="badge badge-green">Activo</span>
-                    : <span className="badge badge-gray">Inactivo</span>}
+                    : <span className="badge badge-red">Inactivo</span>}
                 </td>
                 <td>
                   {puedeGestionar ? (
                     <div className="actions-cell">
                       <Link to={`/permisos/${permiso.id_permiso}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
                       <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(permiso)} title="Eliminar"><IconEliminar /></button>
+                      {permiso.estado_permiso ? (
+                        NO_DESACTIVABLES.includes(permiso.codigo) ? (
+                          <button type="button" className="btn btn-secondary btn-sm" disabled title="Este permiso no se puede desactivar: sin él nadie podría volver a entrar a Permisos"><IconDesactivar /></button>
+                        ) : (
+                          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setADesactivar(permiso)} title="Desactivar"><IconDesactivar /></button>
+                        )
+                      ) : (
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => reactivar(permiso)} title="Reactivar" disabled={procesando}><IconReactivar /></button>
+                      )}
                     </div>
                   ) : (
                     <span className="form-hint">Solo lectura</span>
@@ -135,10 +181,23 @@ export default function PermisosList() {
       {aEliminar && (
         <ConfirmModal
           titulo="Eliminar permiso"
-          mensaje={`¿Eliminar el permiso "${aEliminar.nombre_permiso}"? Se quitará de todos los perfiles que lo tengan asignado.`}
+          mensaje={`¿Eliminar el permiso "${aEliminar.nombre_permiso}"? Se borra del sistema y no se puede recuperar. Si está asignado a algún perfil no se puede eliminar: podés desactivarlo.`}
           confirmando={eliminando}
           onCancelar={() => setAEliminar(null)}
           onConfirmar={confirmarEliminar}
+        />
+      )}
+
+      {/* Ventana para confirmar la desactivación */}
+      {aDesactivar && (
+        <ConfirmModal
+          titulo="Desactivar permiso"
+          mensaje={`¿Desactivar el permiso "${aDesactivar.nombre_permiso}"? Va a dejar de tener efecto en todos los perfiles que lo tienen, hasta que se vuelva a activar.`}
+          textoConfirmar="Desactivar"
+          textoConfirmando="Desactivando..."
+          confirmando={procesando}
+          onCancelar={() => setADesactivar(null)}
+          onConfirmar={confirmarDesactivar}
         />
       )}
     </div>

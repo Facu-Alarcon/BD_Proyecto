@@ -88,9 +88,22 @@ class PermisosSerializer(serializers.ModelSerializer):
     """
     codigo = serializers.CharField(read_only=True)
 
+    # Estos permisos no se pueden desactivar: son los que dejan entrar a esta pantalla.
+    # Si se apagaran, nadie podría volver a activar ningún permiso desde el sistema.
+    NO_DESACTIVABLES = {'ver_permisos', 'gestionar_permisos'}
+
     class Meta:
         model = Permisos
         fields = ['id_permiso', 'nombre_permiso', 'descripcion_permiso', 'estado_permiso', 'codigo']
+
+    # Desde el formulario tampoco se puede destildar "Activo" en esos dos permisos
+    def validate_estado_permiso(self, activo):
+        if not activo and self.instance is not None and self.instance.codigo in self.NO_DESACTIVABLES:
+            raise serializers.ValidationError(
+                f'"{self.instance.nombre_permiso}" no se puede desactivar: sin él nadie podría '
+                'volver a entrar a Permisos para activarlo.'
+            )
+        return activo
 
     def create(self, validated_data):
         # Arma el código a partir del nombre: "Ver Reportes" -> "ver_reportes".

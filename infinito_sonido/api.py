@@ -457,10 +457,34 @@ class PermisosViewSet(RegistrarActividadMixin, EliminarMixin, viewsets.ModelView
             nombres = ', '.join(sorted({r.id_perfil.tipo_perfil for r in perfiles}))
             return f'No se puede eliminar "{permiso.nombre_permiso}" porque está asignado a estos perfiles: {nombres}.'
 
+    # Botones Desactivar y Reactivar de la lista. Un permiso desactivado sigue tildado en
+    # los perfiles pero no tiene efecto en ninguno (ver permissions.py) hasta reactivarlo.
+    @action(detail=True, methods=['post'], url_path='desactivar')
+    def desactivar(self, request, pk=None):
+        permiso = self.get_object()
+        if not permiso.estado_permiso:
+            return Response({'detail': f'"{permiso}" ya está desactivado.'}, status=status.HTTP_409_CONFLICT)
+        if permiso.codigo in PermisosSerializer.NO_DESACTIVABLES:
+            return Response({'detail': f'"{permiso}" no se puede desactivar: sin él nadie podría volver a entrar '
+                                       'a Permisos para activarlo.'}, status=status.HTTP_409_CONFLICT)
+        permiso.estado_permiso = False
+        permiso.save(update_fields=['estado_permiso'])
+        return Response(self.get_serializer(permiso).data)
+
+    @action(detail=True, methods=['post'], url_path='reactivar')
+    def reactivar(self, request, pk=None):
+        permiso = self.get_object()
+        if permiso.estado_permiso:
+            return Response({'detail': f'"{permiso}" ya está activo.'}, status=status.HTTP_409_CONFLICT)
+        permiso.estado_permiso = True
+        permiso.save(update_fields=['estado_permiso'])
+        return Response(self.get_serializer(permiso).data)
+
 
 # Usuarios del sistema. Se crean a partir de un empleado, con usuario y contraseña
-# automáticos (ver UsuariosSerializer). No se borran: se dan de baja y se pueden reactivar.
-class UsuariosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
+# automáticos (ver UsuariosSerializer). Se desactivan y reactivan; solo se eliminan si
+# nunca se usaron (ver validar_eliminacion).
+class UsuariosViewSet(RegistrarActividadMixin, EliminarMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Usuarios'
     queryset = (
@@ -494,19 +518,41 @@ class UsuariosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
         datos = {**serializer.data, **self._respuesta_contraseña(usuario, contraseña, enviado)}
         return Response(datos, status=status.HTTP_201_CREATED)
 
-    def destroy(self, request, *args, **kwargs):
+    # Eliminar (tachito, ver EliminarMixin): solo un usuario que nunca se usó, por ejemplo
+    # uno creado por error. Si ya registró o anuló reservas, anuló pagos o tiene movimientos
+    # en el registro de actividad (por ejemplo, ya inició sesión), no se borra para no perder
+    # el historial: se desactiva. Tampoco se puede eliminar el usuario con el que se está.
+    # Sus sesiones y links de recuperación se borran solos con él (CASCADE).
+    def validar_eliminacion(self, usuario):
+        if usuario.pk == getattr(self.request.user, 'pk', None):
+            return 'No podés eliminar tu propio usuario.'
+        usado = (
+            Reservas.objects.filter(id_usuario_registro=usuario).exists()
+            or Reservas.objects.filter(id_usuario_anulacion=usuario).exists()
+            or Pagos.objects.filter(id_usuario_anulacion=usuario).exists()
+            or Registro_Actividad.objects.filter(id_usuario=usuario).exists()
+        )
+        if usado:
+            return (f'No se puede eliminar a "{usuario}" porque ya usó el sistema y tiene historial. '
+                    'Podés desactivarlo para que no pueda volver a ingresar.')
+
+    @action(detail=True, methods=['post'], url_path='desactivar')
+    def desactivar(self, request, pk=None):
         """
-        Baja lógica: no se borra la fila (rompería el historial de
-        reservas/pagos si el usuario quedó vinculado a algo). Se marca
-        activo=False + fecha_baja y se cierran sus sesiones activas para
-        que un token ya emitido deje de servir.
+        Desactivar (baja lógica): no se borra la fila, así se conserva su historial. Se marca
+        activo=False + fecha_baja y se cierran sus sesiones abiertas para que un token ya
+        emitido deje de servir. Se puede deshacer con Reactivar.
         """
         usuario = self.get_object()
+        if not usuario.activo:
+            return Response({'detail': f'"{usuario}" ya está desactivado.'}, status=status.HTTP_409_CONFLICT)
+        if usuario.pk == request.user.pk:
+            return Response({'detail': 'No podés desactivar tu propio usuario.'}, status=status.HTTP_409_CONFLICT)
         usuario.activo = False
         usuario.fecha_baja = timezone.localdate()
         usuario.save()
         SesionToken.objects.filter(id_usuario=usuario).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(UsuariosSerializer(usuario).data)
 
     @action(detail=True, methods=['post'], url_path='restablecer-clave')
     def restablecer_clave(self, request, pk=None):

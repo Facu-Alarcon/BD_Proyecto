@@ -6,19 +6,22 @@ import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
 import { useFiltros, opcionesDe } from '../../hooks/useFiltros';
 import Paginacion from '../../components/Paginacion';
 import { usePaginacion } from '../../hooks/usePaginacion';
-import { IconEditar, IconEliminar, IconLlave, IconReactivar } from '../../components/icons';
+import { IconDesactivar, IconEditar, IconEliminar, IconLlave, IconReactivar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import { PersonaCelda } from '../../components/Avatar';
 import RestablecerClaveModal from '../../components/RestablecerClaveModal';
 
-// Lista de Usuarios: además de editar, permite restablecer la clave, dar de baja y reactivar.
+// Lista de Usuarios: además de editar, permite restablecer la clave, desactivar, reactivar y
+// eliminar (solo los que nunca se usaron; los demás se desactivan).
 export default function UsuariosList() {
   // Qué puede hacer el usuario en este módulo según su perfil (si no puede gestionar, solo ve la tabla)
   const { puedeGestionar } = usePermiso('usuarios');
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
-  const [aDarDeBaja, setADarDeBaja] = useState(null);
+  // El que se está por desactivar o eliminar (abre la ventana que pregunta)
+  const [aDesactivar, setADesactivar] = useState(null);
+  const [aEliminar, setAEliminar] = useState(null);
   const [procesando, setProcesando] = useState(false);
   const [aRestablecer, setARestablecer] = useState(null);
 
@@ -35,14 +38,31 @@ export default function UsuariosList() {
   // Se cargan una sola vez, al abrir la pantalla
   useEffect(cargar, []);
 
-  async function confirmarBaja() {
+  // Desactivar: el usuario no se borra, deja de poder iniciar sesión y se puede reactivar
+  async function confirmarDesactivar() {
     setProcesando(true);
     try {
-      await api.delete(`/usuarios/${aDarDeBaja.id_usuario}/`);
-      setADarDeBaja(null);
+      await api.post(`/usuarios/${aDesactivar.id_usuario}/desactivar/`);
+      setADesactivar(null);
       cargar();
     } catch (err) {
-      alert(err.response?.data?.detail || 'No se pudo dar de baja al usuario.');
+      alert(err.response?.data?.detail || 'No se pudo desactivar al usuario.');
+    } finally {
+      setProcesando(false);
+    }
+  }
+
+  // Eliminar: lo borra de la base. El backend solo deja si el usuario nunca se usó;
+  // si no, muestra el motivo y avisa que se puede desactivar.
+  async function confirmarEliminar() {
+    setProcesando(true);
+    try {
+      await api.delete(`/usuarios/${aEliminar.id_usuario}/`);
+      setAEliminar(null);
+      cargar();
+    } catch (err) {
+      setAEliminar(null);
+      alert(err.response?.data?.detail || 'No se pudo eliminar al usuario.');
     } finally {
       setProcesando(false);
     }
@@ -82,7 +102,7 @@ export default function UsuariosList() {
     { tipo: 'select', id: 'perfil', label: 'Perfil', valor: (u) => u.perfil_nombre, opciones: opcionesDe(usuarios, (u) => u.perfil_nombre) },
     {
       tipo: 'select', id: 'estado', label: 'Estado', valor: (u) => (u.activo ? 'activo' : 'inactivo'),
-      opciones: [{ value: 'activo', label: 'Activos' }, { value: 'inactivo', label: 'Dados de baja' }],
+      opciones: [{ value: 'activo', label: 'Activos' }, { value: 'inactivo', label: 'Inactivos' }],
     },
   ];
   const filtros = useFiltros(usuarios, configFiltros);
@@ -152,9 +172,12 @@ export default function UsuariosList() {
                       <button type="button" className="btn btn-secondary btn-sm" onClick={() => setARestablecer(usuario)} title="Restablecer clave">
                         <IconLlave />
                       </button>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(usuario)} title="Eliminar">
+                        <IconEliminar />
+                      </button>
                       {usuario.activo ? (
-                        <button type="button" className="btn btn-danger btn-sm" onClick={() => setADarDeBaja(usuario)} title="Dar de baja">
-                          <IconEliminar />
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setADesactivar(usuario)} title="Desactivar">
+                          <IconDesactivar />
                         </button>
                       ) : (
                         <button type="button" className="btn btn-secondary btn-sm" onClick={() => reactivar(usuario)} title="Reactivar" disabled={procesando}>
@@ -173,14 +196,25 @@ export default function UsuariosList() {
         <Paginacion paginacion={paginacion} />
       </div>
 
-      {aDarDeBaja && (
+      {aDesactivar && (
         <ConfirmModal
-          titulo="Dar de baja usuario"
-          mensaje={`¿Dar de baja al usuario "${aDarDeBaja.usuario}"? Va a dejar de poder iniciar sesión, pero sus datos e historial se conservan.`}
-          textoConfirmar="Dar de baja"
+          titulo="Desactivar usuario"
+          mensaje={`¿Desactivar al usuario "${aDesactivar.usuario}"? Va a dejar de poder iniciar sesión, pero sus datos e historial se conservan y se puede volver a activar.`}
+          textoConfirmar="Desactivar"
+          textoConfirmando="Desactivando..."
           confirmando={procesando}
-          onCancelar={() => setADarDeBaja(null)}
-          onConfirmar={confirmarBaja}
+          onCancelar={() => setADesactivar(null)}
+          onConfirmar={confirmarDesactivar}
+        />
+      )}
+
+      {aEliminar && (
+        <ConfirmModal
+          titulo="Eliminar usuario"
+          mensaje={`¿Eliminar al usuario "${aEliminar.usuario}"? Se borra del sistema y no se puede recuperar. Solo se puede si nunca se usó; si no, desactivalo.`}
+          confirmando={procesando}
+          onCancelar={() => setAEliminar(null)}
+          onConfirmar={confirmarEliminar}
         />
       )}
 
