@@ -35,16 +35,22 @@ from .models import (
 # ---------------- Equipos ----------------
 #
 # Tipos y estados de equipo: solo el id y el nombre
+# Los conteos 'cantidad_...' de estos catálogos los calcula el ViewSet (annotate) y son solo
+# para mostrar en la lista cuánto se usa cada registro (si está en uso no se puede eliminar)
 class TipoEquiposSerializer(serializers.ModelSerializer):
+    cantidad_equipos = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Tipo_Equipos
-        fields = ['id_tipoeq', 'nombre_tipoeq']
+        fields = ['id_tipoeq', 'nombre_tipoeq', 'cantidad_equipos']
 
 
 class EstadoEquiposSerializer(serializers.ModelSerializer):
+    cantidad_equipos = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Estado_Equipos
-        fields = ['id_estadoeq', 'nombre_estadoeq']
+        fields = ['id_estadoeq', 'nombre_estadoeq', 'cantidad_equipos']
 
 
 # Equipos. Además de los ids de tipo y estado, manda sus nombres para mostrarlos en la tabla
@@ -65,9 +71,12 @@ class EquiposSerializer(serializers.ModelSerializer):
 #
 # Perfiles: solo el id y el nombre (los permisos de cada perfil se manejan aparte, ver PerfilesViewSet.permisos)
 class PerfilesSerializer(serializers.ModelSerializer):
+    cantidad_usuarios = serializers.IntegerField(read_only=True)
+    cantidad_permisos = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Perfiles
-        fields = ['id_perfil', 'tipo_perfil']
+        fields = ['id_perfil', 'tipo_perfil', 'cantidad_usuarios', 'cantidad_permisos']
 
 
 class PermisosSerializer(serializers.ModelSerializer):
@@ -113,9 +122,10 @@ class UsuariosSerializer(serializers.ModelSerializer):
     del empleado y la contraseña es temporal: la arma el sistema al azar, se le
     manda por mail al empleado (ver correos.py) y en el primer ingreso tiene que
     cambiarla (debe_cambiar_clave=True).
-    Modificación: solo se puede cambiar el perfil. Los datos de la persona se
-    editan desde Empleados. 'activo' y 'fecha_baja' los maneja el destroy() del
-    ViewSet (baja lógica).
+    Modificación: se puede cambiar el perfil y el correo. El correo es del empleado
+    (Empleados.email_emp): se cambia ahí, así queda igual en las dos pantallas. El resto
+    de los datos de la persona se edita desde Empleados. 'activo' y 'fecha_baja' los
+    maneja el destroy() del ViewSet (baja lógica).
     """
     perfil_nombre = serializers.CharField(source='id_perfil.tipo_perfil', read_only=True)
     usuario = serializers.CharField(read_only=True)
@@ -124,11 +134,13 @@ class UsuariosSerializer(serializers.ModelSerializer):
     nombre = serializers.CharField(source='id_empleado.nombre_emp', read_only=True)
     apellido = serializers.CharField(source='id_empleado.apellido_emp', read_only=True)
     correo = serializers.CharField(source='id_empleado.email_emp', read_only=True)
+    # Correo nuevo, solo al modificar (se guarda en el empleado, ver update)
+    email = serializers.EmailField(write_only=True, required=False, max_length=254)
 
     class Meta:
         model = Usuarios
         fields = [
-            'id_usuario', 'id_empleado', 'dni', 'nombre', 'apellido', 'correo',
+            'id_usuario', 'id_empleado', 'dni', 'nombre', 'apellido', 'correo', 'email',
             'id_perfil', 'perfil_nombre', 'usuario', 'activo', 'debe_cambiar_clave',
             'fecha_ultima_modificacion', 'fecha_baja',
         ]
@@ -156,6 +168,8 @@ class UsuariosSerializer(serializers.ModelSerializer):
     # La contraseña en texto plano se guarda en self.contraseña_temporal solo para que
     # la vista pueda mandarla por mail; en la base queda hasheada.
     def create(self, validated_data):
+        # Al crear, el correo es el que ya tiene el empleado
+        validated_data.pop('email', None)
         empleado = validated_data['id_empleado']
         self.contraseña_temporal = generar_contraseña_temporal()
         validated_data['usuario'] = generar_nombre_usuario(
@@ -166,10 +180,16 @@ class UsuariosSerializer(serializers.ModelSerializer):
         validated_data['debe_cambiar_clave'] = True
         return super().create(validated_data)
 
-    # Al editar solo cambia el perfil
+    # Al editar cambian el perfil y el correo. El correo se guarda en el empleado; los
+    # dos cambios van juntos (atomic): o se guardan los dos o ninguno.
     def update(self, instance, validated_data):
-        instance.id_perfil = validated_data.get('id_perfil', instance.id_perfil)
-        instance.save()  # fecha_ultima_modificacion se actualiza sola (auto_now)
+        with transaction.atomic():
+            email = validated_data.get('email')
+            if email is not None and email != instance.id_empleado.email_emp:
+                instance.id_empleado.email_emp = email
+                instance.id_empleado.save(update_fields=['email_emp'])
+            instance.id_perfil = validated_data.get('id_perfil', instance.id_perfil)
+            instance.save()  # fecha_ultima_modificacion se actualiza sola (auto_now)
         return instance
 
 
@@ -599,18 +619,21 @@ class ReservasSerializer(serializers.ModelSerializer):
 #
 # Sueldos, horarios y métodos de pago son catálogos simples: solo se mandan sus campos
 class SueldosSerializer(serializers.ModelSerializer):
+    cantidad_puestos = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Sueldos
-        fields = ['id_sueldo', 'monto_sueldo']
+        fields = ['id_sueldo', 'monto_sueldo', 'cantidad_puestos']
 
 
 # Puestos, con el monto del sueldo para mostrarlo en la tabla
 class PuestosSerializer(serializers.ModelSerializer):
     sueldo_monto = serializers.FloatField(source='id_sueldo.monto_sueldo', read_only=True)
+    cantidad_empleados = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Puestos
-        fields = ['id_puesto', 'nombre_puesto', 'id_sueldo', 'sueldo_monto']
+        fields = ['id_puesto', 'nombre_puesto', 'id_sueldo', 'sueldo_monto', 'cantidad_empleados']
 
 
 class PuestoConEstadoSerializer(serializers.ModelSerializer):
@@ -624,9 +647,11 @@ class PuestoConEstadoSerializer(serializers.ModelSerializer):
 
 
 class HorariosSerializer(serializers.ModelSerializer):
+    cantidad_empleados = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Horarios
-        fields = ['id_horario', 'cantidad_horas']
+        fields = ['id_horario', 'cantidad_horas', 'cantidad_empleados']
 
 
 class MetodoPagosSerializer(serializers.ModelSerializer):

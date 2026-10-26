@@ -285,6 +285,58 @@ button {
 .icono-verde { background: #e3f2df; color: #3f6f35; }
 .icono-rosa { background: #fbe4ec; color: #a33b62; }
 .icono-celeste { background: #ddf1fb; color: #0f6a96; }
+.icono-rojo { background: var(--red-bg); color: var(--red); }
+
+/* ---------- Listas de catálogos (Tipos y Estados de equipo, Horarios, Sueldos, Puestos, Perfiles) ---------- */
+/* Columna de acciones angosta y a la derecha, así el nombre aprovecha el ancho */
+.data-table .col-acciones {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+.data-table .col-acciones .actions-cell {
+  justify-content: flex-end;
+}
+
+/* Columna de uso (Equipos, Empleados, Usuarios...): cuántos registros dependen de este (ver components/UsoCelda.jsx) */
+.uso-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--gray-bg);
+  color: var(--text-main);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.uso-chip strong {
+  color: var(--navy-900);
+}
+.uso-ninguno {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* En el celular las celdas tienen menos margen y los nombres no se parten en varios
+   renglones: si la tabla no entra, se desliza dentro de su tarjeta */
+@media (max-width: 640px) {
+  .data-table th,
+  .data-table td {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .data-table .persona-celda-nombre,
+  .data-table .persona-celda-detalle {
+    white-space: nowrap;
+  }
+}
+
+/* Número destacado al lado del ícono (horas, montos) */
+.dato-numero {
+  font-variant-numeric: tabular-nums;
+}
 
 /* Circulito o cuadradito + nombre en las tablas (ver PersonaCelda en components/Avatar.jsx e IconoCelda) */
 .persona-celda {

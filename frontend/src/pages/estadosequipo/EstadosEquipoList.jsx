@@ -8,7 +8,9 @@ import Paginacion from '../../components/Paginacion';
 import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
-import { colorEstadoEquipo } from '../../utils/estadoEquipo';
+import IconoCelda from '../../components/IconoCelda';
+import UsoCelda from '../../components/UsoCelda';
+import { iconoEstadoEquipo } from '../../utils/iconosModulos';
 
 // Lista de Estados de equipo (Disponible, En uso, En reparación...): tabla con buscador
 // y botones para editar o eliminar. Antes los estados se agregaban desde el formulario
@@ -65,6 +67,7 @@ export default function EstadosEquipoList() {
       <div className="page-header">
         <div>
           <h1>Estados de equipo</h1>
+          <p>Situación de cada equipo. Los equipos "En reparación" no se pueden reservar.</p>
         </div>
         {puedeGestionar && <Link to="/estados-equipo/nuevo" className="btn btn-primary">+ Nuevo Estado de equipo</Link>}
       </div>
@@ -80,23 +83,25 @@ export default function EstadosEquipoList() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Nombre</th>
-              <th>Acciones</th>
+              <th>Estado</th>
+              <th>Equipos</th>
+              <th className="col-acciones">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cargando && (
-              <tr><td colSpan={2} style={{ textAlign: 'center' }}>Cargando...</td></tr>
+              <tr><td colSpan={3} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             )}
             {!cargando && estados.length === 0 && (
-              <tr><td colSpan={2} style={{ textAlign: 'center' }}>No hay estados de equipo cargados.</td></tr>
+              <tr><td colSpan={3} style={{ textAlign: 'center' }}>No hay estados de equipo cargados.</td></tr>
             )}
-            <FilaSinResultados filtros={filtros} total={estados.length} cargando={cargando} columnas={2} nombreItems="estados de equipo" />
+            <FilaSinResultados filtros={filtros} total={estados.length} cargando={cargando} columnas={3} nombreItems="estados de equipo" />
             {paginacion.visibles.map((estado) => (
               <tr key={estado.id_estadoeq}>
-                {/* El nombre va con el mismo cartelito de color que se ve en la lista de Equipos */}
-                <td><span className={`badge ${colorEstadoEquipo(estado.nombre_estadoeq).badge}`}>{estado.nombre_estadoeq}</span></td>
-                <td>
+                {/* Ícono y color iguales a los cartelitos de la lista de Equipos */}
+                <td><IconoCelda {...iconoEstadoEquipo(estado.nombre_estadoeq)} nombre={estado.nombre_estadoeq} /></td>
+                <td><UsoCelda cantidad={estado.cantidad_equipos} singular="equipo" plural="equipos" /></td>
+                <td className="col-acciones">
                   {puedeGestionar ? (
                     <div className="actions-cell">
                       <Link to={`/estados-equipo/${estado.id_estadoeq}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>

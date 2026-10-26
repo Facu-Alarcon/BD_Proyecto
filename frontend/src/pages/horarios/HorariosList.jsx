@@ -8,6 +8,9 @@ import Paginacion from '../../components/Paginacion';
 import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import IconoCelda from '../../components/IconoCelda';
+import UsoCelda from '../../components/UsoCelda';
+import { iconoHorario } from '../../utils/iconosModulos';
 
 // Lista de Horarios: cargas horarias, con filtro por cantidad de horas.
 export default function HorariosList() {
@@ -62,6 +65,7 @@ export default function HorariosList() {
       <div className="page-header">
         <div>
           <h1>Horarios</h1>
+          <p>Cargas horarias que se pueden asignar a los empleados desde su ficha.</p>
         </div>
         {puedeGestionar && <Link to="/horarios/nuevo" className="btn btn-primary">+ Nuevo Horario</Link>}
       </div>
@@ -77,22 +81,24 @@ export default function HorariosList() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Cantidad de horas</th>
-              <th>Acciones</th>
+              <th>Horario</th>
+              <th>Empleados</th>
+              <th className="col-acciones">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cargando && (
-              <tr><td colSpan={2} style={{ textAlign: 'center' }}>Cargando...</td></tr>
+              <tr><td colSpan={3} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             )}
             {!cargando && horarios.length === 0 && (
-              <tr><td colSpan={2} style={{ textAlign: 'center' }}>No hay horarios cargados.</td></tr>
+              <tr><td colSpan={3} style={{ textAlign: 'center' }}>No hay horarios cargados.</td></tr>
             )}
-            <FilaSinResultados filtros={filtros} total={horarios.length} cargando={cargando} columnas={2} nombreItems="horarios" />
+            <FilaSinResultados filtros={filtros} total={horarios.length} cargando={cargando} columnas={3} nombreItems="horarios" />
             {paginacion.visibles.map((horario) => (
               <tr key={horario.id_horario}>
-                <td>{horario.cantidad_horas} hs</td>
-                <td>
+                <td><IconoCelda {...iconoHorario()} nombre={<span className="dato-numero">{Number(horario.cantidad_horas).toLocaleString('es-AR')} horas</span>} detalle="por jornada" /></td>
+                <td><UsoCelda cantidad={horario.cantidad_empleados} singular="empleado" plural="empleados" /></td>
+                <td className="col-acciones">
                   {puedeGestionar ? (
                     <div className="actions-cell">
                       <Link to={`/horarios/${horario.id_horario}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>

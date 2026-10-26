@@ -8,6 +8,7 @@ import Paginacion from '../../components/Paginacion';
 import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import UsoCelda from '../../components/UsoCelda';
 import IconoCelda from '../../components/IconoCelda';
 import { iconoTipoEquipo } from '../../utils/iconosModulos';
 
@@ -64,6 +65,7 @@ export default function TiposEquipoList() {
       <div className="page-header">
         <div>
           <h1>Tipos de equipo</h1>
+          <p>Categorías en las que se agrupan los equipos: sonido, iluminación, estructuras, etc.</p>
         </div>
         {puedeGestionar && <Link to="/tipos-equipo/nuevo" className="btn btn-primary">+ Nuevo Tipo de equipo</Link>}
       </div>
@@ -79,22 +81,24 @@ export default function TiposEquipoList() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Nombre</th>
-              <th>Acciones</th>
+              <th>Tipo</th>
+              <th>Equipos</th>
+              <th className="col-acciones">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cargando && (
-              <tr><td colSpan={2} style={{ textAlign: 'center' }}>Cargando...</td></tr>
+              <tr><td colSpan={3} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             )}
             {!cargando && tipos.length === 0 && (
-              <tr><td colSpan={2} style={{ textAlign: 'center' }}>No hay tipos de equipo cargados.</td></tr>
+              <tr><td colSpan={3} style={{ textAlign: 'center' }}>No hay tipos de equipo cargados.</td></tr>
             )}
-            <FilaSinResultados filtros={filtros} total={tipos.length} cargando={cargando} columnas={2} nombreItems="tipos de equipo" />
+            <FilaSinResultados filtros={filtros} total={tipos.length} cargando={cargando} columnas={3} nombreItems="tipos de equipo" />
             {paginacion.visibles.map((tipo) => (
               <tr key={tipo.id_tipoeq}>
                 <td><IconoCelda {...iconoTipoEquipo(tipo.nombre_tipoeq)} nombre={tipo.nombre_tipoeq} /></td>
-                <td>
+                <td><UsoCelda cantidad={tipo.cantidad_equipos} singular="equipo" plural="equipos" /></td>
+                <td className="col-acciones">
                   {puedeGestionar ? (
                     <div className="actions-cell">
                       <Link to={`/tipos-equipo/${tipo.id_tipoeq}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>

@@ -8,6 +8,7 @@ import Paginacion from '../../components/Paginacion';
 import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import UsoCelda from '../../components/UsoCelda';
 import IconoCelda from '../../components/IconoCelda';
 import { iconoPuesto } from '../../utils/iconosModulos';
 
@@ -65,6 +66,7 @@ export default function PuestosList() {
       <div className="page-header">
         <div>
           <h1>Puestos</h1>
+          <p>Puestos de trabajo de la empresa y el sueldo de cada uno. Se asignan a los empleados desde su ficha.</p>
         </div>
         {puedeGestionar && <Link to="/puestos/nuevo" className="btn btn-primary">+ Nuevo Puesto</Link>}
       </div>
@@ -82,22 +84,24 @@ export default function PuestosList() {
             <tr>
               <th>Puesto</th>
               <th>Sueldo</th>
-              <th>Acciones</th>
+              <th>Empleados</th>
+              <th className="col-acciones">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cargando && (
-              <tr><td colSpan={3} style={{ textAlign: 'center' }}>Cargando...</td></tr>
+              <tr><td colSpan={4} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             )}
             {!cargando && puestos.length === 0 && (
-              <tr><td colSpan={3} style={{ textAlign: 'center' }}>No hay puestos cargados.</td></tr>
+              <tr><td colSpan={4} style={{ textAlign: 'center' }}>No hay puestos cargados.</td></tr>
             )}
-            <FilaSinResultados filtros={filtros} total={puestos.length} cargando={cargando} columnas={3} nombreItems="puestos" />
+            <FilaSinResultados filtros={filtros} total={puestos.length} cargando={cargando} columnas={4} nombreItems="puestos" />
             {paginacion.visibles.map((puesto) => (
               <tr key={puesto.id_puesto}>
                 <td><IconoCelda {...iconoPuesto(puesto.nombre_puesto)} nombre={puesto.nombre_puesto} /></td>
-                <td>${Number(puesto.sueldo_monto).toLocaleString('es-AR')}</td>
-                <td>
+                <td className="dato-numero">$ {Number(puesto.sueldo_monto).toLocaleString('es-AR')}</td>
+                <td><UsoCelda cantidad={puesto.cantidad_empleados} singular="empleado" plural="empleados" /></td>
+                <td className="col-acciones">
                   {puedeGestionar ? (
                     <div className="actions-cell">
                       <Link to={`/puestos/${puesto.id_puesto}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>

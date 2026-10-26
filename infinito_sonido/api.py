@@ -275,7 +275,8 @@ class MeView(APIView):
 class TipoEquiposViewSet(RegistrarActividadMixin, EliminarMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Tipos de equipo'
-    queryset = Tipo_Equipos.objects.all().order_by('nombre_tipoeq')
+    # Con cuántos equipos tiene cada tipo, para mostrarlo en la lista
+    queryset = Tipo_Equipos.objects.annotate(cantidad_equipos=Count('equipos')).order_by('nombre_tipoeq')
     serializer_class = TipoEquiposSerializer
     permission_classes = [permiso_modulo('tipos_equipo')]
 
@@ -289,7 +290,8 @@ class TipoEquiposViewSet(RegistrarActividadMixin, EliminarMixin, viewsets.ModelV
 class HorariosViewSet(RegistrarActividadMixin, EliminarMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Horarios'
-    queryset = Horarios.objects.all().order_by('cantidad_horas')
+    # Con cuántos empleados tienen cada horario, para mostrarlo en la lista
+    queryset = Horarios.objects.annotate(cantidad_empleados=Count('horarios_x_empleados')).order_by('cantidad_horas')
     serializer_class = HorariosSerializer
     permission_classes = [permiso_modulo('horarios')]
 
@@ -342,7 +344,8 @@ class EstadoEquiposViewSet(RegistrarActividadMixin, EliminarMixin, viewsets.Mode
     """
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Estados de equipo'
-    queryset = Estado_Equipos.objects.all().order_by('nombre_estadoeq')
+    # Con cuántos equipos tienen cada estado, para mostrarlo en la lista
+    queryset = Estado_Equipos.objects.annotate(cantidad_equipos=Count('equipos')).order_by('nombre_estadoeq')
     serializer_class = EstadoEquiposSerializer
     permission_classes = [PermisoEstadosEquipo]
 
@@ -378,7 +381,11 @@ class EquiposViewSet(RegistrarActividadMixin, EliminarMixin, viewsets.ModelViewS
 class PerfilesViewSet(RegistrarActividadMixin, EliminarMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Perfiles'
-    queryset = Perfiles.objects.all().order_by('tipo_perfil')
+    # Con cuántos usuarios y permisos tiene cada perfil (distinct: son dos tablas distintas)
+    queryset = Perfiles.objects.annotate(
+        cantidad_usuarios=Count('usuarios', distinct=True),
+        cantidad_permisos=Count('permisos_x_perfiles', distinct=True),
+    ).order_by('tipo_perfil')
     serializer_class = PerfilesSerializer
     permission_classes = [permiso_modulo('perfiles')]
 
@@ -462,6 +469,11 @@ class UsuariosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
     )
     serializer_class = UsuariosSerializer
     permission_classes = [permiso_modulo('usuarios')]
+
+    # En el registro de actividad también se anota el correo, que se guarda en el empleado
+    # (se lee de la base para tener el valor actualizado después de modificarlo)
+    def datos_extra_registro(self, usuario):
+        return {'Email': Empleados.objects.filter(pk=usuario.id_empleado_id).values_list('email_emp', flat=True).first()}
 
     # Arma la respuesta después de generar una contraseña temporal: si el mail salió,
     # solo se avisa a qué correo se mandó; si no salió, se devuelve la contraseña para que
@@ -660,7 +672,8 @@ class EmpleadosViewSet(RegistrarActividadMixin, EliminarMixin, DesactivarMixin, 
 class SueldosViewSet(RegistrarActividadMixin, EliminarMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Sueldos'
-    queryset = Sueldos.objects.all().order_by('monto_sueldo')
+    # Con cuántos puestos usan cada sueldo, para mostrarlo en la lista
+    queryset = Sueldos.objects.annotate(cantidad_puestos=Count('puestos')).order_by('monto_sueldo')
     serializer_class = SueldosSerializer
     permission_classes = [permiso_modulo('sueldos')]
 
@@ -674,7 +687,10 @@ class SueldosViewSet(RegistrarActividadMixin, EliminarMixin, viewsets.ModelViewS
 class PuestosViewSet(RegistrarActividadMixin, EliminarMixin, viewsets.ModelViewSet):
     # Nombre con el que aparece en el registro de actividad (ver registro.py)
     modulo_registro = 'Puestos'
-    queryset = Puestos.objects.select_related('id_sueldo').all().order_by('nombre_puesto')
+    # Con cuántos empleados tienen cada puesto, para mostrarlo en la lista
+    queryset = Puestos.objects.select_related('id_sueldo').annotate(
+        cantidad_empleados=Count('puestos_x_empleados')
+    ).order_by('nombre_puesto')
     serializer_class = PuestosSerializer
     permission_classes = [permiso_modulo('puestos')]
 

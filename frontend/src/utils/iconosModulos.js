@@ -68,6 +68,26 @@ export function iconoPermiso(codigo) {
   return { icono: 'candado', color: 'pizarra' };
 }
 
+// Estados de equipo: los mismos colores que los cartelitos de la lista de Equipos
+// (ver utils/estadoEquipo.js); cualquier estado nuevo queda gris
+export function iconoEstadoEquipo(nombreEstado) {
+  const n = normalizar(nombreEstado);
+  if (n.includes('dispon')) return { icono: 'tilde', color: 'verde' };
+  if (n.includes('uso') || n.includes('reserv')) return { icono: 'play', color: 'ambar' };
+  if (n.includes('repar') || n.includes('baja') || n.includes('roto')) return { icono: 'llave', color: 'rojo' };
+  return GENERICO;
+}
+
+// Todos los horarios llevan el reloj
+export function iconoHorario() {
+  return { icono: 'reloj', color: 'celeste' };
+}
+
+// Todos los sueldos llevan el billete
+export function iconoSueldo() {
+  return { icono: 'billete', color: 'verde' };
+}
+
 // El administrador se distingue del resto de los perfiles
 export function iconoPerfil(nombrePerfil) {
   if (normalizar(nombrePerfil).includes('admin')) return { icono: 'escudoOk', color: 'azul' };

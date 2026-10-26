@@ -8,6 +8,9 @@ import Paginacion from '../../components/Paginacion';
 import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import IconoCelda from '../../components/IconoCelda';
+import UsoCelda from '../../components/UsoCelda';
+import { iconoSueldo } from '../../utils/iconosModulos';
 
 // Lista de Sueldos, con filtro por monto.
 export default function SueldosList() {
@@ -62,6 +65,7 @@ export default function SueldosList() {
       <div className="page-header">
         <div>
           <h1>Sueldos</h1>
+          <p>Montos de sueldo que se asignan a los puestos de trabajo.</p>
         </div>
         {puedeGestionar && <Link to="/sueldos/nuevo" className="btn btn-primary">+ Nuevo Sueldo</Link>}
       </div>
@@ -78,21 +82,23 @@ export default function SueldosList() {
           <thead>
             <tr>
               <th>Monto</th>
-              <th>Acciones</th>
+              <th>Puestos que lo usan</th>
+              <th className="col-acciones">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cargando && (
-              <tr><td colSpan={2} style={{ textAlign: 'center' }}>Cargando...</td></tr>
+              <tr><td colSpan={3} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             )}
             {!cargando && sueldos.length === 0 && (
-              <tr><td colSpan={2} style={{ textAlign: 'center' }}>No hay sueldos cargados.</td></tr>
+              <tr><td colSpan={3} style={{ textAlign: 'center' }}>No hay sueldos cargados.</td></tr>
             )}
-            <FilaSinResultados filtros={filtros} total={sueldos.length} cargando={cargando} columnas={2} nombreItems="sueldos" />
+            <FilaSinResultados filtros={filtros} total={sueldos.length} cargando={cargando} columnas={3} nombreItems="sueldos" />
             {paginacion.visibles.map((sueldo) => (
               <tr key={sueldo.id_sueldo}>
-                <td>${Number(sueldo.monto_sueldo).toLocaleString('es-AR')}</td>
-                <td>
+                <td><IconoCelda {...iconoSueldo()} nombre={<span className="dato-numero">$ {Number(sueldo.monto_sueldo).toLocaleString('es-AR')}</span>} /></td>
+                <td><UsoCelda cantidad={sueldo.cantidad_puestos} singular="puesto" plural="puestos" /></td>
+                <td className="col-acciones">
                   {puedeGestionar ? (
                     <div className="actions-cell">
                       <Link to={`/sueldos/${sueldo.id_sueldo}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>

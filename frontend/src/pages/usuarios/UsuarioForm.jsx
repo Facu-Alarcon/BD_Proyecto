@@ -38,7 +38,7 @@ export default function UsuarioForm() {
   useEffect(() => {
     if (!editando) return;
     api.get(`/usuarios/${id}/`).then(({ data }) => {
-      setForm({ id_empleado: data.id_empleado, id_perfil: data.id_perfil });
+      setForm({ id_empleado: data.id_empleado, id_perfil: data.id_perfil, email: data.correo || '' });
       setDatosUsuario(data);
       setCargando(false);
     });
@@ -60,7 +60,7 @@ export default function UsuarioForm() {
     setErrores({});
     try {
       if (editando) {
-        await api.put(`/usuarios/${id}/`, { id_empleado: form.id_empleado, id_perfil: form.id_perfil });
+        await api.put(`/usuarios/${id}/`, { id_empleado: form.id_empleado, id_perfil: form.id_perfil, email: form.email });
         setGuardadoOk(true);
       } else {
         const { data } = await api.post('/usuarios/', form);
@@ -155,7 +155,19 @@ export default function UsuarioForm() {
             <span>{editando ? 'Usuario' : 'Usuario (se genera solo)'}</span>
             <strong>{editando ? datosUsuario?.usuario : usuarioSugerido(empleadoElegido.nombre_emp, empleadoElegido.apellido_emp)}</strong>
           </div>
-          <div><span>Correo</span><strong>{editando ? datosUsuario?.correo : empleadoElegido.email_emp || '—'}</strong></div>
+          {/* Al crear se muestra el correo del empleado; al editar se puede cambiar (campo de abajo) */}
+          {!editando && <div><span>Correo</span><strong>{empleadoElegido.email_emp || '—'}</strong></div>}
+        </div>
+      )}
+
+      {/* Correo: es el del empleado, así que el cambio también se ve en Empleados.
+          Ahí le llegan la contraseña temporal y el link para recuperarla. */}
+      {editando && (
+        <div className="form-field">
+          <label htmlFor="email">Correo <span className="requerido">*</span></label>
+          <input id="email" type="email" placeholder="Ej: nombre@gmail.com" value={form.email} onChange={(e) => actualizar('email', e.target.value)} required />
+          <span className="form-hint">Es el correo del empleado: el cambio también se ve en Empleados.</span>
+          {errores.email && <span className="form-error">{errores.email}</span>}
         </div>
       )}
       {faltanDatos && (

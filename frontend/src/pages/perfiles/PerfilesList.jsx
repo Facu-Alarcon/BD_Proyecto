@@ -8,6 +8,7 @@ import Paginacion from '../../components/Paginacion';
 import { usePaginacion } from '../../hooks/usePaginacion';
 import { IconEditar, IconEliminar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
+import UsoCelda from '../../components/UsoCelda';
 import IconoCelda from '../../components/IconoCelda';
 import { iconoPerfil } from '../../utils/iconosModulos';
 
@@ -64,6 +65,7 @@ export default function PerfilesList() {
       <div className="page-header">
         <div>
           <h1>Perfiles</h1>
+          <p>Cada perfil agrupa los permisos que definen qué puede hacer en el sistema cada usuario que lo tiene.</p>
         </div>
         {puedeGestionar && <Link to="/perfiles/nuevo" className="btn btn-primary">+ Nuevo Perfil</Link>}
       </div>
@@ -79,22 +81,31 @@ export default function PerfilesList() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Nombre del Perfil</th>
-              <th>Acciones</th>
+              <th>Perfil</th>
+              <th>Permisos</th>
+              <th>Usuarios</th>
+              <th className="col-acciones">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {cargando && (
-              <tr><td colSpan={2} style={{ textAlign: 'center' }}>Cargando...</td></tr>
+              <tr><td colSpan={4} style={{ textAlign: 'center' }}>Cargando...</td></tr>
             )}
             {!cargando && perfiles.length === 0 && (
-              <tr><td colSpan={2} style={{ textAlign: 'center' }}>No hay perfiles cargados.</td></tr>
+              <tr><td colSpan={4} style={{ textAlign: 'center' }}>No hay perfiles cargados.</td></tr>
             )}
-            <FilaSinResultados filtros={filtros} total={perfiles.length} cargando={cargando} columnas={2} nombreItems="perfiles" />
+            <FilaSinResultados filtros={filtros} total={perfiles.length} cargando={cargando} columnas={4} nombreItems="perfiles" />
             {paginacion.visibles.map((perfil) => (
               <tr key={perfil.id_perfil}>
                 <td><IconoCelda {...iconoPerfil(perfil.tipo_perfil)} nombre={perfil.tipo_perfil} /></td>
+                {/* Cuántos permisos tiene tildados (se eligen al editar el perfil) */}
                 <td>
+                  {perfil.cantidad_permisos
+                    ? <span className="dato-numero">{perfil.cantidad_permisos} {perfil.cantidad_permisos === 1 ? 'permiso' : 'permisos'}</span>
+                    : <span className="uso-ninguno">Sin permisos</span>}
+                </td>
+                <td><UsoCelda cantidad={perfil.cantidad_usuarios} singular="usuario" plural="usuarios" /></td>
+                <td className="col-acciones">
                   {puedeGestionar ? (
                     <div className="actions-cell">
                       <Link to={`/perfiles/${perfil.id_perfil}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>

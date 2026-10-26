@@ -23,10 +23,18 @@ export default function BarraFiltros({ config, filtros, total, cargando, nombreI
     f.tipo === 'rango' ? valores[`${f.id}Desde`] !== '' || valores[`${f.id}Hasta`] !== '' : valores[f.id] !== ''
   ).length;
 
+  const botonLimpiar = (
+    <button type="button" className="btn btn-secondary" onClick={limpiar} disabled={!hayFiltros}>
+      Limpiar
+    </button>
+  );
+
   return (
     <>
       <div className="card filtros">
-        {/* Fila de arriba: buscador + botones */}
+        {/* Fila de arriba: buscador + botones. Sin buscador no hace falta: el botón
+            Limpiar va al final de la fila de filtros (ver más abajo) */}
+        {buscadores.length > 0 && (
         <div className="filtros-fila">
           {buscadores.map((f) => (
             <div key={f.id} className="form-field filtros-buscar">
@@ -53,10 +61,9 @@ export default function BarraFiltros({ config, filtros, total, cargando, nombreI
             </button>
           )}
 
-          <button type="button" className="btn btn-secondary" onClick={limpiar} disabled={!hayFiltros}>
-            Limpiar
-          </button>
+          {botonLimpiar}
         </div>
+        )}
 
         {/* Panel con el resto de los filtros */}
         {delPanel.length > 0 && panelVisible && (
@@ -64,6 +71,7 @@ export default function BarraFiltros({ config, filtros, total, cargando, nombreI
             {delPanel.map((f) => (
               <CampoFiltro key={f.id} filtro={f} valores={valores} cambiar={cambiar} />
             ))}
+            {buscadores.length === 0 && botonLimpiar}
           </div>
         )}
       </div>
