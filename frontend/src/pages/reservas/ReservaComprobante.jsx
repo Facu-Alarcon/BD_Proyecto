@@ -53,7 +53,7 @@ export default function ReservaComprobante() {
       </div>
 
       {/* La hoja del comprobante */}
-      <article className={`comprobante${anulada ? ' comprobante-anulado' : ''}`}>
+      <article className={`comprobante tema-claro${anulada ? ' comprobante-anulado' : ''}`}>
         {/* Sello de ANULADA cruzando la hoja, para que no se pueda usar como válido */}
         {anulada && <div className="comprobante-sello" aria-hidden="true">ANULADA</div>}
 

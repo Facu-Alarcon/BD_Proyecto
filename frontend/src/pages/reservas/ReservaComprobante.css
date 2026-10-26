@@ -53,7 +53,7 @@
   padding: 10px 14px;
   border: 1px solid var(--navy-900);
   border-radius: 8px;
-  color: var(--navy-900);
+  color: var(--titulo);
 }
 
 .comprobante-numero strong {

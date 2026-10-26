@@ -25,7 +25,7 @@
 .reporte-tarjeta h2 {
   margin: 0;
   font-size: 17px;
-  color: var(--navy-900);
+  color: var(--titulo);
 }
 
 .reporte-tarjeta p {
@@ -93,7 +93,7 @@
 .reporte-subtitulo {
   margin: 0 0 8px;
   font-size: 16px;
-  color: var(--navy-900);
+  color: var(--titulo);
 }
 
 .reporte-interpretacion {
@@ -114,7 +114,7 @@
 }
 
 .reporte-vacio strong {
-  color: var(--navy-900);
+  color: var(--titulo);
   font-size: 16px;
 }
 
@@ -138,7 +138,7 @@
 
 /* Los ceros en gris clarito */
 .reporte-tabla .cero {
-  color: #b3bacb;
+  color: var(--texto-apagado);
 }
 
 /* Fila de totales al pie */
@@ -146,7 +146,7 @@
   padding: 12px 16px;
   border-top: 2px solid var(--border);
   font-weight: 700;
-  color: var(--navy-900);
+  color: var(--titulo);
 }
 
 /* La columna con el nombre del equipo queda fija a la izquierda: así, al deslizar la
@@ -160,7 +160,7 @@
 }
 
 .reporte-tabla tbody tr:hover td:first-child {
-  background: #fafbfd;
+  background: var(--fila-hover);
 }
 
 
@@ -215,7 +215,7 @@
 .comparacion-nombre {
   font-size: 14px;
   font-weight: 600;
-  color: var(--navy-900);
+  color: var(--titulo);
 }
 
 .comparacion-barras {

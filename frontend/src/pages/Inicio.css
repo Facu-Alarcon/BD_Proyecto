@@ -24,7 +24,7 @@
 .stat-value {
   font-size: 28px;
   font-weight: 800;
-  color: var(--navy-950);
+  color: var(--titulo-fuerte);
 }
 
 .stat-hint {
@@ -59,7 +59,7 @@
 .inicio-panel h2 {
   margin: 0 0 16px;
   font-size: 16px;
-  color: var(--navy-950);
+  color: var(--titulo-fuerte);
 }
 
 /* Sin uso: ninguna pantalla usa hoy esta clase (quedó de un diseño anterior). Se puede borrar. */
@@ -81,13 +81,13 @@
 }
 .acceso-item:hover {
   border-color: var(--navy-accent);
-  background: #eef3ff;
+  background: var(--inicio-azul-bg);
 }
 
 .acceso-label {
   font-weight: 700;
   font-size: 14px;
-  color: var(--navy-950);
+  color: var(--titulo-fuerte);
 }
 .acceso-desc {
   font-size: 12px;

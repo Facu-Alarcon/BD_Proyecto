@@ -35,7 +35,7 @@
   width: min(480px, 100%);
   max-height: calc(100vh - 48px);
   overflow-y: auto;
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 18px;
   box-shadow: 0 30px 60px rgba(4, 10, 30, 0.45);
   padding: 32px 32px 26px;
@@ -71,7 +71,7 @@
 .overlay-card-header h2 {
   margin: 0;
   font-size: 19px;
-  color: var(--navy-950);
+  color: var(--titulo-fuerte);
 }
 
 .overlay-subtitle {
@@ -92,7 +92,7 @@
   border-radius: 6px;
 }
 .overlay-close:hover {
-  color: var(--navy-950);
+  color: var(--titulo-fuerte);
   background: var(--gray-bg);
 }
 
@@ -118,7 +118,7 @@
 .overlay-success h2 {
   margin: 0 0 6px;
   font-size: 18px;
-  color: var(--navy-950);
+  color: var(--titulo-fuerte);
 }
 
 .overlay-success .overlay-subtitle {

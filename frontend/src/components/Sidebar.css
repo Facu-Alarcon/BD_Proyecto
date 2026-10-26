@@ -69,6 +69,24 @@
   font-weight: 700;
 }
 
+/* Tema oscuro: el menú se invierte, blanco con letras en azul institucional,
+   así resalta contra el fondo oscuro de la pantalla */
+:root[data-theme="dark"] .sidebar {
+  background: #fff;
+  color: var(--navy-900);
+}
+:root[data-theme="dark"] .sidebar-link {
+  color: var(--navy-900);
+}
+:root[data-theme="dark"] .sidebar-link:hover {
+  background: #eef2f9;
+  color: var(--navy-950);
+}
+:root[data-theme="dark"] .sidebar-link.active {
+  background: #dfe7f5;
+  color: var(--navy-950);
+}
+
 .sidebar-icon {
   flex-shrink: 0;
 }
@@ -103,7 +121,7 @@
   transform: translateY(-50%);
   border: 5px solid transparent;
   border-left: 0;
-  border-right-color: var(--navy-950);
+  border-right-color: var(--titulo-fuerte);
 }
 
 /* Pantallas medianas/chicas: solo íconos. Mismo corte que MEDIA_COMPACTO en Sidebar.jsx. */

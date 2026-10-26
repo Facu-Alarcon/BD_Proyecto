@@ -30,7 +30,65 @@
   --red-bg: #fbe6e6;
   --blue-bar: #2f6fed;
   --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.05);
+  /* Colores "por uso", para que el tema oscuro pueda cambiarlos sin tocar el azul de los fondos */
+  --titulo: var(--navy-900);             /* títulos y textos destacados */
+  --titulo-fuerte: var(--navy-950);
+  --fila-hover: #fafbfd;                 /* fila de tabla con el mouse encima */
+  --btn-secundario-hover: #e3e6ee;
+  --texto-apagado: #b3bacb;              /* ceros de las tablas de reportes */
+  --inicio-azul-bg: #eef3ff;
   font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  color-scheme: light;
+}
+
+/* ---------- Tema oscuro ----------
+   Se activa con el botón de la luna de la barra de arriba (ver hooks/useTema.js), que pone
+   data-theme="dark" en la página. Solo cambian los valores de las variables: todo el resto
+   del CSS ya usa var(--...), así que se adapta solo. El azul institucional de los fondos
+   (menú lateral, cabeceras) y el verde de los botones quedan igual en los dos temas. */
+:root[data-theme="dark"] {
+  --bg-app: #0d1524;
+  --card-bg: #162135;
+  --border: #283651;
+  --text-main: #e2e8f4;
+  --text-muted: #9ba7c1;
+  --gray-bg: #212d45;
+  --verde-claro-bg: #1d3020;
+  --navy-accent: #7aa2ff;
+  --green: #92c487;
+  --green-bg: #1d3020;
+  --amber: #e6b65e;
+  --amber-bg: #392c12;
+  --red: #f08a8a;
+  --red-bg: #3c1e23;
+  --blue-bar: #6b96ff;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  --titulo: #dce7f8;
+  --titulo-fuerte: #eef3fc;
+  --fila-hover: #1b283f;
+  --btn-secundario-hover: #2b3a58;
+  --texto-apagado: #4c5a78;
+  --inicio-azul-bg: #1a2a47;
+  color-scheme: dark;
+}
+
+/* Lo que tiene que verse siempre claro aunque el sistema esté en oscuro (el comprobante,
+   que es una hoja para imprimir): vuelve a poner los valores del tema claro adentro */
+.tema-claro {
+  --bg-app: #f3f5fa;
+  --card-bg: #ffffff;
+  --border: #e4e8f1;
+  --text-main: #142042;
+  --text-muted: #6b7590;
+  --gray-bg: #eef0f5;
+  --green: #4e7246;
+  --green-bg: #e6efe2;
+  --amber: #a5720a;
+  --amber-bg: #fdf1d8;
+  --red: #d64545;
+  --red-bg: #fbe6e6;
+  --titulo: var(--navy-900);
+  --titulo-fuerte: var(--navy-950);
   color-scheme: light;
 }
 
@@ -86,9 +144,9 @@ button {
 
 /* Botón con borde y fondo blanco, para "Cancelar" al lado del principal */
 .btn-outline {
-  background: #fff;
-  color: var(--navy-900);
-  border: 1px solid var(--navy-900);
+  background: var(--card-bg);
+  color: var(--titulo);
+  border: 1px solid var(--titulo);
 }
 .btn-outline:hover { background: var(--gray-bg); }
 
@@ -97,7 +155,7 @@ button {
   background: var(--gray-bg);
   color: var(--text-main);
 }
-.btn-secondary:hover { background: #e3e6ee; }
+.btn-secondary:hover { background: var(--btn-secundario-hover); }
 
 /* Botón rojo, para acciones peligrosas (Eliminar, Anular) */
 .btn-danger {
@@ -178,7 +236,7 @@ button {
 }
 
 .data-table tr:last-child td { border-bottom: none; }
-.data-table tr:hover td { background: #fafbfd; }
+.data-table tr:hover td { background: var(--fila-hover); }
 
 /* Celda de la última columna con los botones de cada fila (ver, editar, eliminar...) */
 .actions-cell {
@@ -211,7 +269,7 @@ button {
   padding: 10px 12px;
   font-size: 14px;
   color: var(--text-main);
-  background: #fff;
+  background: var(--card-bg);
 }
 .form-field input:focus,
 .form-field select:focus,
@@ -265,6 +323,18 @@ button {
   background: var(--navy-900);
 }
 
+/* En tema oscuro el azul institucional se pierde contra las tarjetas: se aclara un poco */
+:root[data-theme="dark"] .data-table tbody tr:nth-child(even) .avatar-badge,
+:root[data-theme="dark"] .reserva-row:nth-child(even) .avatar-badge {
+  background: #2d5590;
+}
+
+/* El logo tiene letras azul oscuro: en tema oscuro se muestra en blanco para que se lea
+   (menos en el comprobante, que siempre es una hoja clara) */
+:root[data-theme="dark"] img[src*="logonuevo"]:not(.tema-claro img) {
+  filter: brightness(0) invert(1);
+}
+
 /* Cuadradito con ícono para las tablas que no son de personas (ver components/IconoCelda.jsx).
    Mismo estilo que la app móvil: fondo suave y el ícono del mismo color más fuerte. */
 .icono-cuadro {
@@ -286,6 +356,14 @@ button {
 .icono-rosa { background: #fbe4ec; color: #a33b62; }
 .icono-celeste { background: #ddf1fb; color: #0f6a96; }
 .icono-rojo { background: var(--red-bg); color: var(--red); }
+:root[data-theme="dark"] .icono-azul { background: #1c2c4d; color: #9dbcff; }
+:root[data-theme="dark"] .icono-ambar { background: #3a2d12; color: #f0c36a; }
+:root[data-theme="dark"] .icono-pizarra { background: #263248; color: #b7c3da; }
+:root[data-theme="dark"] .icono-violeta { background: #2e2348; color: #c7a8f5; }
+:root[data-theme="dark"] .icono-teal { background: #163536; color: #7fd3d3; }
+:root[data-theme="dark"] .icono-verde { background: #1d3020; color: #9fd294; }
+:root[data-theme="dark"] .icono-rosa { background: #3a1f2c; color: #f0a3c0; }
+:root[data-theme="dark"] .icono-celeste { background: #16304a; color: #8fd0f2; }
 
 /* ---------- Listas de catálogos (Tipos y Estados de equipo, Horarios, Sueldos, Puestos, Perfiles) ---------- */
 /* Columna de acciones angosta y a la derecha, así el nombre aprovecha el ancho */
@@ -311,7 +389,7 @@ button {
   white-space: nowrap;
 }
 .uso-chip strong {
-  color: var(--navy-900);
+  color: var(--titulo);
 }
 .uso-ninguno {
   color: var(--text-muted);
@@ -511,7 +589,7 @@ button {
   padding: 0 8px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--card-bg);
   color: var(--text-main);
   font-size: 13px;
   font-weight: 600;
@@ -590,12 +668,12 @@ button {
 }
 
 .ruta a:hover {
-  color: var(--navy-900);
+  color: var(--titulo);
   text-decoration: underline;
 }
 
 .ruta strong {
-  color: var(--navy-900);
+  color: var(--titulo);
 }
 
 /* Formulario a la izquierda (más ancho) y panel de ayuda a la derecha */
@@ -619,7 +697,7 @@ button {
 .alta-titulo {
   margin: 0;
   font-size: 18px;
-  color: var(--navy-900);
+  color: var(--titulo);
 }
 
 .alta-subtitulo {
@@ -778,7 +856,7 @@ button {
 .aviso-contraseña-valor code {
   padding: 6px 12px;
   border-radius: 8px;
-  background: #fff;
+  background: var(--card-bg);
   border: 1px solid var(--border);
   font-size: 16px;
   letter-spacing: 1px;
@@ -810,7 +888,7 @@ button {
 
 /* La pestaña elegida se subraya con el verde institucional */
 .pestañas button.activa {
-  color: var(--navy-900);
+  color: var(--titulo);
   border-bottom-color: var(--verde);
 }
 
@@ -837,7 +915,7 @@ button {
 
 /* Fila desplegada con el detalle (campos que cambiaron o el error completo) */
 .registro-detalle-fila td {
-  background: #fafbfd;
+  background: var(--fila-hover);
 }
 
 .registro-detalle {
@@ -846,7 +924,7 @@ button {
   max-height: 320px;
   overflow: auto;
   border-radius: 8px;
-  background: #fff;
+  background: var(--card-bg);
   border: 1px solid var(--border);
   font-size: 12px;
   line-height: 1.5;
@@ -889,7 +967,7 @@ button {
   width: 100%;
   margin-bottom: 6px;
   border-collapse: collapse;
-  background: #fff;
+  background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 13px;
@@ -1156,7 +1234,7 @@ button {
   border: 1px solid var(--border);
   border-radius: 50%;
   background: var(--card-bg);
-  color: var(--navy-900);
+  color: var(--titulo);
   cursor: pointer;
   transition: background-color 0.15s ease;
 }

@@ -29,7 +29,7 @@
   position: relative;
   z-index: 1;
   width: min(420px, 90vw);
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 18px;
   box-shadow: 0 30px 60px rgba(4, 10, 30, 0.45);
   padding: 44px 40px 32px;
@@ -38,7 +38,7 @@
 .login-card h1 {
   margin: 0 0 6px;
   font-size: 24px;
-  color: var(--navy-950);
+  color: var(--titulo-fuerte);
 }
 
 .login-subtitle {
@@ -74,7 +74,7 @@
 }
 
 .password-toggle:hover {
-  color: var(--navy-950);
+  color: var(--titulo-fuerte);
 }
 
 /* Fila con "Recordarme" a la izquierda y "Olvidé mi contraseña" a la derecha */
@@ -95,7 +95,7 @@
 }
 
 .login-link {
-  color: var(--navy-700);
+  color: var(--titulo);
   font-weight: 600;
 }
 .login-link:hover {

@@ -12,7 +12,7 @@
 }
 
 .confirm-card {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 14px;
   padding: 24px;
   width: 100%;
@@ -23,7 +23,7 @@
 .confirm-card h3 {
   margin: 0 0 8px;
   font-size: 17px;
-  color: var(--navy-950);
+  color: var(--titulo-fuerte);
 }
 
 .confirm-card p {

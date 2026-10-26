@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { IconChevronDown, IconHamburguesa, IconSalir } from './icons';
+import { IconChevronDown, IconHamburguesa, IconLuna, IconSalir, IconSol } from './icons';
+import { useTema } from '../hooks/useTema';
 import logo from '../assets/img/logonuevo.png';
 import './Topbar.css';
 
@@ -18,10 +19,12 @@ function iniciales(texto) {
 // Barra de arriba: el logo a la izquierda y, a la derecha, el circulito del usuario
 // con un menú que muestra su usuario, su perfil y el botón para cerrar sesión.
 // En el celular aparece además, a la izquierda, el botón que abre el menú lateral.
+// Al lado del usuario está el botón para pasar a tema claro u oscuro.
 export default function Topbar({ onAbrirMenu, menuAbierto }) {
   const { usuario, logout } = useAuth();
   const [abierto, setAbierto] = useState(false);
   const menuRef = useRef(null);
+  const { tema, cambiarTema } = useTema();
 
   // Cierra el menú si se hace clic en cualquier otro lado de la pantalla
   useEffect(() => {
@@ -50,6 +53,18 @@ export default function Topbar({ onAbrirMenu, menuAbierto }) {
         <img src={logo} alt="Infinito Sonido e Iluminación" className="topbar-logo" />
       </div>
 
+      <div className="topbar-derecha">
+      {/* Tema claro / oscuro: muestra la luna en claro (para pasar a oscuro) y el sol en oscuro */}
+      <button
+        type="button"
+        className="topbar-tema-btn"
+        onClick={cambiarTema}
+        aria-label={tema === 'oscuro' ? 'Pasar a tema claro' : 'Pasar a tema oscuro'}
+        title={tema === 'oscuro' ? 'Tema claro' : 'Tema oscuro'}
+      >
+        {tema === 'oscuro' ? <IconSol /> : <IconLuna />}
+      </button>
+
       {/* Menú del usuario: el botón lo abre y lo cierra; la flechita gira cuando está abierto */}
       <div className="topbar-menu" ref={menuRef}>
         <button type="button" className="topbar-avatar-btn" onClick={() => setAbierto((v) => !v)}>
@@ -68,6 +83,7 @@ export default function Topbar({ onAbrirMenu, menuAbierto }) {
             </button>
           </div>
         )}
+      </div>
       </div>
     </header>
   );
