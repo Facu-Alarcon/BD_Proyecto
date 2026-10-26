@@ -6,7 +6,7 @@ import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
 import { useFiltros } from '../../hooks/useFiltros';
 import Paginacion from '../../components/Paginacion';
 import { usePaginacion } from '../../hooks/usePaginacion';
-import { IconAnular, IconEditar, IconEliminar, IconReactivar } from '../../components/icons';
+import { IconDesactivar, IconEditar, IconEliminar, IconReactivar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import IconoCelda from '../../components/IconoCelda';
 import { iconoMetodoPago } from '../../utils/iconosModulos';
@@ -147,7 +147,7 @@ export default function MetodosPagoList() {
                       <Link to={`/metodos-pago/${metodo.id_metodo_pago}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
                       <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(metodo)} title="Eliminar"><IconEliminar /></button>
                       {metodo.activo ? (
-                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setADesactivar(metodo)} title="Desactivar"><IconAnular /></button>
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setADesactivar(metodo)} title="Desactivar"><IconDesactivar /></button>
                       ) : (
                         <button type="button" className="btn btn-secondary btn-sm" onClick={() => reactivar(metodo)} title="Reactivar" disabled={procesando}><IconReactivar /></button>
                       )}

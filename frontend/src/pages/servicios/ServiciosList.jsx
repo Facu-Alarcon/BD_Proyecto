@@ -6,7 +6,7 @@ import BarraFiltros, { FilaSinResultados } from '../../components/BarraFiltros';
 import { useFiltros } from '../../hooks/useFiltros';
 import Paginacion from '../../components/Paginacion';
 import { usePaginacion } from '../../hooks/usePaginacion';
-import { IconAnular, IconEditar, IconEliminar, IconReactivar } from '../../components/icons';
+import { IconDesactivar, IconEditar, IconEliminar, IconReactivar } from '../../components/icons';
 import ConfirmModal from '../../components/ConfirmModal';
 import IconoCelda from '../../components/IconoCelda';
 import { iconoServicio } from '../../utils/iconosModulos';
@@ -166,7 +166,7 @@ export default function ServiciosList() {
                       <Link to={`/servicios/${servicio.id_servicio}/editar`} className="btn btn-secondary btn-sm" title="Editar"><IconEditar /></Link>
                       <button type="button" className="btn btn-danger btn-sm" onClick={() => setAEliminar(servicio)} title="Eliminar"><IconEliminar /></button>
                       {servicio.activo ? (
-                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setADesactivar(servicio)} title="Desactivar"><IconAnular /></button>
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setADesactivar(servicio)} title="Desactivar"><IconDesactivar /></button>
                       ) : (
                         <button type="button" className="btn btn-secondary btn-sm" onClick={() => reactivar(servicio)} title="Reactivar" disabled={procesando}><IconReactivar /></button>
                       )}

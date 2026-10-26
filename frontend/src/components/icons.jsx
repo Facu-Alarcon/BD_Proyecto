@@ -331,6 +331,18 @@ export function IconAnular(props) {
   );
 }
 
+// Botón de encendido: Desactivar (empleados, servicios y métodos de pago). Es distinto
+// del de Anular a propósito: desactivar se puede deshacer con Reactivar, anular no.
+export function IconDesactivar(props) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+      <line x1="12" y1="2" x2="12" y2="12" />
+    </svg>
+  );
+}
+
 // Tilde: botón Confirmar reserva (pasa de Pendiente a Confirmada)
 export function IconConfirmar(props) {
   return (
