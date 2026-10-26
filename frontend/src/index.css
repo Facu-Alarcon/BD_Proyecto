@@ -162,6 +162,21 @@ button {
   border-bottom: 1px solid var(--border);
   font-size: 14px;
 }
+/* Si la tabla no entra a lo ancho (celular, o tablas con muchas columnas), se desliza
+   hacia el costado dentro de su tarjeta, en vez de cortarse o salirse de la pantalla */
+.card:has(> .data-table) {
+  overflow-x: auto;
+}
+
+/* En pantallas más chicas las celdas tienen menos margen, así entran más columnas */
+@media (max-width: 1366px) {
+  .data-table th,
+  .data-table td {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tr:hover td { background: #fafbfd; }
 
@@ -295,6 +310,8 @@ button {
   gap: 4px;
   max-height: 60vh;
   overflow-y: auto;
+  /* Es una lista vertical: nunca debe aparecer una barra para deslizarla de costado */
+  overflow-x: hidden;
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
@@ -307,6 +324,30 @@ button {
   gap: 10px;
   padding: 6px 2px;
   font-size: 14px;
+}
+
+/* Los textos largos (nombres de servicios) bajan de renglón en vez de empujar
+   el precio y la casilla fuera de la lista en pantallas angostas */
+.checkbox-list label > span,
+.checkbox-list .servicio-nombre {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* En el celular, cada servicio de la reserva muestra el nombre en un renglón entero
+   y el precio con el botón "Ver equipos" debajo */
+@media (max-width: 640px) {
+  .servicio-fila-principal {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .checkbox-list .servicio-fila-principal .servicio-nombre {
+    flex: 1 1 100%;
+  }
+  .servicio-fila-principal .servicio-precio {
+    margin-left: 28px;
+    margin-right: auto;
+  }
 }
 
 /* Barra de búsqueda y filtros que va arriba de las tablas (ver components/BarraFiltros.jsx) */
@@ -460,8 +501,16 @@ button {
   column-gap: 20px;
 }
 
+/* Campos de a tres por fila (fecha, hora y duración de la reserva) */
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 16px;
+}
+
 @media (max-width: 640px) {
-  .form-grid-2 {
+  .form-grid-2,
+  .form-grid-3 {
     grid-template-columns: 1fr;
   }
 }
@@ -851,6 +900,17 @@ button {
 /* Los mails largos se cortan en cualquier parte en vez de ensanchar la tabla */
 .contacto-email {
   overflow-wrap: anywhere;
+}
+
+/* En el celular, en cambio, el mail y el teléfono van enteros en un renglón: la tabla
+   se desliza hacia el costado dentro de su tarjeta (ver .card:has(> .data-table)) */
+@media (max-width: 640px) {
+  .contacto-email {
+    overflow-wrap: normal;
+  }
+  .contacto-linea {
+    white-space: nowrap;
+  }
 }
 
 /* El teléfono va en gris, igual que el DNI debajo del nombre */

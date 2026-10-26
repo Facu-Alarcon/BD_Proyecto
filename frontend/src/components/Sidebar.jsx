@@ -33,9 +33,10 @@ const NAV_ITEMS = [
   { to: '/registro', label: 'Registro de actividad', icon: IconRegistro, modulo: 'registro' },
 ];
 
-// Mismo corte que en Sidebar.css: por debajo de este ancho el menú
-// muestra solo los íconos y el nombre aparece en un cartelito (tooltip).
-const MEDIA_COMPACTO = '(max-width: 1024px)';
+// Mismos cortes que en Sidebar.css: entre el celular y 1024px el menú muestra solo
+// los íconos y el nombre aparece en un cartelito (tooltip). En el celular (hasta
+// 640px) el menú se abre completo, con los nombres, desde el botón de la barra de arriba.
+const MEDIA_COMPACTO = '(min-width: 641px) and (max-width: 1024px)';
 
 function useMenuCompacto() {
   const [compacto, setCompacto] = useState(() => window.matchMedia(MEDIA_COMPACTO).matches);
@@ -48,7 +49,8 @@ function useMenuCompacto() {
   return compacto;
 }
 
-export default function Sidebar() {
+// abierto: solo importa en el celular, donde el menú va escondido (lo maneja Layout.jsx)
+export default function Sidebar({ abierto = false }) {
   const { usuario } = useAuth();
   const permisos = usuario?.permisos || [];
   const compacto = useMenuCompacto();
@@ -76,7 +78,7 @@ export default function Sidebar() {
   useEffect(() => () => clearTimeout(timerOcultar.current), []);
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${abierto ? ' abierto' : ''}`}>
       <nav className="sidebar-nav" onScroll={() => ocultarTooltip()}>
         {NAV_ITEMS.filter((item) => puedeVer(item.modulo)).map((item) => {
           const Icono = item.icon;

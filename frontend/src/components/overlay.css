@@ -46,6 +46,19 @@
   width: min(900px, 92vw);
 }
 
+/* En el celular la ventana usa casi todo el ancho y tiene menos margen adentro */
+@media (max-width: 640px) {
+  .overlay-page {
+    padding: 12px;
+  }
+  .overlay-card,
+  .overlay-card-wide {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+    padding: 22px 18px 18px;
+  }
+}
+
 /* Título y subtítulo a la izquierda, la X para cerrar a la derecha */
 .overlay-card-header {
   display: flex;

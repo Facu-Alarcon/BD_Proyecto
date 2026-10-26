@@ -31,6 +31,19 @@
   margin-inline: auto;
 }
 
+/* Menos margen en pantallas chicas, para que el contenido aproveche el ancho */
+@media (max-width: 1024px) {
+  .app-content {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-content {
+    padding: 16px;
+  }
+}
+
 .page-header {
   display: flex;
   align-items: center;

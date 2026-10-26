@@ -168,6 +168,35 @@
   pointer-events: none;
 }
 
+/* ---------- En el celular ---------- */
+/* La hoja con menos margen, el número debajo del logo y cliente/reserva uno debajo del otro */
+@media (max-width: 640px) {
+  .comprobante {
+    padding: 20px 16px;
+  }
+  .comprobante-encabezado {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .comprobante-numero {
+    align-items: flex-start;
+  }
+  .comprobante-dos-columnas {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .comprobante-botones {
+    justify-content: stretch;
+  }
+  .comprobante-botones > * {
+    flex: 1;
+  }
+  .comprobante-sello {
+    font-size: 40px;
+    letter-spacing: 4px;
+  }
+}
+
 /* ---------- Al imprimir ---------- */
 @media print {
   /* Solo sale la hoja: sin menú, barra de arriba ni botones */

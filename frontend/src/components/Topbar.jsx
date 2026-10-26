@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { IconChevronDown, IconSalir } from './icons';
+import { IconChevronDown, IconHamburguesa, IconSalir } from './icons';
 import logo from '../assets/img/logonuevo.png';
 import './Topbar.css';
 
@@ -17,7 +17,8 @@ function iniciales(texto) {
 
 // Barra de arriba: el logo a la izquierda y, a la derecha, el circulito del usuario
 // con un menú que muestra su usuario, su perfil y el botón para cerrar sesión.
-export default function Topbar() {
+// En el celular aparece además, a la izquierda, el botón que abre el menú lateral.
+export default function Topbar({ onAbrirMenu, menuAbierto }) {
   const { usuario, logout } = useAuth();
   const [abierto, setAbierto] = useState(false);
   const menuRef = useRef(null);
@@ -34,8 +35,20 @@ export default function Topbar() {
   }, []);
 
   return (
-        <header className="topbar">
-      <img src={logo} alt="Infinito Sonido e Iluminación" className="topbar-logo" />
+    <header className="topbar">
+      <div className="topbar-izquierda">
+        {/* Solo se ve en el celular (ver Topbar.css) */}
+        <button
+          type="button"
+          className="topbar-menu-btn"
+          onClick={onAbrirMenu}
+          aria-label={menuAbierto ? 'Cerrar menú' : 'Abrir menú'}
+          aria-expanded={menuAbierto}
+        >
+          <IconHamburguesa />
+        </button>
+        <img src={logo} alt="Infinito Sonido e Iluminación" className="topbar-logo" />
+      </div>
 
       {/* Menú del usuario: el botón lo abre y lo cierra; la flechita gira cuando está abierto */}
       <div className="topbar-menu" ref={menuRef}>

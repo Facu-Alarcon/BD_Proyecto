@@ -126,6 +126,53 @@
   }
 }
 
+/* Celular: el menú no ocupa lugar. Queda escondido a la izquierda y se desliza encima
+   del contenido cuando se toca el botón de la barra de arriba (ver Layout.jsx).
+   Abierto se ve completo, con los nombres, porque los íconos solos no se entienden. */
+@media (max-width: 640px) {
+  .sidebar {
+    position: fixed;
+    top: 60px;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    width: 260px;
+    min-width: 0;
+    max-width: 85vw;
+    padding: 12px;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    visibility: hidden;
+  }
+
+  .sidebar.abierto {
+    transform: none;
+    visibility: visible;
+    box-shadow: 8px 0 24px rgba(4, 10, 30, 0.3);
+  }
+
+  /* Cada sección con un alto fijo (en el celular hay lugar para scrollear el menú) */
+  .sidebar-link {
+    flex: 0 0 auto;
+    min-height: 44px;
+    justify-content: flex-start;
+    padding: 0 14px;
+  }
+
+  .sidebar-label {
+    display: inline;
+  }
+
+  /* Fondo oscuro detrás del menú abierto; tocarlo lo cierra */
+  .sidebar-fondo {
+    position: fixed;
+    inset: 60px 0 0 0;
+    z-index: 35;
+    background: rgba(4, 10, 30, 0.45);
+  }
+}
+
 /* Sin uso: ninguna pantalla usa hoy esta clase (quedó de un diseño anterior). Se puede borrar. (también .sidebar-user y .sidebar-logout: */
 /* el cierre de sesión pasó al menú de la barra de arriba) */
 .sidebar-footer {

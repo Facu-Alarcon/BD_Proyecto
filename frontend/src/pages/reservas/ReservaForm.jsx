@@ -290,7 +290,8 @@ export default function ReservaForm() {
       </div>
 
       {/* Fecha, hora de inicio y duración van en la misma fila */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+      {/* En el celular pasan a ir uno debajo del otro (ver .form-grid-3 en index.css) */}
+      <div className="form-grid-3">
         <div className="form-field">
           <label htmlFor="fecha_evento">Fecha</label>
           <input

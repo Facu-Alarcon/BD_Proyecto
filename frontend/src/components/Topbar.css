@@ -19,6 +19,41 @@
   position: relative;
 }
 
+.topbar-izquierda {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Botón de las tres rayitas: solo en el celular, donde el menú lateral va escondido */
+.topbar-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--navy-900);
+  cursor: pointer;
+}
+.topbar-menu-btn:hover {
+  background: var(--gray-bg);
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    padding: 0 12px;
+  }
+  .topbar-menu-btn {
+    display: flex;
+  }
+  .topbar-logo {
+    height: 32px;
+  }
+}
+
 .topbar-avatar-btn {
   display: flex;
   align-items: center;
