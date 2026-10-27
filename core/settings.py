@@ -44,6 +44,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # Guarda los errores del servidor en el registro de actividad y en logs/errores.log
     'infinito_sonido.registro.RegistroErroresMiddleware',
+    # Pasa a Finalizada las reservas Confirmadas cuyo evento ya terminó (ver finalizar.py)
+    'infinito_sonido.finalizar.FinalizarReservasMiddleware',
 ]
 
 # --- API (React consume esto desde otro puerto/origen) ---

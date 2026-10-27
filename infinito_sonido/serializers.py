@@ -17,6 +17,7 @@ from django.utils.text import slugify
 from rest_framework import serializers
 
 from .disponibilidad import empleados_ocupados, equipos_faltantes
+from .finalizar import evento_terminado
 from .nombres_usuario import generar_nombre_usuario
 from .seguridad import generar_contraseña_temporal, validar_contraseña_segura
 
@@ -552,10 +553,23 @@ class ReservasSerializer(serializers.ModelSerializer):
                 'servicios': f'No hay equipos suficientes el {fecha_evento:%d/%m/%Y}: ' + '; '.join(faltantes) + '.'
             })
 
-    # Una reserva anulada queda como está: no se puede modificar (solo consultar)
+    # Una reserva anulada queda como está: no se puede modificar (solo consultar).
+    # Finalizada: solo si el evento ya terminó, y una vez finalizada no vuelve atrás
+    # (las Confirmadas se finalizan solas al terminar el evento, ver finalizar.py)
     def validate(self, attrs):
         if self.instance is not None and self.instance.estado_reserva == 'ANULADA':
             raise serializers.ValidationError({'detail': 'Una reserva anulada no se puede modificar.'})
+
+        estado = attrs.get('estado_reserva')
+        if self.instance is not None and self.instance.estado_reserva == 'FINALIZADA' and estado and estado != 'FINALIZADA':
+            raise serializers.ValidationError({'estado_reserva': 'Una reserva finalizada no puede volver a otro estado.'})
+        if estado == 'FINALIZADA':
+            # Los datos del evento: los que se están guardando o, si no vinieron, los que ya tenía
+            fecha = attrs.get('fecha_evento') or getattr(self.instance, 'fecha_evento', None)
+            hora = attrs.get('hora_evento') or getattr(self.instance, 'hora_evento', None)
+            duracion = attrs.get('duracion_evento') or getattr(self.instance, 'duracion_evento', None)
+            if fecha and hora and duracion and not evento_terminado(fecha, hora, duracion):
+                raise serializers.ValidationError({'estado_reserva': 'Solo se puede finalizar una reserva cuando el evento ya terminó.'})
         return attrs
 
     # @transaction.atomic: la cabecera y todos los detalles se guardan juntos. Si algo falla
