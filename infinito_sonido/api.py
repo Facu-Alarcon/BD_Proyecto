@@ -172,7 +172,7 @@ class RecuperarClaveView(APIView):
     def post(self, request):
         usuario_nombre = (request.data.get('usuario') or '').strip()
         respuesta = Response({
-            'detail': 'Si el usuario existe, le enviamos un mail con un link para elegir una contraseña nueva. '
+            'detail': 'Te enviamos un mail con un link para elegir una contraseña nueva. '
                       f'El link vence en {MINUTOS_VALIDEZ_LINK} minutos.'
         })
         if not usuario_nombre:
