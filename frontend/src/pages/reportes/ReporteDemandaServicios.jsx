@@ -135,9 +135,9 @@ export default function ReporteDemandaServicios() {
             <button type="button" className="btn-volver" onClick={() => navigate('/reportes')} title="Volver a Reportes" aria-label="Volver a Reportes">
               <IconVolver />
             </button>
-            <h1>Demanda por servicio por mes</h1>
+            <h1>Demanda de servicios por mes</h1>
           </div>
-          <div className="ruta"><Link to="/reportes">Reportes</Link> / <strong>Demanda por servicio por mes</strong></div>
+          <div className="ruta"><Link to="/reportes">Reportes</Link> / <strong>Demanda de servicios por mes</strong></div>
         </div>
       </div>
 
@@ -262,7 +262,7 @@ export default function ReporteDemandaServicios() {
                 {/* Los totales de cada mes: tienen que coincidir con las barras del gráfico */}
                 <tfoot>
                   <tr>
-                    <td>Total del mes</td>
+                    <td>Total del período</td>
                     {datos.meses.map((m) => (
                       <td key={m.etiqueta} className="numero">{escribir(porPlata ? m.ingresos : m.contrataciones)}</td>
                     ))}

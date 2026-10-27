@@ -12,7 +12,7 @@ const REPORTES = [
   },
   {
     to: '/reportes/demanda-servicios',
-    nombre: 'Demanda por servicio por mes',
+    nombre: 'Demanda de servicio por mes',
     descripcion: 'Cuántas veces se contrató cada servicio en cada mes y cuánto dejó. Sirve para saber qué servicios promocionar, en qué meses reforzar personal y equipos, y cuáles casi no se piden.',
   },
   {
