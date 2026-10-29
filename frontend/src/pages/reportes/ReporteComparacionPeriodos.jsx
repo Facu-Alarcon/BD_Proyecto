@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import { IconVolver } from '../../components/icons';
+import BotonImprimirReporte from '../../components/BotonImprimirReporte';
 import { formatearPesos } from '../../utils/formato';
 import './Reportes.css';
 
@@ -120,8 +121,11 @@ export default function ReporteComparacionPeriodos() {
     ].filter(Boolean); // saca las frases que quedaron vacías
   }
 
+  // Nombre que propone el navegador al guardar el PDF (ver BotonImprimirReporte.jsx)
+  const nombreArchivo = `Reporte-Comparacion-de-periodos-${anio}-${tipo === 'trimestre' ? 'T' : 'S'}${numero}`;
+
   return (
-    <div>
+    <div className="reporte-pagina">
       <div className="page-header page-header-con-ruta">
         <div>
           {/* Flecha para volver a la pantalla principal de Reportes, al lado del título */}
@@ -136,11 +140,14 @@ export default function ReporteComparacionPeriodos() {
       </div>
 
       {/* Para qué sirve y qué es lo que se cuenta */}
-      <p className="reporte-descripcion">
-        Compara un <strong>trimestre o semestre</strong> contra el mismo del año anterior, servicio por servicio,
-        para decidir en cuáles conviene concentrar los recursos. Los ingresos son lo contratado (el precio del
-        servicio al reservar); cada reserva cuenta en el período de su evento y las anuladas no entran.
-      </p>
+      <div className="reporte-intro">
+        <p className="reporte-descripcion">
+          Compara un <strong>trimestre o semestre</strong> contra el mismo del año anterior, servicio por servicio,
+          para decidir en cuáles conviene concentrar los recursos. Los ingresos son lo contratado (el precio del
+          servicio al reservar); cada reserva cuenta en el período de su evento y las anuladas no entran.
+        </p>
+        <BotonImprimirReporte nombreArchivo={nombreArchivo} deshabilitado={cargando || !!error || !datos || !!sinDatos} />
+      </div>
 
       {/* ---- Filtros ---- */}
       <div className="card filtros reporte-filtros">

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import GraficoBarras from '../../components/GraficoBarras';
 import { IconVolver } from '../../components/icons';
+import BotonImprimirReporte from '../../components/BotonImprimirReporte';
 import './Reportes.css';
 
 // REPORTE: USO DE EQUIPOS POR MES
@@ -115,8 +116,11 @@ export default function ReporteUsoEquipos() {
     ].filter(Boolean); // saca las frases que quedaron vacías
   }
 
+  // Nombre que propone el navegador al guardar el PDF (ver BotonImprimirReporte.jsx)
+  const nombreArchivo = `Reporte-Uso-de-equipos-${desde.anio}-${String(desde.mes).padStart(2, '0')}-a-${hasta.anio}-${String(hasta.mes).padStart(2, '0')}`;
+
   return (
-    <div>
+    <div className="reporte-pagina">
       <div className="page-header page-header-con-ruta">
         <div>
           {/* Flecha para volver a la pantalla principal de Reportes, al lado del título */}
@@ -131,11 +135,14 @@ export default function ReporteUsoEquipos() {
       </div>
 
       {/* Para qué sirve y qué es lo que se cuenta */}
-      <p className="reporte-descripcion">
-        Muestra cuántas <strong>unidades de equipos</strong> se usan en los eventos de cada mes, para decidir qué
-        equipos comprar, cuáles sobran y cuándo conviene hacer mantenimiento. Cuentan las reservas pendientes,
-        confirmadas y finalizadas; las anuladas no.
-      </p>
+      <div className="reporte-intro">
+        <p className="reporte-descripcion">
+          Muestra cuántas <strong>unidades de equipos</strong> se usan en los eventos de cada mes, para decidir qué
+          equipos comprar, cuáles sobran y cuándo conviene hacer mantenimiento. Cuentan las reservas pendientes,
+          confirmadas y finalizadas; las anuladas no.
+        </p>
+        <BotonImprimirReporte nombreArchivo={nombreArchivo} deshabilitado={cargando || !!error || !datos || !!sinDatos} />
+      </div>
 
       {/* ---- Filtros ---- */}
       <div className="card filtros reporte-filtros">

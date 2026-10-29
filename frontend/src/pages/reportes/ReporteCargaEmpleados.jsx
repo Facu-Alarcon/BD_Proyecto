@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import GraficoBarras from '../../components/GraficoBarras';
 import { IconVolver } from '../../components/icons';
+import BotonImprimirReporte from '../../components/BotonImprimirReporte';
 import './Reportes.css';
 
 // REPORTE TÁCTICO: CARGA DE TRABAJO DE LOS EMPLEADOS
@@ -172,8 +173,11 @@ export default function ReporteCargaEmpleados() {
     ].filter(Boolean); // saca las frases que quedaron vacías
   }
 
+  // Nombre que propone el navegador al guardar el PDF (ver BotonImprimirReporte.jsx)
+  const nombreArchivo = `Reporte-Carga-de-empleados-${desde.anio}-${String(desde.mes).padStart(2, '0')}-a-${hasta.anio}-${String(hasta.mes).padStart(2, '0')}`;
+
   return (
-    <div>
+    <div className="reporte-pagina">
       <div className="page-header page-header-con-ruta">
         <div>
           {/* Flecha para volver a la pantalla principal de Reportes, al lado del título */}
@@ -188,11 +192,14 @@ export default function ReporteCargaEmpleados() {
       </div>
 
       {/* Para qué sirve y qué es lo que se cuenta */}
-      <p className="reporte-descripcion">
-        Muestra a <strong>cuántos eventos fue asignado cada empleado</strong> en cada mes, para repartir mejor el trabajo,
-        ver quién está sobrecargado y en qué meses hace falta más personal. Cuentan las reservas pendientes,
-        confirmadas y finalizadas; las anuladas no. Cada evento se cuenta en el mes de su fecha.
-      </p>
+      <div className="reporte-intro">
+        <p className="reporte-descripcion">
+          Muestra a <strong>cuántos eventos fue asignado cada empleado</strong> en cada mes, para repartir mejor el trabajo,
+          ver quién está sobrecargado y en qué meses hace falta más personal. Cuentan las reservas pendientes,
+          confirmadas y finalizadas; las anuladas no. Cada evento se cuenta en el mes de su fecha.
+        </p>
+        <BotonImprimirReporte nombreArchivo={nombreArchivo} deshabilitado={cargando || !!error || !datos || !!sinDatos} />
+      </div>
 
       {/* ---- Filtros ---- */}
       <div className="card filtros reporte-filtros">
