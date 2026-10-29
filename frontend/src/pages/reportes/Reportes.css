@@ -45,6 +45,37 @@
   color: var(--text-muted);
 }
 
+/* Descripción del reporte a la izquierda y, a la derecha, el botón "Imprimir / Guardar PDF".
+   Si no entran en la misma fila (pantallas chicas), el botón pasa abajo. */
+.reporte-intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.reporte-intro .reporte-descripcion {
+  flex: 1 1 420px;
+}
+
+/* El mismo margen de arriba que tiene el párrafo, para que queden alineados */
+.reporte-intro .btn {
+  flex: none;
+  margin: 16px 0;
+}
+
+@media (max-width: 640px) {
+  .reporte-intro .reporte-descripcion {
+    margin-bottom: 0;
+  }
+  .reporte-intro .btn {
+    flex: 1 1 100%;
+    justify-content: center;
+    margin-top: 0;
+  }
+}
+
 /* Los filtros van todos en una fila; si no entran, bajan al renglón siguiente */
 .reporte-filtros {
   display: flex;
@@ -255,5 +286,123 @@
   .comparacion-fila {
     grid-template-columns: 1fr;
     gap: 6px;
+  }
+}
+
+
+/* ---------- Al imprimir / guardar como PDF ---------- */
+/* El menú, la barra de arriba y los elementos .no-imprimir (el botón) se esconden con las reglas
+   de impresión de ReservaComprobante.css, que valen para todo el sistema. Acá va lo propio de
+   los reportes. Todo está dentro de .reporte-pagina, así no afecta a las otras pantallas. */
+
+/* Hoja A4 apaisada: las tablas de detalle tienen una columna por mes y en vertical no entran */
+@page reporte {
+  size: A4 landscape;
+  margin: 12mm;
+}
+
+@media print {
+  /* El fondo de la hoja (incluidos los márgenes) también en claro cuando el sistema está en oscuro */
+  :root[data-theme]:has(.reporte-pagina) {
+    background: #ffffff !important;
+    color-scheme: light;
+  }
+
+  .reporte-pagina {
+    page: reporte;
+    /* Siempre con los colores del tema claro, aunque el sistema esté en oscuro
+       (si no, el texto claro saldría invisible sobre el papel blanco) */
+    --card-bg: #ffffff;
+    --border: #e4e8f1;
+    --text-main: #142042;
+    --text-muted: #6b7590;
+    --gray-bg: #eef0f5;
+    --green: #4e7246;
+    --green-bg: #e6efe2;
+    --verde-claro-bg: #e8f1e4;
+    --amber: #a5720a;
+    --amber-bg: #fdf1d8;
+    --red: #d64545;
+    --red-bg: #fbe6e6;
+    --titulo: var(--navy-900);
+    --titulo-fuerte: var(--navy-950);
+    --fila-hover: #ffffff;
+    --texto-apagado: #b3bacb;
+    color: var(--text-main);
+    color-scheme: light;
+  }
+
+  /* Para que los fondos de color (barras, etiquetas, encabezados) salgan impresos */
+  .reporte-pagina,
+  .reporte-pagina * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Cosas de navegación que en el papel no sirven: la flecha de volver y la ruta */
+  .reporte-pagina .btn-volver,
+  .reporte-pagina .ruta {
+    display: none !important;
+  }
+
+  .reporte-pagina .page-header {
+    margin-bottom: 8px;
+  }
+
+  .reporte-pagina .card {
+    box-shadow: none;
+  }
+
+  /* Los desplegables de los filtros salen como texto, sin la flechita */
+  .reporte-pagina select {
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  /* Los bloques pueden continuar en la hoja siguiente (si no, uno largo, como la lista de
+     servicios de la comparación, dejaría la hoja anterior casi en blanco). Lo que sí se evita
+     es cortar por la mitad un gráfico, un servicio o una frase, y separar un título de lo que sigue. */
+  .grafico,
+  .comparacion-fila,
+  .reporte-interpretacion li {
+    break-inside: avoid;
+  }
+
+  .reporte-subtitulo,
+  .comparacion-leyenda {
+    break-after: avoid;
+  }
+
+  /* La tabla se muestra completa (en pantalla se desliza de costado) y más compacta para que entre */
+  .reporte-tabla-scroll {
+    overflow: visible;
+  }
+
+  .reporte-tabla {
+    white-space: normal;
+  }
+
+  .reporte-tabla th,
+  .reporte-tabla td,
+  .reporte-tabla tfoot td {
+    padding: 5px 7px;
+    font-size: 11px;
+  }
+
+  /* La primera columna ya no queda fija (no hay nada que deslizar) y tiene un ancho mínimo,
+     para que el nombre no se parta en muchas líneas */
+  .reporte-tabla th:first-child,
+  .reporte-tabla td:first-child {
+    position: static;
+    min-width: 45mm;
+  }
+
+  /* Si la tabla ocupa más de una hoja, el encabezado se repite y las filas no se cortan por la mitad */
+  .reporte-tabla thead {
+    display: table-header-group;
+  }
+
+  .reporte-tabla tr {
+    break-inside: avoid;
   }
 }
