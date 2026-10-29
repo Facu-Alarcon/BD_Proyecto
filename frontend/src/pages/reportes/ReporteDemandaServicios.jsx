@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import GraficoBarras from '../../components/GraficoBarras';
 import { IconVolver } from '../../components/icons';
+import BotonImprimirReporte from '../../components/BotonImprimirReporte';
 import './Reportes.css';
 
 // REPORTE TÁCTICO: DEMANDA POR SERVICIO POR MES
@@ -126,8 +127,11 @@ export default function ReporteDemandaServicios() {
     ].filter(Boolean); // saca las frases que quedaron vacías
   }
 
+  // Nombre que propone el navegador al guardar el PDF (ver BotonImprimirReporte.jsx)
+  const nombreArchivo = `Reporte-Demanda-por-servicio-${desde.anio}-${String(desde.mes).padStart(2, '0')}-a-${hasta.anio}-${String(hasta.mes).padStart(2, '0')}`;
+
   return (
-    <div>
+    <div className="reporte-pagina">
       <div className="page-header page-header-con-ruta">
         <div>
           {/* Flecha para volver a la pantalla principal de Reportes, al lado del título */}
@@ -142,12 +146,15 @@ export default function ReporteDemandaServicios() {
       </div>
 
       {/* Para qué sirve y qué es lo que se cuenta */}
-      <p className="reporte-descripcion">
-        Muestra cuántas veces se <strong>contrató cada servicio</strong> en los eventos de cada mes y cuánto dejó,
-        para saber qué servicios conviene promocionar, en qué meses reforzar el personal y los equipos, y cuáles casi
-        no se piden. Cuentan las reservas pendientes, confirmadas y finalizadas; las anuladas no. Los ingresos se
-        calculan con el precio que se cobró en cada reserva.
-      </p>
+      <div className="reporte-intro">
+        <p className="reporte-descripcion">
+          Muestra cuántas veces se <strong>contrató cada servicio</strong> en los eventos de cada mes y cuánto dejó,
+          para saber qué servicios conviene promocionar, en qué meses reforzar el personal y los equipos, y cuáles casi
+          no se piden. Cuentan las reservas pendientes, confirmadas y finalizadas; las anuladas no. Los ingresos se
+          calculan con el precio que se cobró en cada reserva.
+        </p>
+        <BotonImprimirReporte nombreArchivo={nombreArchivo} deshabilitado={cargando || !!error || !datos || !!sinDatos} />
+      </div>
 
       {/* ---- Filtros ---- */}
       <div className="card filtros reporte-filtros">

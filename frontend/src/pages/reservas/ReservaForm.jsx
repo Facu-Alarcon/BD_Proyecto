@@ -335,11 +335,14 @@ export default function ReservaForm() {
         {/* Al crear, el estado lo pone el sistema (siempre Pendiente). Al editar se puede
             pasar a Confirmada o Finalizada; para anular está el botón "Anular" de la lista */}
         {editando ? (
-          <select id="estado_reserva" value={form.estado_reserva} onChange={(e) => actualizar('estado_reserva', e.target.value)}>
-            {ESTADOS.map((e) => (
-              <option key={e.value} value={e.value}>{e.label}</option>
-            ))}
-          </select>
+          <>
+            <select id="estado_reserva" value={form.estado_reserva} onChange={(e) => actualizar('estado_reserva', e.target.value)}>
+              {ESTADOS.map((e) => (
+                <option key={e.value} value={e.value}>{e.label}</option>
+              ))}
+            </select>
+            <span className="form-hint">Las reservas confirmadas pasan solas a Finalizada cuando termina el evento.</span>
+          </>
         ) : (
           <>
             <input id="estado_reserva" value="Pendiente" disabled />
