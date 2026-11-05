@@ -45,7 +45,7 @@ export default function Inicio() {
     <div>
       <div className="page-header">
         <div>
-          <h1>{nombre ? `BIENVENIDO, ${nombre.toUpperCase()}` : 'BIENVENIDO'}</h1>
+          <h1>{nombre ? `HOLA, ${nombre.toUpperCase()}` : 'HOLA'}</h1>
         </div>
       </div>
 
