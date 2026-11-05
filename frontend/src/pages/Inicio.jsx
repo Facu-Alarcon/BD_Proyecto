@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import './Inicio.css';
 import Avatar from '../components/Avatar';
 
@@ -23,6 +24,9 @@ function formatearFecha(fecha, hora) {
 // Pantalla de Inicio: tarjetas con números del día y del inventario, las próximas reservas
 // y el estado de los equipos. Todo sale de un solo pedido a /dashboard/resumen/.
 export default function Inicio() {
+  // Nombre de la persona (sale del empleado vinculado al usuario, no el nombre de usuario)
+  const { usuario } = useAuth();
+  const nombre = usuario?.nombre?.trim();
   const [resumen, setResumen] = useState(null);
   const [error, setError] = useState('');
 
@@ -41,7 +45,7 @@ export default function Inicio() {
     <div>
       <div className="page-header">
         <div>
-          <h1>BIENVENIDO</h1>
+          <h1>{nombre ? `BIENVENIDO, ${nombre.toUpperCase()}` : 'BIENVENIDO'}</h1>
         </div>
       </div>
 
