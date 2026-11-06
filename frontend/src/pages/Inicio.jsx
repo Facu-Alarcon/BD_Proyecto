@@ -103,35 +103,42 @@ export default function Inicio() {
           </div>
         </div>
 
-        <div className="card inicio-panel">
-          {/* Estado de los equipos hoy: libres, en uso por reservas de hoy y en reparación.
-              Un equipo ocupado por una reserva no figura como disponible. */}
-          <h2>Estado de equipos hoy</h2>
-          {hoyEq && hoyEq.total > 0 && [
-            { nombre: 'Disponibles', cantidad: hoyEq.libres, color: 'fill-green' },
-            { nombre: 'En uso por reservas', cantidad: hoyEq.ocupadas, color: 'fill-blue' },
-            { nombre: 'En reparación', cantidad: hoyEq.en_reparacion, color: 'fill-red' },
-          ].map((fila) => (
-            <div className="progress-row" key={fila.nombre}>
-              <div className="progress-head">
-                <span>{fila.nombre}</span>
-                <span>{fila.cantidad}/{hoyEq.total}</span>
+        {/* Columna de la derecha: estado de los equipos y, debajo, una foto que ocupa el
+            lugar que sobra, así las dos columnas terminan a la misma altura */}
+        <div className="inicio-columna">
+          <div className="card inicio-panel">
+            {/* Estado de los equipos hoy: libres, en uso por reservas de hoy y en reparación.
+                Un equipo ocupado por una reserva no figura como disponible. */}
+            <h2>Estado de equipos hoy</h2>
+            {hoyEq && hoyEq.total > 0 && [
+              { nombre: 'Disponibles', cantidad: hoyEq.libres, color: 'fill-green' },
+              { nombre: 'En uso por reservas', cantidad: hoyEq.ocupadas, color: 'fill-blue' },
+              { nombre: 'En reparación', cantidad: hoyEq.en_reparacion, color: 'fill-red' },
+            ].map((fila) => (
+              <div className="progress-row" key={fila.nombre}>
+                <div className="progress-head">
+                  <span>{fila.nombre}</span>
+                  <span>{fila.cantidad}/{hoyEq.total}</span>
+                </div>
+                <div className="progress-track">
+                  <div className={`progress-fill ${fila.color}`} style={{ width: `${pctHoy(fila.cantidad)}%` }} />
+                </div>
               </div>
-              <div className="progress-track">
-                <div className={`progress-fill ${fila.color}`} style={{ width: `${pctHoy(fila.cantidad)}%` }} />
-              </div>
-            </div>
-          ))}
-          {/* Nombre y cantidad de lo que se está usando hoy (ej: "4 Bafle, 2 Par LED") */}
-          {hoyEq?.en_uso.length > 0 && (
-            <p className="form-hint">En uso hoy: {hoyEq.en_uso.map((e) => `${e.cantidad} ${e.nombre_equipo}`).join(', ')}.</p>
-          )}
-          {hoyEq?.agotados.length > 0 && (
-            <p className="form-hint">Sin equipos libres hoy: {hoyEq.agotados.join(', ')}.</p>
-          )}
-          {hoyEq && hoyEq.total === 0 && (
-            <p className="form-hint">No hay equipos cargados todavía.</p>
-          )}
+            ))}
+            {/* Nombre y cantidad de lo que se está usando hoy (ej: "4 Bafle, 2 Par LED") */}
+            {hoyEq?.en_uso.length > 0 && (
+              <p className="form-hint">En uso hoy: {hoyEq.en_uso.map((e) => `${e.cantidad} ${e.nombre_equipo}`).join(', ')}.</p>
+            )}
+            {hoyEq?.agotados.length > 0 && (
+              <p className="form-hint">Sin equipos libres hoy: {hoyEq.agotados.join(', ')}.</p>
+            )}
+            {hoyEq && hoyEq.total === 0 && (
+              <p className="form-hint">No hay equipos cargados todavía.</p>
+            )}
+          </div>
+
+          {/* Foto decorativa de una consola de sonido (va como fondo en Inicio.css) */}
+          <div className="card inicio-foto" aria-hidden="true" />
         </div>
       </div>
     </div>

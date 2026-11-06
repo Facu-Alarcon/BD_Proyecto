@@ -37,7 +37,28 @@
   display: grid;
   grid-template-columns: 1.3fr 1fr;
   gap: 20px;
-  align-items: start;
+  /* Las dos columnas miden lo mismo de alto, así abajo terminan parejas */
+  align-items: stretch;
+}
+
+/* Columna de la derecha: estado de equipos arriba y la foto debajo, ocupando el resto del
+   alto para que termine a la misma altura que "Próximas reservas" */
+.inicio-columna {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Foto de la consola de sonido (la misma de las ventanas de edición), recortada para llenar
+   la tarjeta sin deformarse. No tiene alto propio (flex-basis 0 y min-height 0): solo ocupa
+   el lugar que sobra hasta la altura de "Próximas reservas", así nunca agranda la pantalla
+   ni obliga a scrollear */
+.inicio-foto {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  background: url('../assets/img/fondo_consola.jpg') center / cover no-repeat;
 }
 
 /* Cada reserva de la lista de próximas reservas */
@@ -132,4 +153,5 @@
 @media (max-width: 900px) {
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
   .inicio-grid { grid-template-columns: 1fr; }
+  .inicio-foto { min-height: 180px; }
 }
