@@ -12,3 +12,5 @@ django-cors-headers==4.4.0
 # Para los graficos de los reportes (ver infinito_sonido/graficos.py)
 pandas
 matplotlib
+# Calculos de los reportes: agregados (total, promedio, maximo...) y recta de tendencia
+numpy

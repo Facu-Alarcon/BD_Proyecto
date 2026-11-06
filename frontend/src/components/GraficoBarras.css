@@ -4,6 +4,20 @@
   margin: 0;
 }
 
+/* Cabecera: título y período a la izquierda, botón "Descargar PNG" a la derecha */
+.grafico-cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.grafico-descargar {
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
 /* Título del gráfico y, debajo, el período que se está mirando */
 .grafico-titulo {
   font-size: 16px;
@@ -26,9 +40,15 @@
   margin: 12px auto 0;
 }
 
+/* La torta no necesita todo el ancho: más chica se lee igual y no queda gigante */
+.grafico-lienzo-angosto {
+  width: 75%;
+}
+
 /* En pantallas angostas (celular) se usa todo el ancho para que se lean los números */
 @media (max-width: 700px) {
-  .grafico-lienzo {
+  .grafico-lienzo,
+  .grafico-lienzo-angosto {
     width: 100%;
   }
 }

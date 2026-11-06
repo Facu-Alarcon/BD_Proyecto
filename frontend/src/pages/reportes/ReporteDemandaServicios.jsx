@@ -4,6 +4,8 @@ import api from '../../api/client';
 import GraficoBarras from '../../components/GraficoBarras';
 import { IconVolver } from '../../components/icons';
 import BotonImprimirReporte from '../../components/BotonImprimirReporte';
+import GraficoImagen from '../../components/GraficoImagen';
+import ResumenAgregados from '../../components/ResumenAgregados';
 import './Reportes.css';
 
 // REPORTE TÁCTICO: DEMANDA POR SERVICIO POR MES
@@ -191,12 +193,23 @@ export default function ReporteDemandaServicios() {
 
       {!error && datos && !sinDatos && (
         <>
+          {/* ---- Resumen: total, promedio, máximo, mínimo y desvío por mes (numpy) ---- */}
+          <div className="card reporte-bloque">
+            <h2 className="reporte-subtitulo">Resumen de {porPlata ? 'ingresos' : 'contrataciones'} por mes</h2>
+            <ResumenAgregados
+              agregados={porPlata ? datos.agregados.ingresos : datos.agregados.contrataciones}
+              formato={porPlata ? pesos : undefined}
+              unidad={porPlata ? 'ingresos' : 'contrataciones'}
+            />
+          </div>
+
           {/* ---- Gráfico: una barra por mes con el total (contrataciones o ingresos) ---- */}
           <div className="card reporte-bloque">
             <GraficoBarras
               titulo={porPlata ? 'Ingresos por servicios contratados, por mes' : 'Servicios contratados en eventos, por mes'}
               periodo={`${periodo} · ${contar(datos.total_contrataciones, 'contratación', 'contrataciones')} en ${contar(datos.total_reservas, 'reserva', 'reservas')} · ${pesos(datos.total_ingresos)}`}
               grafico={porPlata ? datos.graficos.ingresos : datos.graficos.contrataciones}
+              nombreArchivo={`${nombreArchivo}-barras-${verPor}`}
               unidad={porPlata ? 'en ingresos' : 'contrataciones'}
               formato={porPlata ? pesos : undefined}
               datos={datos.meses.map((m) => ({
@@ -210,6 +223,19 @@ export default function ReporteDemandaServicios() {
               }))}
             />
           </div>
+
+          {/* ---- Torta: qué parte del total se llevó cada servicio ---- */}
+          {(porPlata ? datos.tortas.ingresos : datos.tortas.contrataciones) && (
+            <div className="card reporte-bloque">
+              <GraficoImagen
+                titulo={porPlata ? 'Participación de cada servicio en los ingresos' : 'Participación de cada servicio en las contrataciones'}
+                periodo={periodo}
+                grafico={porPlata ? datos.tortas.ingresos : datos.tortas.contrataciones}
+                nombreArchivo={`${nombreArchivo}-torta-${verPor}`}
+                angosto
+              />
+            </div>
+          )}
 
           {/* ---- Interpretación: qué nos dicen los números ---- */}
           <div className="card reporte-bloque">

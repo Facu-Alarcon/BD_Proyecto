@@ -16,7 +16,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .graficos import barras_por_mes, pesos_corto
+from .graficos import agregados, barras_agrupadas, barras_por_mes, heatmap, lineas_con_tendencia, pesos_corto, torta
 from .models import Equipos, Equipos_x_Servicios, Reservas, Reservas_x_Servicios, Servicios, Tipo_Equipos
 from .models import Detalles_Reservas, Empleados, Puestos, Puestos_x_Empleados
 from .permissions import permiso_modulo
@@ -187,6 +187,8 @@ class ReporteUsoEquiposView(APIView):
             'meses': columnas,
             # El gráfico ya dibujado (pandas + matplotlib) y dónde quedó cada barra (ver graficos.py)
             'grafico': barras_por_mes(columnas, [c['unidades'] for c in columnas], 'Unidades'),
+            # Total, promedio, máximo, mínimo y desvío de las unidades por mes (numpy, ver graficos.py)
+            'agregados': agregados(columnas, [c['unidades'] for c in columnas]),
             'equipos': filas,
             'total_unidades': sum(c['unidades'] for c in columnas),
             # Reservas del período (no anuladas) que usan alguno de los equipos elegidos
@@ -313,6 +315,16 @@ class ReporteDemandaServiciosView(APIView):
                 'contrataciones': barras_por_mes(columnas, [c['contrataciones'] for c in columnas], 'Contrataciones'),
                 'ingresos': barras_por_mes(columnas, [c['ingresos'] for c in columnas], 'Ingresos', pesos_corto),
             },
+            # Tortas: qué parte del total se llevó cada servicio (una por cada opción de "Ver por")
+            'tortas': {
+                'contrataciones': torta([f['nombre_servicio'] for f in filas], [f['total'] for f in filas]),
+                'ingresos': torta([f['nombre_servicio'] for f in filas], [f['ingresos'] for f in filas], pesos_corto),
+            },
+            # Total, promedio, máximo, mínimo y desvío por mes (numpy, ver graficos.py)
+            'agregados': {
+                'contrataciones': agregados(columnas, [c['contrataciones'] for c in columnas]),
+                'ingresos': agregados(columnas, [c['ingresos'] for c in columnas]),
+            },
             'servicios': filas,
             'total_contrataciones': total_contrataciones,
             'total_ingresos': round(total_ingresos, 2),
@@ -400,14 +412,24 @@ class ReporteEvolucionIngresosView(APIView):
 
         total_ingresos = round(sum(c['ingresos'] for c in columnas), 2)
         total_eventos = sum(c['eventos'] for c in columnas)
+        # Ingresos: línea mes a mes con la recta de tendencia y el promedio (numpy, ver graficos.py)
+        lineas = lineas_con_tendencia(columnas, [c['ingresos'] for c in columnas], 'Ingresos', pesos_corto)
 
         return Response({
             'periodo': {'desde': f'{desde[0]}-{desde[1]:02d}', 'hasta': f'{hasta[0]}-{hasta[1]:02d}'},
             'meses': columnas,
-            # Los dos gráficos ya dibujados (pandas + matplotlib) y dónde quedó cada barra (ver graficos.py)
+            # Los dos gráficos ya dibujados (pandas + matplotlib, ver graficos.py): los ingresos en
+            # líneas con tendencia y los eventos en barras (con dónde quedó cada barra)
             'graficos': {
-                'ingresos': barras_por_mes(columnas, [c['ingresos'] for c in columnas], 'Ingresos', pesos_corto),
+                'ingresos': {'imagen': lineas['imagen']},
                 'eventos': barras_por_mes(columnas, [c['eventos'] for c in columnas], 'Eventos'),
+            },
+            # Cuánto suben o bajan los ingresos por mes según la recta de tendencia
+            'tendencia_ingresos': lineas['tendencia'],
+            # Total, promedio, máximo, mínimo y desvío por mes (numpy, ver graficos.py)
+            'agregados': {
+                'ingresos': agregados(columnas, [c['ingresos'] for c in columnas]),
+                'eventos': agregados(columnas, [c['eventos'] for c in columnas]),
             },
             'total_ingresos': total_ingresos,
             'total_eventos': total_eventos,
@@ -531,6 +553,16 @@ class ReporteComparacionPeriodosView(APIView):
                 'anterior': {'etiqueta': f'{numero}º {tipo} {anio - 1}', 'desde': desde_anterior, 'hasta': hasta_anterior},
             },
             'servicios': filas,
+            # Barras agrupadas: por cada servicio, los ingresos del período actual al lado de los del
+            # año anterior (pandas + matplotlib, ver graficos.py). Sin servicios no hay gráfico.
+            'grafico': barras_agrupadas(
+                [f['nombre_servicio'] for f in filas],
+                {
+                    f'{numero}º {tipo} {anio}': [f['actual']['ingresos'] for f in filas],
+                    f'{numero}º {tipo} {anio - 1}': [f['anterior']['ingresos'] for f in filas],
+                },
+                'Ingresos', pesos_corto,
+            ) if filas else None,
             'totales': {
                 'actual': {'ingresos': total_actual, 'contrataciones': contrataciones_actual},
                 'anterior': {'ingresos': total_anterior, 'contrataciones': contrataciones_anterior},
@@ -691,6 +723,13 @@ class ReporteCargaEmpleadosView(APIView):
             'meses': columnas,
             # El gráfico ya dibujado (pandas + matplotlib) y dónde quedó cada barra (ver graficos.py)
             'grafico': barras_por_mes(columnas, [c['asignaciones'] for c in columnas], 'Eventos asignados'),
+            # Mapa de calor: una fila por empleado y una columna por mes (ver graficos.py)
+            'heatmap': heatmap(
+                [f['nombre_empleado'] for f in filas_empleados], columnas,
+                [f['por_mes'] for f in filas_empleados], 'Eventos',
+            ),
+            # Total, promedio, máximo, mínimo y desvío de las asignaciones por mes (numpy, ver graficos.py)
+            'agregados': agregados(columnas, [c['asignaciones'] for c in columnas]),
             'empleados': filas_empleados,
             'puestos': filas_puestos,
             'total_asignaciones': total_asignaciones,

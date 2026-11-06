@@ -127,6 +127,39 @@
   color: var(--titulo);
 }
 
+/* Números de resumen calculados con numpy (components/ResumenAgregados.jsx):
+   total, promedio, máximo, mínimo y desvío, uno al lado del otro */
+.agregados {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.agregado {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+.agregado-titulo {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.agregado-valor {
+  font-size: 18px;
+  color: var(--titulo);
+}
+
+.agregado-detalle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .reporte-interpretacion {
   margin: 0;
   padding-left: 20px;
@@ -192,101 +225,6 @@
 
 .reporte-tabla tbody tr:hover td:first-child {
   background: var(--fila-hover);
-}
-
-
-/* ---------- Comparación de períodos: barras por servicio ---------- */
-/* Leyenda: qué color es este período y cuál el del año anterior */
-.comparacion-leyenda {
-  display: flex;
-  gap: 20px;
-  margin: 4px 0 16px;
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.comparacion-leyenda span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.comparacion-muestra {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-}
-
-/* Colores: el período actual en azul oscuro (como el resto de los gráficos) y el año anterior en verde claro */
-.comparacion-muestra.actual,
-.comparacion-barra.actual {
-  background: var(--navy-900);
-}
-
-.comparacion-muestra.anterior,
-.comparacion-barra.anterior {
-  background: var(--verde-claro);
-}
-
-.comparacion-lista {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-/* Cada servicio: su nombre a la izquierda y sus dos barras a la derecha */
-.comparacion-fila {
-  display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 16px;
-  align-items: center;
-}
-
-.comparacion-nombre {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--titulo);
-}
-
-.comparacion-barras {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* La barra y el monto escrito al lado */
-.comparacion-barra-linea {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-}
-
-/* El monto escrito al lado de la barra, con ancho fijo para que las barras arranquen alineadas */
-.comparacion-barra-linea > span {
-  flex: 0 0 120px;
-}
-
-.comparacion-pista {
-  flex: 1;
-  min-width: 0;
-}
-
-.comparacion-barra {
-  height: 16px;
-  min-width: 2px;
-  border-radius: 0 4px 4px 0;
-  transition: width 0.2s ease;
-}
-
-/* En pantallas angostas el nombre pasa arriba de las barras */
-@media (max-width: 640px) {
-  .comparacion-fila {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
 }
 
 
@@ -363,13 +301,12 @@
      servicios de la comparación, dejaría la hoja anterior casi en blanco). Lo que sí se evita
      es cortar por la mitad un gráfico, un servicio o una frase, y separar un título de lo que sigue. */
   .grafico,
-  .comparacion-fila,
+  .agregados,
   .reporte-interpretacion li {
     break-inside: avoid;
   }
 
-  .reporte-subtitulo,
-  .comparacion-leyenda {
+  .reporte-subtitulo {
     break-after: avoid;
   }
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import BotonDescargarPng from './BotonDescargarPng';
 import './GraficoBarras.css';
 
 // Gráfico de barras de los reportes: una barra por mes.
@@ -18,13 +19,14 @@ import './GraficoBarras.css';
 //   unidad   -> qué se está contando, para el cartelito (ej: "unidades")
 //   formato  -> (opcional) cómo se escribe el número en el cartelito. Por ejemplo, para plata:
 //               (v) => `$ ${v.toLocaleString('es-AR')}`. Si no se manda, va el número tal cual.
+//   nombreArchivo -> (opcional) nombre del .png para el botón "Descargar PNG" (sin la extensión)
 
 const NOMBRES_MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 // Pasa una proporción que manda el backend (0.25) a porcentaje para el CSS ("25%")
 const pct = (valor) => `${valor * 100}%`;
 
-export default function GraficoBarras({ titulo, periodo, grafico, datos, unidad = 'unidades', formato = (v) => v }) {
+export default function GraficoBarras({ titulo, periodo, grafico, datos, unidad = 'unidades', formato = (v) => v, nombreArchivo }) {
   // La barra sobre la que está el mouse (su posición en la lista), o null si no hay ninguna
   const [activa, setActiva] = useState(null);
 
@@ -33,10 +35,13 @@ export default function GraficoBarras({ titulo, periodo, grafico, datos, unidad 
 
   return (
     <figure className="grafico">
-      {/* Título y período arriba del gráfico */}
-      <figcaption>
-        <div className="grafico-titulo">{titulo}</div>
-        <div className="grafico-periodo">{periodo}</div>
+      {/* Título y período arriba del gráfico, y a la derecha el botón para descargarlo */}
+      <figcaption className="grafico-cabecera">
+        <div>
+          <div className="grafico-titulo">{titulo}</div>
+          <div className="grafico-periodo">{periodo}</div>
+        </div>
+        <BotonDescargarPng imagen={grafico.imagen} nombreArchivo={nombreArchivo} />
       </figcaption>
 
       {/* position: relative para poder ubicar encima las zonas del mouse y el cartelito.

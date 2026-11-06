@@ -4,6 +4,8 @@ import api from '../../api/client';
 import GraficoBarras from '../../components/GraficoBarras';
 import { IconVolver } from '../../components/icons';
 import BotonImprimirReporte from '../../components/BotonImprimirReporte';
+import GraficoImagen from '../../components/GraficoImagen';
+import ResumenAgregados from '../../components/ResumenAgregados';
 import './Reportes.css';
 
 // REPORTE TÁCTICO: CARGA DE TRABAJO DE LOS EMPLEADOS
@@ -245,12 +247,19 @@ export default function ReporteCargaEmpleados() {
 
       {!error && datos && !sinDatos && (
         <>
+          {/* ---- Resumen: total, promedio, máximo, mínimo y desvío de asignaciones por mes (numpy) ---- */}
+          <div className="card reporte-bloque">
+            <h2 className="reporte-subtitulo">Resumen de eventos asignados por mes</h2>
+            <ResumenAgregados agregados={datos.agregados} unidad="eventos asignados" />
+          </div>
+
           {/* ---- Gráfico: una barra por mes con el total de eventos asignados ---- */}
           <div className="card reporte-bloque">
             <GraficoBarras
               titulo="Eventos asignados al personal, por mes"
               periodo={`${periodo} · ${contar(datos.total_asignaciones, 'asignación', 'asignaciones')} en ${contar(datos.total_reservas, 'reserva', 'reservas')}`}
               grafico={datos.grafico}
+              nombreArchivo={`${nombreArchivo}-barras`}
               unidad="eventos asignados"
               datos={datos.meses.map((m) => ({
                 anio: m.anio,
@@ -261,6 +270,18 @@ export default function ReporteCargaEmpleados() {
               }))}
             />
           </div>
+
+          {/* ---- Mapa de calor: empleados x meses, más oscuro cuantos más eventos ---- */}
+          {datos.heatmap && (
+            <div className="card reporte-bloque">
+              <GraficoImagen
+                titulo="Mapa de calor: eventos de cada empleado por mes"
+                periodo={`${periodo} · cuanto más oscuro el casillero, más eventos tuvo ese mes`}
+                grafico={datos.heatmap}
+                nombreArchivo={`${nombreArchivo}-heatmap`}
+              />
+            </div>
+          )}
 
           {/* ---- Interpretación: qué nos dicen los números ---- */}
           <div className="card reporte-bloque">

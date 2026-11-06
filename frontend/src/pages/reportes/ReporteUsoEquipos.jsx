@@ -4,6 +4,7 @@ import api from '../../api/client';
 import GraficoBarras from '../../components/GraficoBarras';
 import { IconVolver } from '../../components/icons';
 import BotonImprimirReporte from '../../components/BotonImprimirReporte';
+import ResumenAgregados from '../../components/ResumenAgregados';
 import './Reportes.css';
 
 // REPORTE: USO DE EQUIPOS POR MES
@@ -177,12 +178,19 @@ export default function ReporteUsoEquipos() {
 
       {!error && datos && !sinDatos && (
         <>
+          {/* ---- Resumen: total, promedio, máximo, mínimo y desvío de unidades por mes (numpy) ---- */}
+          <div className="card reporte-bloque">
+            <h2 className="reporte-subtitulo">Resumen de unidades por mes</h2>
+            <ResumenAgregados agregados={datos.agregados} unidad="unidades" />
+          </div>
+
           {/* ---- Gráfico: una barra por mes con el total de unidades ---- */}
           <div className="card reporte-bloque">
             <GraficoBarras
               titulo="Unidades de equipos comprometidas en eventos, por mes"
               periodo={`${periodo} · ${datos.total_unidades} unidades en ${datos.total_reservas} ${datos.total_reservas === 1 ? 'reserva' : 'reservas'}`}
               grafico={datos.grafico}
+              nombreArchivo={`${nombreArchivo}-barras`}
               unidad="unidades"
               datos={datos.meses.map((m) => ({
                 anio: m.anio,

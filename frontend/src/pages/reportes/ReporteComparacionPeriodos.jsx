@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import { IconVolver } from '../../components/icons';
 import BotonImprimirReporte from '../../components/BotonImprimirReporte';
+import GraficoImagen from '../../components/GraficoImagen';
 import { formatearPesos } from '../../utils/formato';
 import './Reportes.css';
 
@@ -10,7 +11,8 @@ import './Reportes.css';
 //
 // Compara un trimestre o semestre contra el mismo del año anterior, servicio por servicio,
 // para decidir en cuáles conviene concentrar los recursos. Tiene tres partes: los filtros,
-// un gráfico de barras por servicio (este año contra el anterior) y la tabla con el detalle.
+// un gráfico de barras agrupadas por servicio (este año al lado del anterior, lo dibuja el
+// backend con pandas y matplotlib) y la tabla con el detalle.
 // Los números los calcula el backend (ver ReporteComparacionPeriodosView en
 // infinito_sonido/reportes.py); esta pantalla solo los muestra.
 
@@ -81,9 +83,6 @@ export default function ReporteComparacionPeriodos() {
   const sinDatos = datos && datos.servicios.length === 0;
   const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 
-  // Para dibujar las barras: la más larga ocupa todo el ancho y las demás se achican en proporción
-  const maximo = datos ? Math.max(...datos.servicios.flatMap((s) => [s.actual.ingresos, s.anterior.ingresos]), 1) : 1;
-  const ancho = (valor) => `${(valor / maximo) * 100}%`;
 
   // ---- Frases de la interpretación (se arman solas con los números del reporte) ----
   let interpretacion = [];
@@ -187,31 +186,17 @@ export default function ReporteComparacionPeriodos() {
 
       {!error && datos && !sinDatos && (
         <>
-          {/* ---- Gráfico: por cada servicio, una barra de este período y otra del año anterior ---- */}
-          <div className="card reporte-bloque">
-            <h2 className="reporte-subtitulo">Ingresos contratados por servicio</h2>
-            <div className="comparacion-leyenda">
-              <span><i className="comparacion-muestra actual" />{datos.periodo.actual.etiqueta}</span>
-              <span><i className="comparacion-muestra anterior" />{datos.periodo.anterior.etiqueta}</span>
+          {/* ---- Barras agrupadas: por cada servicio, una barra de este período y otra del año anterior ---- */}
+          {datos.grafico && (
+            <div className="card reporte-bloque">
+              <GraficoImagen
+                titulo="Ingresos contratados por servicio"
+                periodo={`${datos.periodo.actual.etiqueta} contra ${datos.periodo.anterior.etiqueta}`}
+                grafico={datos.grafico}
+                nombreArchivo={`${nombreArchivo}-barras-agrupadas`}
+              />
             </div>
-            <div className="comparacion-lista">
-              {datos.servicios.map((s) => (
-                <div key={s.id_servicio} className="comparacion-fila">
-                  <div className="comparacion-nombre">{s.nombre_servicio}</div>
-                  <div className="comparacion-barras">
-                    <div className="comparacion-barra-linea">
-                      <div className="comparacion-pista"><div className="comparacion-barra actual" style={{ width: ancho(s.actual.ingresos) }} /></div>
-                      <span>{formatearPesos(s.actual.ingresos)}</span>
-                    </div>
-                    <div className="comparacion-barra-linea">
-                      <div className="comparacion-pista"><div className="comparacion-barra anterior" style={{ width: ancho(s.anterior.ingresos) }} /></div>
-                      <span>{formatearPesos(s.anterior.ingresos)}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* ---- Interpretación: qué nos dicen los números ---- */}
           <div className="card reporte-bloque">

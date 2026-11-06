@@ -4,14 +4,17 @@ import api from '../../api/client';
 import { IconVolver } from '../../components/icons';
 import BotonImprimirReporte from '../../components/BotonImprimirReporte';
 import GraficoBarras from '../../components/GraficoBarras';
+import GraficoImagen from '../../components/GraficoImagen';
+import ResumenAgregados from '../../components/ResumenAgregados';
 import { formatearPesos } from '../../utils/formato';
 import './Reportes.css';
 
 // REPORTE: EVOLUCIÓN MENSUAL DE INGRESOS CONTRATADOS Y CANTIDAD DE EVENTOS
 //
 // Muestra mes a mes cuánta plata se contrató y cuántos eventos hubo, para ver si el
-// negocio crece. Tiene tres partes: los filtros, dos gráficos (ingresos y eventos) y la
-// tabla con la variación contra el mes anterior. Los números los calcula el backend
+// negocio crece. Tiene: los filtros, el resumen (total, promedio, máximo...), dos gráficos
+// (los ingresos en líneas con su tendencia y los eventos en barras) y la tabla con la
+// variación contra el mes anterior. Los números los calcula el backend
 // (ver ReporteEvolucionIngresosView en infinito_sonido/reportes.py); esta pantalla solo los muestra.
 
 const NOMBRES_MES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -111,9 +114,19 @@ export default function ReporteEvolucionIngresos() {
       }
     }
 
+    // Qué dice la recta de tendencia (la calcula el backend con numpy)
+    const tendencia = datos.tendencia_ingresos;
+    let fraseTendencia = null;
+    if (datos.meses.length > 1) {
+      fraseTendencia = tendencia.direccion === 'estable'
+        ? 'La tendencia de los ingresos es estable: no suben ni bajan de forma marcada.'
+        : `La tendencia de los ingresos es ${tendencia.direccion === 'sube' ? 'creciente' : 'decreciente'}: en promedio ${tendencia.direccion === 'sube' ? 'suben' : 'bajan'} ${formatearPesos(Math.abs(tendencia.pendiente))} por mes.`;
+    }
+
     interpretacion = [
       `En el período se contrataron ${formatearPesos(datos.total_ingresos)} en ${plural(datos.total_eventos, 'evento', 'eventos')}, un promedio de ${formatearPesos(datos.promedio_mensual_ingresos)} por mes.`,
       `El mes con más ingresos fue ${mesEnPalabras(mesTop.anio, mesTop.mes)}: ${formatearPesos(mesTop.ingresos)} en ${plural(mesTop.eventos, 'evento', 'eventos')}.`,
+      fraseTendencia,
       crecimiento,
       mesesSinEventos.length > 0
         ? `Meses sin eventos: ${mesesSinEventos.map((m) => mesEnPalabras(m.anio, m.mes)).join(', ')}.`
@@ -168,20 +181,19 @@ export default function ReporteEvolucionIngresos() {
 
       {!error && datos && !sinDatos && (
         <>
-          {/* ---- Gráfico de ingresos contratados por mes ---- */}
+          {/* ---- Resumen: total, promedio, máximo, mínimo y desvío de los ingresos por mes (numpy) ---- */}
           <div className="card reporte-bloque">
-            <GraficoBarras
-              titulo="Ingresos contratados por mes"
+            <h2 className="reporte-subtitulo">Resumen de ingresos por mes</h2>
+            <ResumenAgregados agregados={datos.agregados.ingresos} formato={formatearPesos} unidad="ingresos" />
+          </div>
+
+          {/* ---- Gráfico de líneas: ingresos de cada mes, recta de tendencia y promedio ---- */}
+          <div className="card reporte-bloque">
+            <GraficoImagen
+              titulo="Ingresos contratados por mes y tendencia"
               periodo={`${periodo} · ${formatearPesos(datos.total_ingresos)} en total`}
               grafico={datos.graficos.ingresos}
-              unidad=""
-              formato={formatearPesos}
-              datos={datos.meses.map((m) => ({
-                anio: m.anio,
-                mes: m.mes,
-                valor: m.ingresos,
-                detalle: plural(m.eventos, 'evento', 'eventos'),
-              }))}
+              nombreArchivo={`${nombreArchivo}-lineas-ingresos`}
             />
           </div>
 
@@ -191,6 +203,7 @@ export default function ReporteEvolucionIngresos() {
               titulo="Cantidad de eventos por mes"
               periodo={`${periodo} · ${plural(datos.total_eventos, 'evento', 'eventos')} en total`}
               grafico={datos.graficos.eventos}
+              nombreArchivo={`${nombreArchivo}-barras-eventos`}
               unidad="eventos"
               datos={datos.meses.map((m) => ({
                 anio: m.anio,
