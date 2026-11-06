@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import FondoBarras from '../components/FondoBarras';
 import ReglasContraseña from '../components/ReglasContraseña';
 import { contraseñaSegura } from '../utils/contraseña';
 import './Login.css';
@@ -63,7 +62,6 @@ export default function CambiarClave() {
 
   return (
     <div className="login-page">
-      <FondoBarras className="login-bars" />
       <form className="login-card" onSubmit={handleSubmit}>
         <h1>Cambiar contraseña</h1>
         <p className="login-subtitle">

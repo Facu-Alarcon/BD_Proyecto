@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import FondoBarras from '../components/FondoBarras';
 import './Login.css';
 
 // "Olvidé mi contraseña": el usuario tiene que pedirle al administrador que le restablezca
@@ -8,7 +7,6 @@ import './Login.css';
 export default function RecuperarClave() {
   return (
     <div className="login-page">
-      <FondoBarras className="login-bars" />
       <div className="login-card">
         <h1>Recuperar contraseña</h1>
 

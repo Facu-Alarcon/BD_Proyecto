@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import FondoBarras from '../components/FondoBarras';
+import logo from '../assets/img/logonuevo.png';
 import './Login.css';
 
 // Pantalla de inicio de sesión: usuario, contraseña (con el ojito para verla) y el link de
@@ -40,9 +40,8 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <FondoBarras className="login-bars" />
-
       <form className="login-card" onSubmit={handleSubmit}>
+        <img src={logo} alt="Infinito Sonido e Iluminación" className="login-logo" />
         <h1>Iniciar sesión</h1>
         <p className="login-subtitle">Ingresá con tu usuario para acceder al sistema.</p>
 

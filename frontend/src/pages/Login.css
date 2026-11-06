@@ -1,5 +1,7 @@
 /* Pantallas fuera del sistema: Login, Cambiar clave, Recuperar y Restablecer contraseña. */
-/* Fondo azul oscuro con barras decorativas y la tarjeta blanca centrada. */
+/* De fondo, la foto del ecualizador en azul y verde (assets/img/fondo_login.jpg) cubriendo
+   toda la pantalla, con una capa azul oscura semitransparente encima para que la tarjeta
+   blanca del centro resalte y se lea bien. Mientras carga la foto se ve el azul oscuro. */
 .login-page {
   position: relative;
   min-height: 100vh;
@@ -7,22 +9,18 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: radial-gradient(circle at 20% 20%, #163169 0%, #0a1730 55%, #060f24 100%);
+  background:
+    linear-gradient(rgba(6, 15, 36, 0.55), rgba(6, 15, 36, 0.55)),
+    url('../assets/img/fondo_login.jpg') center / cover no-repeat,
+    #0a1730;
 }
 
-.login-bars {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  gap: clamp(4px, 1.6vw, 22px);
-  padding: 0 4%;
-}
-
-.login-bars span {
-  flex: 1;
-  background: linear-gradient(180deg, rgba(120, 160, 220, 0.35), rgba(60, 100, 170, 0.12));
-  border-radius: 4px 4px 0 0;
+/* Logo arriba del formulario de inicio de sesión */
+.login-logo {
+  display: block;
+  width: 200px;
+  max-width: 70%;
+  margin: 0 auto 24px;
 }
 
 .login-card {

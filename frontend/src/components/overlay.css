@@ -1,5 +1,8 @@
 /* Ventanas emergentes de editar (FormModal) y de "¡Listo!" (SuccessModal). */
-/* Fondo azul oscuro que tapa toda la pantalla, con la tarjeta blanca centrada. */
+/* Tapan toda la pantalla con una foto de equipos de sonido en azul y verde y una capa azul
+   oscura semitransparente encima, para que la tarjeta blanca del centro resalte.
+   Cada módulo usa una foto distinta: la elige utils/fondoModal.js y la pone con "style"
+   (la de acá abajo queda por si alguna ventana no la elige). */
 .overlay-page {
   position: fixed;
   inset: 0;
@@ -9,23 +12,13 @@
   justify-content: center;
   overflow: hidden auto;
   padding: 24px;
-  background: radial-gradient(circle at 20% 20%, #163169 0%, #0a1730 55%, #060f24 100%);
-}
-
-/* Barras verticales decorativas del fondo (ver components/FondoBarras.jsx) */
-.overlay-bars {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  gap: clamp(4px, 1.6vw, 22px);
-  padding: 0 4%;
-}
-
-.overlay-bars span {
-  flex: 1;
-  background: linear-gradient(180deg, rgba(120, 160, 220, 0.35), rgba(60, 100, 170, 0.12));
-  border-radius: 4px 4px 0 0;
+  background-color: #0a1730;
+  background-image:
+    linear-gradient(rgba(6, 15, 36, 0.55), rgba(6, 15, 36, 0.55)),
+    url('../assets/img/fondo_consola.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 /* Tarjeta blanca con el contenido; si es más alta que la pantalla, scrollea por dentro */
