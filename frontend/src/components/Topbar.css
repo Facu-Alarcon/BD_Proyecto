@@ -49,6 +49,39 @@
   gap: 8px;
 }
 
+/* En computadora, la parte del logo mide lo mismo que el menú lateral (260px, ver
+   Sidebar.css) y el logo queda centrado ahí, casi tan ancho como el menú. Se saca el margen
+   izquierdo de la barra para que esa parte arranque justo en el borde, igual que el menú. */
+@media (min-width: 1025px) {
+  .topbar {
+    padding-left: 0;
+  }
+  .topbar-izquierda {
+    width: 260px;
+    justify-content: center;
+  }
+  /* El logo a lo ancho, en una caja de 39px de alto para que entre en la barra de 60px y quede
+     centrado a la altura del círculo del usuario. La imagen trae espacio transparente arriba y
+     abajo: object-fit: cover recorta solo ese espacio, sin cortar las letras ni deformarlas.
+     ".topbar" adelante para que gane sobre el tamaño normal del logo, que está más abajo */
+  .topbar .topbar-logo {
+    width: 160px;
+    height: 39px;
+    object-fit: cover;
+  }
+}
+
+/* El logo es un link al Inicio */
+.topbar-logo-link {
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+.topbar-logo-link:focus-visible {
+  outline: 2px solid var(--navy-accent);
+  outline-offset: 4px;
+}
+
 /* Botón de las tres rayitas: solo en el celular, donde el menú lateral va escondido */
 .topbar-menu-btn {
   display: none;

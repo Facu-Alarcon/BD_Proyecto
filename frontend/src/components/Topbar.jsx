@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { IconChevronDown, IconHamburguesa, IconLuna, IconSalir, IconSol } from './icons';
 import { useTema } from '../hooks/useTema';
@@ -50,7 +51,10 @@ export default function Topbar({ onAbrirMenu, menuAbierto }) {
         >
           <IconHamburguesa />
         </button>
-        <img src={logo} alt="Infinito Sonido e Iluminación" className="topbar-logo" />
+        {/* El logo lleva al Inicio. En computadora queda centrado sobre el menú lateral */}
+        <Link to="/" className="topbar-logo-link" title="Ir al inicio">
+          <img src={logo} alt="Infinito Sonido e Iluminación - Ir al inicio" className="topbar-logo" />
+        </Link>
       </div>
 
       <div className="topbar-derecha">
