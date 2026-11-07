@@ -1,6 +1,6 @@
 /* Menú lateral: ocupa todo el alto que queda debajo de la barra de arriba, de punta a punta.
-   No tiene scroll propio: las secciones se reparten el alto disponible (ver .sidebar-link),
-   así no sobra espacio azul abajo ni queda nada escondido. */
+   No tiene scroll propio: las filas se reparten el alto disponible (ver .sidebar-link) y, a
+   medida que se abren secciones, todas se achican para que siga entrando todo. */
 .sidebar {
   width: 260px;
   min-width: 260px;
@@ -41,11 +41,13 @@
   min-height: 0;
 }
 
-/* Cada sección crece por igual hasta llenar el alto del menú (flex: 1).
+/* Cada fila (Inicio, el nombre de una sección o una pantalla de una sección abierta) crece por
+   igual (flex: 1) hasta un máximo de 44px; si no entran, todas se achican por igual.
    min-height: 0 deja que se achiquen si la pantalla es baja, así siempre entran todas. */
 .sidebar-link {
   flex: 1 1 0;
   min-height: 0;
+  max-height: 44px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -85,6 +87,40 @@
 :root[data-theme="dark"] .sidebar-link.active {
   background: #dfe7f5;
   color: var(--navy-950);
+}
+
+/* Nombre de una sección (Reservas, Equipos, ...): es un botón, no un enlace.
+   Al hacer click despliega sus pantallas debajo. */
+.sidebar-grupo {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Las pantallas de una sección abierta: debajo de su nombre, con el fondo apenas más claro y
+   un poco más a la derecha. --filas es cuántas hay: el contenedor pesa lo mismo que esa cantidad
+   de filas sueltas, así todas las filas del menú se achican por igual. */
+.sidebar-submenu {
+  flex: var(--filas) 1 0px;
+  min-height: 0;
+  max-height: calc(var(--filas) * 44px + (var(--filas) - 1) * 2px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-submenu .sidebar-link {
+  padding-left: 28px;
+  font-size: 13.5px;
+}
+
+:root[data-theme="dark"] .sidebar-submenu {
+  background: rgba(10, 37, 80, 0.06);
 }
 
 .sidebar-icon {
@@ -142,6 +178,11 @@
   .sidebar-label {
     display: none;
   }
+
+  /* Solo íconos: sin sangría; el fondo del contenedor marca qué pantallas son de la sección */
+  .sidebar-submenu .sidebar-link {
+    padding: 0 10px;
+  }
 }
 
 /* Celular: el menú no ocupa lugar. Queda escondido a la izquierda y se desliza encima
@@ -174,8 +215,19 @@
   .sidebar-link {
     flex: 0 0 auto;
     min-height: 44px;
+    max-height: none;
     justify-content: flex-start;
     padding: 0 14px;
+  }
+
+  /* Las pantallas de una sección abierta ocupan su propio alto y mantienen la sangría */
+  .sidebar-submenu {
+    flex: 0 0 auto;
+    max-height: none;
+  }
+
+  .sidebar-submenu .sidebar-link {
+    padding: 0 14px 0 28px;
   }
 
   .sidebar-label {
