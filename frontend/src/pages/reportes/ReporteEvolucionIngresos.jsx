@@ -5,7 +5,10 @@ import { IconVolver } from '../../components/icons';
 import BotonImprimirReporte from '../../components/BotonImprimirReporte';
 import GraficoBarras from '../../components/GraficoBarras';
 import GraficoImagen from '../../components/GraficoImagen';
+import { EncabezadoImpresion, PieImpresion } from '../../components/ImpresionReporte';
+import Paginacion from '../../components/Paginacion';
 import ResumenAgregados from '../../components/ResumenAgregados';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import { formatearPesos } from '../../utils/formato';
 import './Reportes.css';
 
@@ -16,6 +19,7 @@ import './Reportes.css';
 // (los ingresos en líneas con su tendencia y los eventos en barras) y la tabla con la
 // variación contra el mes anterior. Los números los calcula el backend
 // (ver ReporteEvolucionIngresosView en infinito_sonido/reportes.py); esta pantalla solo los muestra.
+// Es el reporte sensible del sistema: solo lo ven los perfiles con "Ver Reportes Financieros".
 
 const NOMBRES_MES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -65,6 +69,7 @@ export default function ReporteEvolucionIngresos() {
   // Lo que está elegido en los filtros. Al entrar se muestra el año actual completo
   const [desde, setDesde] = useState({ anio: ANIO_ACTUAL, mes: 1 });
   const [hasta, setHasta] = useState({ anio: ANIO_ACTUAL, mes: 12 });
+  const [servicio, setServicio] = useState(''); // '' = todos los servicios
 
   const [datos, setDatos] = useState(null);  // lo que devuelve el backend
   const [cargando, setCargando] = useState(true);
@@ -79,7 +84,7 @@ export default function ReporteEvolucionIngresos() {
     setError('');
     const mes = (m) => `${m.anio}-${String(m.mes).padStart(2, '0')}`; // (2026, 3) -> "2026-03"
     api
-      .get('/reportes/evolucion-ingresos/', { params: { desde: mes(desde), hasta: mes(hasta) } })
+      .get('/reportes/evolucion-ingresos/', { params: { desde: mes(desde), hasta: mes(hasta), servicio: servicio || undefined } })
       .then(({ data }) => { if (vigente) setDatos(data); })
       .catch((err) => {
         // Por ejemplo, si se eligió un "Desde" posterior al "Hasta" el backend avisa con un mensaje
@@ -87,12 +92,19 @@ export default function ReporteEvolucionIngresos() {
       })
       .finally(() => { if (vigente) setCargando(false); });
     return () => { vigente = false; };
-  }, [desde, hasta]);
+  }, [desde, hasta, servicio]);
+
+  // La tabla de detalle va de a 12 meses por página. Cuando llegan datos nuevos (cambió algún
+  // filtro) se vuelve a la primera página.
+  const paginacion = usePaginacion(datos?.meses || [], datos, 12);
+  const enPagina = new Set(paginacion.visibles);
 
   const periodo = `De ${mesEnPalabras(desde.anio, desde.mes)} a ${mesEnPalabras(hasta.anio, hasta.mes)}`;
   // true cuando en el período no hay ningún evento
   const sinDatos = datos && datos.total_eventos === 0;
   const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+  // Nombre del servicio elegido, para el pie del PDF y los textos
+  const nombreServicio = (datos?.opciones.servicios || []).find((s) => String(s.id) === String(servicio))?.nombre;
 
   // ---- Frases de la interpretación (se arman solas con los números del reporte) ----
   let interpretacion = [];
@@ -162,10 +174,22 @@ export default function ReporteEvolucionIngresos() {
         <BotonImprimirReporte nombreArchivo={nombreArchivo} deshabilitado={cargando || !!error || !datos || !!sinDatos} />
       </div>
 
+      {/* Encabezado institucional: solo sale al imprimir */}
+      <EncabezadoImpresion titulo="Reporte: Evolución de ingresos y eventos" />
+
       {/* ---- Filtros ---- */}
       <div className="card filtros reporte-filtros">
         <SelectorMes id="desde" label="Desde" valor={desde} onChange={setDesde} />
         <SelectorMes id="hasta" label="Hasta" valor={hasta} onChange={setHasta} />
+        <div className="form-field">
+          <label htmlFor="servicio">Servicio</label>
+          <select id="servicio" value={servicio} onChange={(e) => setServicio(e.target.value)}>
+            <option value="">Todos los servicios</option>
+            {(datos?.opciones.servicios || []).map((s) => (
+              <option key={s.id} value={s.id}>{s.nombre}{s.activo ? '' : ' (desactivado)'}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -175,7 +199,7 @@ export default function ReporteEvolucionIngresos() {
       {!error && sinDatos && (
         <div className="card reporte-vacio">
           <strong>No hay eventos para mostrar.</strong>
-          <span>{periodo} no hay reservas. Probá con otro período.</span>
+          <span>{periodo} no hay reservas{nombreServicio ? ` con el servicio ${nombreServicio}` : ''}. Probá con otro período o sacá el filtro.</span>
         </div>
       )}
 
@@ -226,6 +250,7 @@ export default function ReporteEvolucionIngresos() {
           <div className="card reporte-bloque">
             <h2 className="reporte-subtitulo">Detalle por mes</h2>
             <p className="form-hint">La variación compara cada mes con el anterior. Si el mes anterior no tuvo ingresos no se puede calcular (—).</p>
+            <Paginacion paginacion={paginacion} posicion="arriba" />
             <div className="reporte-tabla-scroll">
               <table className="data-table reporte-tabla">
                 <thead>
@@ -238,8 +263,10 @@ export default function ReporteEvolucionIngresos() {
                   </tr>
                 </thead>
                 <tbody>
+                  {/* Van todas las filas, pero las que no son de esta página quedan escondidas en
+                      pantalla (al imprimir salen todas, ver Reportes.css) */}
                   {datos.meses.map((m) => (
-                    <tr key={m.etiqueta}>
+                    <tr key={m.etiqueta} className={enPagina.has(m) ? undefined : 'fila-otra-pagina'}>
                       <td>{m.etiqueta}</td>
                       <td className={`numero${m.ingresos === 0 ? ' cero' : ''}`}>{formatearPesos(m.ingresos)}</td>
                       <td className="numero"><Variacion valor={m.variacion_ingresos} /></td>
@@ -260,7 +287,14 @@ export default function ReporteEvolucionIngresos() {
                 </tfoot>
               </table>
             </div>
+            <Paginacion paginacion={paginacion} />
           </div>
+
+          {/* Pie con los filtros, el usuario y la fecha y hora: solo sale al imprimir */}
+          <PieImpresion filtros={[
+            ['Período', `${mesEnPalabras(desde.anio, desde.mes)} a ${mesEnPalabras(hasta.anio, hasta.mes)}`],
+            ['Servicio', nombreServicio || 'Todos'],
+          ]} />
         </>
       )}
     </div>

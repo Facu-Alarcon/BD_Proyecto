@@ -343,3 +343,84 @@
     break-inside: avoid;
   }
 }
+
+/* ---------- Encabezado y pie del PDF y paginación de las tablas (Parcial 2, M2) ---------- */
+
+/* El encabezado institucional y el pie (ver ImpresionReporte.jsx) solo salen en el papel */
+.reporte-pagina .solo-imprimir {
+  display: none;
+}
+
+/* Las filas que no son de la página que se está viendo se esconden en pantalla.
+   Al imprimir vuelven a aparecer, así el PDF tiene la tabla completa y no solo una página. */
+.reporte-tabla tr.fila-otra-pagina {
+  display: none;
+}
+
+@media print {
+  /* El encabezado: logo a la izquierda y el nombre de la empresa y del reporte a la derecha */
+  .reporte-pagina .impresion-encabezado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+    border-bottom: 3px solid var(--verde);
+  }
+
+  .impresion-logo {
+    height: 48px;
+    width: auto;
+  }
+
+  .impresion-titulo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    color: var(--text-main);
+  }
+
+  .impresion-titulo strong {
+    font-size: 16px;
+  }
+
+  .impresion-titulo span {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* El pie va al final del reporte, separado con una línea, y no se corta entre dos hojas */
+  .reporte-pagina .impresion-pie {
+    display: block;
+    margin-top: 16px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--text-muted);
+    break-inside: avoid;
+  }
+
+  .impresion-pie p {
+    margin: 2px 0;
+  }
+
+  .impresion-pie strong {
+    color: var(--text-main);
+  }
+
+  /* El título de la pantalla ya está en el encabezado: no se repite */
+  .reporte-pagina .page-header {
+    display: none;
+  }
+
+  /* Al imprimir salen todas las filas y no hacen falta los botones de las páginas */
+  .reporte-tabla tr.fila-otra-pagina {
+    display: table-row;
+  }
+
+  .reporte-pagina .paginacion {
+    display: none !important;
+  }
+}
