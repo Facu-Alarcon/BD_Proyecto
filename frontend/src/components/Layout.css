@@ -22,6 +22,75 @@
   overflow-y: auto;
 }
 
+/* Menú lateral escondido (botón de las tres rayitas, ver BotonMenuLateral.jsx): deja de ocupar
+   lugar y el contenido, que ya se centra solo, pasa a centrarse en todo el ancho de la pantalla.
+   Solo en pantallas de más de 640px: en el celular el menú es un cajón que se abre desde la
+   barra de arriba (ver Sidebar.css). */
+@media (min-width: 641px) {
+  .app-shell.menu-oculto .sidebar {
+    display: none;
+  }
+}
+
+/* Botón que esconde / muestra el menú lateral. El contenedor es "pegajoso" y no ocupa alto,
+   así no empuja el contenido y el botón se queda arriba a la izquierda aunque se scrollee. */
+.menu-lateral-ancla {
+  position: sticky;
+  top: 0;
+  height: 0;
+  z-index: 20;
+}
+
+.menu-lateral-btn {
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--titulo-fuerte);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-card);
+}
+
+.menu-lateral-btn:hover {
+  background: var(--gray-bg);
+}
+
+/* Con el menú escondido el botón dice "Menú" (subrayado) a la derecha de las tres rayitas */
+.menu-lateral-btn.con-texto {
+  padding: 0 10px 0 7px;
+}
+
+.menu-lateral-texto {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* En ventanas angostas el margen a la izquierda del contenido no alcanza para el botón y
+   quedaría encima del título o de la flecha de volver. Ahí el contenido baja un poco (8 a 16px)
+   y el botón queda en la franja de arriba. En ventanas anchas sobra margen y nada cambia. */
+@media (min-width: 641px) and (max-width: 1490px) {
+  .app-main .app-content {
+    padding-top: 40px;
+  }
+}
+
+/* En el celular el menú se abre desde la barra de arriba: este botón no hace falta */
+@media (max-width: 640px) {
+  .menu-lateral-ancla {
+    display: none;
+  }
+}
+
 /* Contenido con un ancho máximo, centrado en el espacio que deja el menú,
    así las tablas no quedan pegadas a la izquierda. El mismo margen (32px) en los
    cuatro lados para que quede parejo, y si sobra lugar abajo queda en blanco. */
