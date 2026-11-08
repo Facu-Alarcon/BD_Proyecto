@@ -16,6 +16,7 @@ from .models import (
     Metodo_Pagos, Pagos, Detalles_de_Pago,
     Permisos, Permisos_x_Perfiles,
     Registro_Actividad,
+    Configuracion, Notificacion,
 )
 
 
@@ -213,3 +214,15 @@ class Registro_Actividad_Admin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+# Notificaciones y parámetros de las alertas (Parcial 2, módulo M3)
+@admin.register(Configuracion)
+class ConfiguracionAdmin(admin.ModelAdmin):
+    list_display = ('clave', 'valor', 'descripcion')
+
+
+@admin.register(Notificacion)
+class NotificacionAdmin(admin.ModelAdmin):
+    list_display = ('fecha', 'tipo', 'destino_perfil', 'id_objeto', 'leida', 'mensaje')
+    list_filter = ('tipo', 'leida', 'destino_perfil')

@@ -24,6 +24,9 @@ router.register('horarios', api.HorariosViewSet, basename='api-horarios')
 router.register('metodos-pago', api.MetodoPagosViewSet, basename='api-metodos-pago')
 router.register('pagos', api.PagosViewSet, basename='api-pagos')
 router.register('registro', api.RegistroActividadViewSet, basename='api-registro')
+# Parcial 2 (M3): bandeja de notificaciones y parámetros de las alertas
+router.register('notificaciones', api.NotificacionesViewSet, basename='api-notificaciones')
+router.register('configuracion', api.ConfiguracionViewSet, basename='api-configuracion')
 
 # Vistas sueltas (no son un ABM): sesión, contraseñas y el resumen de Inicio
 urlpatterns = [

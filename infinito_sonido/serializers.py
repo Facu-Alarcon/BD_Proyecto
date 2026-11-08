@@ -22,6 +22,7 @@ from .nombres_usuario import generar_nombre_usuario
 from .seguridad import generar_contraseña_temporal, validar_contraseña_segura
 
 from .models import (
+    Configuracion, Notificacion,
     Tipo_Equipos, Estado_Equipos, Equipos,
     Perfiles, Usuarios,
     Permisos, Permisos_x_Perfiles,
@@ -835,3 +836,39 @@ class RegistroActividadSerializer(serializers.ModelSerializer):
         if obj.id_usuario and obj.id_usuario.id_empleado:
             return f'{obj.id_usuario.nombre} {obj.id_usuario.apellido}'
         return ''
+
+
+# Avisos de la bandeja de notificaciones (Parcial 2, módulo M3). Son de solo lectura:
+# los genera el sistema, el usuario solo los marca como leídos (acciones en api.py).
+class NotificacionSerializer(serializers.ModelSerializer):
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    perfil_nombre = serializers.CharField(source='destino_perfil.tipo_perfil', read_only=True)
+
+    class Meta:
+        model = Notificacion
+        fields = ['id_notificacion', 'fecha', 'tipo', 'tipo_display', 'mensaje', 'destino_perfil',
+                  'perfil_nombre', 'id_objeto', 'leida', 'fecha_lectura']
+        read_only_fields = fields
+
+
+# Parámetros de las alertas. Solo se puede cambiar el valor: la clave y la descripción
+# las define el sistema (migración 0029).
+class ConfiguracionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Configuracion
+        fields = ['clave', 'valor', 'descripcion']
+        read_only_fields = ['clave', 'descripcion']
+
+    # Todos los parámetros que hay hoy son números enteros positivos (días, cantidades)
+    # o el factor de desvíos, que puede llevar decimales
+    def validate_valor(self, valor):
+        valor = valor.strip().replace(',', '.')
+        try:
+            numero = float(valor)
+        except ValueError:
+            raise serializers.ValidationError('Tiene que ser un número.')
+        if numero <= 0:
+            raise serializers.ValidationError('Tiene que ser mayor a cero.')
+        if self.instance and self.instance.clave != 'FACTOR_MONTO_INUSUAL' and not numero.is_integer():
+            raise serializers.ValidationError('Tiene que ser un número entero.')
+        return valor

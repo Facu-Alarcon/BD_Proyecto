@@ -38,7 +38,7 @@ export function IconVer(props) {
   );
 }
 
-// Campana (notificaciones). Sin uso por ahora: quedó de un diseño anterior de la barra de arriba
+// Campana (notificaciones): la de la barra de arriba y la del menú lateral
 export function IconCampana(props) {
   return (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"

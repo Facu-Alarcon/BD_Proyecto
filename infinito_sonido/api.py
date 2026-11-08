@@ -42,6 +42,7 @@ from .models import (
     Sueldos, Puestos, Puestos_x_Empleados,
     Horarios, Horarios_x_Empleados, Metodo_Pagos, Pagos, Detalles_de_Pago,
     Registro_Actividad, Token_Recuperacion,
+    Configuracion, Notificacion,
 )
 from .serializers import (
     TipoEquiposSerializer, EstadoEquiposSerializer, EquiposSerializer,
@@ -53,6 +54,7 @@ from .serializers import (
     HorariosSerializer, MetodoPagosSerializer, PagosSerializer,
     recalcular_saldos,
     RegistroActividadSerializer,
+    NotificacionSerializer, ConfiguracionSerializer,
 )
 from .permissions import permiso_codigo, permiso_modulo, permisos_del_usuario
 from .correos import enviar_contraseña_temporal, enviar_link_recuperacion
@@ -60,6 +62,7 @@ from .registro import RegistrarActividadMixin, registrar, texto_cambios, texto_v
 from .eliminar import DesactivarMixin, EliminarMixin
 from .disponibilidad import disponibilidad_del_dia, empleados_ocupados, equipos_faltantes
 from .seguridad import generar_contraseña_temporal, validar_contraseña_segura
+from .notificaciones import evaluar_reserva, evaluar_todas
 
 
 # Datos del usuario logueado que se le mandan al frontend al entrar (y en /api/me/).
@@ -809,6 +812,14 @@ class ReservasViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
             ),
         }
 
+    # Al registrar o modificar una reserva se revisan en el momento las reglas de alerta
+    # para esa reserva (saldo pendiente, sin confirmar y monto inusual, ver notificaciones.py)
+    def perform_create(self, serializer):
+        evaluar_reserva(serializer.save())
+
+    def perform_update(self, serializer):
+        evaluar_reserva(serializer.save())
+
     # Las reservas no se borran nunca de la base (pedido del Hito 3): se anulan con la
     # acción "anular" de abajo, que deja registrado quién, cuándo y por qué.
     def destroy(self, request, *args, **kwargs):
@@ -981,6 +992,10 @@ class PagosViewSet(RegistrarActividadMixin, viewsets.ModelViewSet):
                       f'Monto: {texto_valor(pago.monto)}\n' + texto_cambios(cambios, Registro_Actividad.MODIFICACION),
                       cambios=cambios)
 
+        # Al anular el pago vuelve a subir el saldo de la reserva: si el evento está cerca,
+        # puede corresponder el aviso de saldo pendiente
+        evaluar_reserva(pago.id_reserva)
+
         # Devolvemos el pago ya anulado para que la pantalla lo muestre actualizado
         return Response(self.get_serializer(pago).data)
 
@@ -1079,3 +1094,67 @@ class DashboardResumenView(APIView):
             'proximas_reservas': proximas,
         })
  
+
+
+# ---------------- Notificaciones y alertas (Parcial 2, módulo M3) ----------------
+
+class NotificacionesViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Bandeja de notificaciones. Cada usuario ve solo los avisos dirigidos a su perfil
+    (no hace falta un permiso aparte). Los avisos no se crean ni se editan desde acá:
+    los genera el sistema (notificaciones.py); el usuario solo los marca como leídos.
+      GET  /api/notificaciones/                 -> los últimos 200 avisos del perfil
+      GET  /api/notificaciones/no-leidas/       -> cuántos sin leer hay (el número de la campana)
+      POST /api/notificaciones/5/leer/          -> marca uno como leído
+      POST /api/notificaciones/leer-todas/      -> marca todos como leídos
+      POST /api/notificaciones/revisar-ahora/   -> corre el control diario en el momento
+    """
+    serializer_class = NotificacionSerializer
+
+    def get_queryset(self):
+        return (Notificacion.objects.filter(destino_perfil=self.request.user.id_perfil)
+                .select_related('destino_perfil').order_by('-fecha'))
+
+    def list(self, request, *args, **kwargs):
+        return Response(self.get_serializer(self.get_queryset()[:200], many=True).data)
+
+    @action(detail=False, methods=['get'], url_path='no-leidas')
+    def no_leidas(self, request):
+        return Response({'cantidad': self.get_queryset().filter(leida=False).count()})
+
+    @action(detail=True, methods=['post'], url_path='leer')
+    def leer(self, request, pk=None):
+        aviso = self.get_object()
+        if not aviso.leida:
+            aviso.leida = True
+            aviso.fecha_lectura = timezone.now()
+            aviso.save(update_fields=['leida', 'fecha_lectura'])
+        return Response(self.get_serializer(aviso).data)
+
+    @action(detail=False, methods=['post'], url_path='leer-todas')
+    def leer_todas(self, request):
+        marcadas = self.get_queryset().filter(leida=False).update(leida=True, fecha_lectura=timezone.now())
+        return Response({'marcadas': marcadas})
+
+    # Lo mismo que hace el comando diario, pero desde la pantalla. Solo quien gestiona la
+    # configuración, para que no se use como botón cualquiera
+    @action(detail=False, methods=['post'], url_path='revisar-ahora',
+            permission_classes=[permiso_codigo('gestionar_configuracion')])
+    def revisar_ahora(self, request):
+        resultado = evaluar_todas()
+        registrar(request, Registro_Actividad.MODIFICACION, 'Revisó las alertas en el momento', 'Notificaciones', '',
+                  f'Avisos nuevos: {sum(resultado.values())}')
+        return Response({'nuevos': sum(resultado.values()), 'por_tipo': resultado})
+
+
+class ConfiguracionViewSet(RegistrarActividadMixin, viewsets.mixins.ListModelMixin,
+                           viewsets.mixins.RetrieveModelMixin, viewsets.mixins.UpdateModelMixin,
+                           viewsets.GenericViewSet):
+    """
+    Parámetros de las alertas (tabla Configuracion). Se pueden ver y cambiar, pero no crear
+    ni borrar: los parámetros los define el sistema y el código los necesita a todos.
+    """
+    modulo_registro = 'Configuración'
+    queryset = Configuracion.objects.all().order_by('clave')
+    serializer_class = ConfiguracionSerializer
+    permission_classes = [permiso_modulo('configuracion')]

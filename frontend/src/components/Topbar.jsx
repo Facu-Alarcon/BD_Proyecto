@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { IconChevronDown, IconHamburguesa, IconLuna, IconSalir, IconSol } from './icons';
+import { IconCampana, IconChevronDown, IconHamburguesa, IconLuna, IconSalir, IconSol } from './icons';
 import { useTema } from '../hooks/useTema';
 import logo from '../assets/img/logonuevo.png';
 import './Topbar.css';
@@ -20,12 +21,33 @@ function iniciales(texto) {
 // Barra de arriba: el logo a la izquierda y, a la derecha, el circulito del usuario
 // con un menú que muestra su usuario, su perfil y el botón para cerrar sesión.
 // En el celular aparece además, a la izquierda, el botón que abre el menú lateral.
-// Al lado del usuario está el botón para pasar a tema claro u oscuro.
+// Al lado del usuario está el botón para pasar a tema claro u oscuro y la campana de
+// notificaciones, con la cantidad de avisos sin leer.
 export default function Topbar({ onAbrirMenu, menuAbierto }) {
   const { usuario, logout } = useAuth();
   const [abierto, setAbierto] = useState(false);
   const menuRef = useRef(null);
   const { tema, cambiarTema } = useTema();
+  const [sinLeer, setSinLeer] = useState(0);
+  const { pathname } = useLocation();
+
+  // Cantidad de avisos sin leer para el número de la campana. Se pide al cambiar de
+  // pantalla, cada un minuto, y cuando la bandeja avisa que se marcó algo como leído
+  // (evento "notificaciones-actualizadas", ver pages/notificaciones/Notificaciones.jsx)
+  useEffect(() => {
+    function contar() {
+      api.get('/notificaciones/no-leidas/')
+        .then(({ data }) => setSinLeer(data.cantidad))
+        .catch(() => {});
+    }
+    contar();
+    const intervalo = setInterval(contar, 60000);
+    window.addEventListener('notificaciones-actualizadas', contar);
+    return () => {
+      clearInterval(intervalo);
+      window.removeEventListener('notificaciones-actualizadas', contar);
+    };
+  }, [pathname]);
 
   // Cierra el menú si se hace clic en cualquier otro lado de la pantalla
   useEffect(() => {
@@ -68,6 +90,17 @@ export default function Topbar({ onAbrirMenu, menuAbierto }) {
       >
         {tema === 'oscuro' ? <IconSol /> : <IconLuna />}
       </button>
+
+      {/* Campana: lleva a la bandeja. El número rojo son los avisos sin leer (más de 99 dice "99+") */}
+      <Link
+        to="/notificaciones"
+        className="topbar-tema-btn topbar-campana"
+        aria-label={sinLeer ? `Notificaciones: ${sinLeer} sin leer` : 'Notificaciones'}
+        title="Notificaciones"
+      >
+        <IconCampana />
+        {sinLeer > 0 && <span className="topbar-campana-numero">{sinLeer > 99 ? '99+' : sinLeer}</span>}
+      </Link>
 
       {/* Menú del usuario: el botón lo abre y lo cierra; la flechita gira cuando está abierto */}
       <div className="topbar-menu" ref={menuRef}>

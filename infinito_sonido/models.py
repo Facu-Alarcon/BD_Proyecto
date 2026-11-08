@@ -639,3 +639,64 @@ class Token_Recuperacion(models.Model):
 
     def __str__(self):
         return f"Recuperación de {self.id_usuario} ({'usado' if self.usado else 'pendiente'})"
+
+
+# ===========================================================================
+# Notificaciones y alertas (Parcial 2, módulo M3)
+# ===========================================================================
+
+# Parámetros de las alertas (los umbrales). Se guardan acá y no en el código, así el
+# dueño los puede cambiar sin tocar el programa (ej: avisar del saldo 7 días antes).
+# Cada fila es un parámetro: la clave es su nombre y el valor se guarda como texto.
+class Configuracion(models.Model):
+    clave = models.CharField(max_length=50, primary_key=True)
+    valor = models.CharField(max_length=100)
+    descripcion = models.CharField(max_length=255)
+
+    class Meta:
+        verbose_name = "Parámetro de configuración"
+        verbose_name_plural = "Configuración"
+        ordering = ['clave']
+
+    def __str__(self):
+        return f"{self.clave} = {self.valor}"
+
+
+# Avisos que genera el sistema cuando se cumple una regla de alerta (ver notificaciones.py).
+# Cada aviso va dirigido a un perfil: lo ven todos los usuarios de ese perfil, y cuando
+# uno lo marca como leído queda leído para todos.
+class Notificacion(models.Model):
+    # Los tipos de aviso, uno por cada regla
+    SALDO_PENDIENTE = 'SALDO_PENDIENTE'
+    SIN_CONFIRMAR = 'SIN_CONFIRMAR'
+    MONTO_INUSUAL = 'MONTO_INUSUAL'
+    TIPO_CHOICES = [
+        (SALDO_PENDIENTE, 'Saldo pendiente'),
+        (SIN_CONFIRMAR, 'Reserva sin confirmar'),
+        (MONTO_INUSUAL, 'Monto inusual'),
+    ]
+
+    id_notificacion = models.AutoField(primary_key=True)
+    # db_index: la bandeja siempre ordena por fecha, los más nuevos primero
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
+    tipo = models.CharField(max_length=30, choices=TIPO_CHOICES)
+    mensaje = models.CharField(max_length=255)
+    # El perfil que tiene que ver el aviso
+    destino_perfil = models.ForeignKey(Perfiles, on_delete=models.CASCADE, db_column='destino_perfil')
+    # La reserva que originó el aviso (se guarda el número, para poder ir a verla)
+    id_objeto = models.IntegerField()
+    leida = models.BooleanField(default=False)
+    fecha_lectura = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Notificación"
+        verbose_name_plural = "Notificaciones"
+        ordering = ['-fecha']
+        # Evita avisos repetidos: la misma regla, para la misma reserva y el mismo perfil,
+        # se guarda una sola vez aunque el control diario corra muchas veces
+        constraints = [
+            models.UniqueConstraint(fields=['tipo', 'id_objeto', 'destino_perfil'], name='notificacion_sin_repetir'),
+        ]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - Reserva {self.id_objeto} - {self.destino_perfil}"
