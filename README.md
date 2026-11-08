@@ -100,3 +100,8 @@ Para borrar tambien la base de datos:
 ```bash
 docker-compose down -v
 ```
+
+## Comando para que funcione analitica.py
+```
+docker exec -it Infinito_Sonido_web python analitica/analitica.py --desde 2026-06-01 --hasta 2027-02-28
+```
