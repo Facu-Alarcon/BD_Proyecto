@@ -1,6 +1,7 @@
 /* Menú lateral: ocupa todo el alto que queda debajo de la barra de arriba, de punta a punta.
-   No tiene scroll propio: las filas se reparten el alto disponible (ver .sidebar-link) y, a
-   medida que se abren secciones, todas se achican para que siga entrando todo. */
+   No tiene scroll propio: las filas se reparten todo el alto disponible (ver .sidebar-link),
+   así no sobra espacio azul abajo, y a medida que se abren secciones todas se achican para
+   que siga entrando todo. */
 .sidebar {
   width: 260px;
   min-width: 260px;
@@ -42,12 +43,12 @@
 }
 
 /* Cada fila (Inicio, el nombre de una sección o una pantalla de una sección abierta) crece por
-   igual (flex: 1) hasta un máximo de 44px; si no entran, todas se achican por igual.
-   min-height: 0 deja que se achiquen si la pantalla es baja, así siempre entran todas. */
+   igual (flex: 1) hasta llenar el alto del menú. Al abrir secciones aparecen más filas y todas
+   se achican por igual. min-height: 0 deja que se achiquen si la pantalla es baja, así siempre
+   entran todas. */
 .sidebar-link {
   flex: 1 1 0;
   min-height: 0;
-  max-height: 44px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -122,11 +123,10 @@
 
 /* Las pantallas de una sección abierta: debajo de su nombre, con el fondo apenas más claro y
    un poco más a la derecha. --filas es cuántas hay: el contenedor pesa lo mismo que esa cantidad
-   de filas sueltas, así todas las filas del menú se achican por igual. */
+   de filas sueltas, así todas las filas del menú miden lo mismo. */
 .sidebar-submenu {
   flex: var(--filas) 1 0px;
   min-height: 0;
-  max-height: calc(var(--filas) * 44px + (var(--filas) - 1) * 2px);
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -236,19 +236,19 @@
     box-shadow: 8px 0 24px rgba(4, 10, 30, 0.3);
   }
 
-  /* Cada sección con un alto fijo (en el celular hay lugar para scrollear el menú) */
+  /* Las filas se reparten el alto del menú, pero nunca miden menos de 44px (se pueden tocar
+     bien con el dedo): si no entran todas, el menú se scrollea */
   .sidebar-link {
-    flex: 0 0 auto;
+    flex: 1 0 44px;
     min-height: 44px;
-    max-height: none;
     justify-content: flex-start;
     padding: 0 14px;
   }
 
-  /* Las pantallas de una sección abierta ocupan su propio alto y mantienen la sangría */
+  /* Las pantallas de una sección abierta mantienen la sangría y miden lo que miden sus filas
+     (mínimo 44px cada una) */
   .sidebar-submenu {
-    flex: 0 0 auto;
-    max-height: none;
+    flex: var(--filas) 0 calc(var(--filas) * 44px + (var(--filas) - 1) * 2px);
   }
 
   .sidebar-submenu .sidebar-link {
