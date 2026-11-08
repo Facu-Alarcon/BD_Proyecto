@@ -34,6 +34,12 @@ const REPORTES = [
     nombre: 'Carga de trabajo de los empleados',
     descripcion: 'A cuántos eventos fue asignado cada empleado en cada mes. Sirve para repartir mejor el trabajo, ver quién está sobrecargado y en qué meses hace falta más personal.',
   },
+  {
+    to: '/reportes/contratado-cobrado',
+    nombre: 'Contratado vs. cobrado',
+    descripcion: 'Lo que se contrató en las reservas al lado de lo que se cobró en los pagos, mes a mes, y cuánto falta cobrar. Sirve para controlar la cobranza y saber qué saldos reclamar.',
+    permiso: 'ver_reportes_financieros',
+  },
 ];
 
 export default function ReportesInicio() {
