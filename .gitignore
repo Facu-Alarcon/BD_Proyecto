@@ -16,3 +16,6 @@ venv/
 
 # Logs de errores del servidor (los genera Django en cada compu)
 logs/
+
+# Gráficos que genera el script de analítica (M1): se crean de nuevo cada vez que se corre
+analitica/salida/
