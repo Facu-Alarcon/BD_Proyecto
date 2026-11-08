@@ -6,6 +6,7 @@ import {
   IconEmpleados, IconPuestos, IconHorarios, IconSueldos, IconUsuarios, IconPerfiles,
   IconPermisos, IconMetodosPago, IconPagos, IconRegistro, IconReportes,
   IconComercial, IconInventario, IconPersonal, IconSeguridad, IconCobros, IconInformes, IconCampana,
+  IconContraer,
 } from './icons';
 import './Sidebar.css';
 
@@ -101,7 +102,9 @@ function useMenuCompacto() {
 }
 
 // abierto: solo importa en el celular, donde el menú va escondido (lo maneja Layout.jsx)
-export default function Sidebar({ abierto = false }) {
+// onOcultar: lo llama la flechita « de arriba de todo; Layout.jsx decide si esconde el menú
+// (pantallas grandes y medianas) o cierra el cajón (celular)
+export default function Sidebar({ abierto = false, onOcultar }) {
   const { usuario } = useAuth();
   const { pathname } = useLocation();
   const permisos = usuario?.permisos || [];
@@ -181,6 +184,21 @@ export default function Sidebar({ abierto = false }) {
   return (
     <aside className={`sidebar${abierto ? ' abierto' : ''}`}>
       <nav className="sidebar-nav" onScroll={() => ocultarTooltip()}>
+        {/* Flechita « arriba a la izquierda: esconde el menú. Para volver a mostrarlo aparece
+            el botón "Menú" a la izquierda del contenido (ver BotonMenuLateral.jsx) */}
+        <div className="sidebar-cabecera no-imprimir">
+          <button
+            type="button"
+            className="sidebar-ocultar"
+            onClick={() => { ocultarTooltip(); onOcultar?.(); }}
+            aria-label="Ocultar menú"
+            title={compacto ? undefined : 'Ocultar menú'}
+            {...eventosTooltip('Ocultar menú')}
+          >
+            <IconContraer width={23} height={23} aria-hidden="true" />
+          </button>
+        </div>
+
         {renderEnlace(ITEM_INICIO)}
 
         {NAV_GRUPOS.map((grupo) => {

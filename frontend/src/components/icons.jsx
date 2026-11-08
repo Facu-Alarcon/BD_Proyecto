@@ -81,6 +81,18 @@ export function IconHamburguesa(props) {
   );
 }
 
+// Doble flechita hacia la izquierda («): esconde el menú lateral (arriba de todo en el menú).
+// No se usa la flecha de volver para no confundirla con el botón de volver de las pantallas
+export function IconContraer(props) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <polyline points="11 17 6 12 11 7" />
+      <polyline points="18 17 13 12 18 7" />
+    </svg>
+  );
+}
+
 // Sol y luna: botón para pasar a tema claro u oscuro (barra de arriba)
 export function IconSol(props) {
   return (
