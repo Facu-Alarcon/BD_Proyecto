@@ -72,6 +72,7 @@ import ReporteUsoEquipos from './pages/reportes/ReporteUsoEquipos';
 import ReporteDemandaServicios from './pages/reportes/ReporteDemandaServicios';
 import ReporteEvolucionIngresos from './pages/reportes/ReporteEvolucionIngresos';
 import ReporteCargaEmpleados from './pages/reportes/ReporteCargaEmpleados';
+import ReporteContratadoCobrado from './pages/reportes/ReporteContratadoCobrado';
 import ReporteComparacionPeriodos from './pages/reportes/ReporteComparacionPeriodos';
 import RecuperarClave from './pages/RecuperarClave';
 import RestablecerConLink from './pages/RestablecerConLink';
@@ -199,6 +200,8 @@ export default function App() {
               {/* Reporte sensible: además de Ver Reportes pide "Ver Reportes Financieros" (ver_reportes_financieros) */}
               <Route path="evolucion-ingresos" element={<RequierePermiso modulo="reportes_financieros"><ReporteEvolucionIngresos /></RequierePermiso>} />
               <Route path="carga-empleados" element={<ReporteCargaEmpleados />} />
+              {/* Reporte sensible que cruza Reservas con Pagos: también pide "Ver Reportes Financieros" */}
+              <Route path="contratado-cobrado" element={<RequierePermiso modulo="reportes_financieros"><ReporteContratadoCobrado /></RequierePermiso>} />
               <Route path="comparacion-periodos" element={<ReporteComparacionPeriodos />} />
             </Route>
 

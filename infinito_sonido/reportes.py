@@ -5,6 +5,7 @@
 # REPORTE 3 - EVOLUCIÓN MENSUAL DE INGRESOS Y EVENTOS
 # REPORTE 4 - COMPARACIÓN DE PERÍODOS
 # REPORTE 5 - CARGA DE TRABAJO DE LOS EMPLEADOS
+# REPORTE 6 - CONTRATADO VS. COBRADO (cruza Reservas con Pagos)
 
 import calendar
 import datetime
@@ -16,8 +17,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .graficos import agregados, barras_agrupadas, barras_por_mes, heatmap, lineas_con_tendencia, pesos_corto, torta
-from .models import Equipos, Equipos_x_Servicios, Reservas, Reservas_x_Servicios, Servicios, Tipo_Equipos
+from .graficos import agregados, barras_agrupadas, barras_dobles_por_mes, barras_por_mes, heatmap, lineas_con_tendencia, pesos_corto, torta
+from .models import Equipos, Equipos_x_Servicios, Pagos, Reservas, Reservas_x_Servicios, Servicios, Tipo_Equipos
 from .models import Detalles_Reservas, Empleados, Puestos, Puestos_x_Empleados
 from .permissions import permiso_codigo, permiso_modulo
 
@@ -764,5 +765,119 @@ class ReporteCargaEmpleadosView(APIView):
                         | Q(pk__in=Detalles_Reservas.objects.values('id_empleado'))
                     ).order_by('apellido_emp', 'nombre_emp')
                 ],
+            },
+        })
+
+
+# REPORTE 6 - CONTRATADO VS. COBRADO
+
+# Los estados que se pueden elegir en el filtro (las anuladas nunca entran al reporte)
+ESTADOS_COBRANZA = [('PENDIENTE', 'Pendiente'), ('CONFIRMADA', 'Confirmada'), ('FINALIZADA', 'Finalizada')]
+
+
+class ReporteContratadoCobradoView(APIView):
+    """
+    Reporte "Contratado vs. cobrado por mes". Es el que cruza los dos procesos del sistema:
+    las Reservas (lo que se contrató) con los Pagos (lo que efectivamente se cobró).
+    Se pide así: /api/reportes/contratado-cobrado/?desde=2026-01&hasta=2026-12
+    Opcionalmente se le puede agregar &estado=CONFIRMADA para ver solo las reservas en ese estado.
+
+    Todo se agrupa por el mes del EVENTO: por cada mes se toman las reservas de ese mes y se
+    compara lo que suman (monto_total) con lo que se pagó de ESAS reservas, sin importar cuándo
+    se pagó. Así las dos barras hablan de las mismas reservas y el saldo coincide con el que
+    muestra el sistema en cada reserva.
+      - contratado: la suma de las reservas del mes (sin las anuladas)
+      - cobrado: la suma de los pagos vigentes de esas reservas (los anulados no cuentan)
+      - saldo: lo que falta cobrar. Se calcula reserva por reserva, igual que recalcular_saldos():
+               si a una reserva le pagaron de más, no resta del saldo de las otras.
+    """
+    # Muestra plata del negocio, así que es un reporte sensible: pide "Ver Reportes Financieros"
+    permission_classes = [permiso_codigo('ver_reportes_financieros')]
+
+    def get(self, request):
+        # ---------- 1) Leemos lo que eligió el usuario en los filtros ----------
+        desde, hasta, meses, error = _leer_periodo(request)
+        if error:
+            return error
+
+        estado = request.query_params.get('estado')
+        if estado not in dict(ESTADOS_COBRANZA):
+            estado = None
+
+        # ---------- 2) Las reservas del período (proceso de Reserva) ----------
+        reservas = _reservas_del_periodo(desde, hasta)
+        if estado:
+            reservas = reservas.filter(estado_reserva=estado)
+        reservas = list(reservas.values_list('id_reserva', 'fecha_evento', 'monto_total'))
+
+        # ---------- 3) Lo pagado de cada una de esas reservas (proceso de Pago) ----------
+        # pagado[id_reserva] = suma de sus pagos vigentes
+        pagado = defaultdict(float)
+        pagos = Pagos.objects.activos().filter(
+            id_reserva__in=[r[0] for r in reservas]
+        ).values_list('id_reserva_id', 'monto')
+        for id_reserva, monto in pagos:
+            pagado[id_reserva] += monto
+
+        # ---------- 4) Sumamos mes por mes (por el mes del evento) ----------
+        contratado = defaultdict(float)
+        cobrado = defaultdict(float)
+        saldo = defaultdict(float)
+        cantidad = defaultdict(int)        # cuántas reservas tiene el mes
+        con_saldo = defaultdict(int)       # cuántas de ellas todavía deben algo
+        for id_reserva, fecha, monto_total in reservas:
+            mes = (fecha.year, fecha.month)
+            debe = max(monto_total - pagado[id_reserva], 0)
+            contratado[mes] += monto_total
+            cobrado[mes] += pagado[id_reserva]
+            saldo[mes] += debe
+            cantidad[mes] += 1
+            if debe > 0:
+                con_saldo[mes] += 1
+
+        # ---------- 5) Armamos una fila por mes ----------
+        columnas = []
+        for anio, mes in meses:
+            clave = (anio, mes)
+            columnas.append({
+                'anio': anio,
+                'mes': mes,
+                'etiqueta': f'{MESES[mes - 1]} {anio}',
+                'contratado': round(contratado[clave], 2),
+                'cobrado': round(cobrado[clave], 2),
+                'saldo': round(saldo[clave], 2),
+                'reservas': cantidad[clave],
+                'reservas_con_saldo': con_saldo[clave],
+                # Qué parte de lo contratado ya se cobró. Sin reservas no hay porcentaje.
+                'porcentaje_cobrado': round(cobrado[clave] / contratado[clave] * 100, 1) if contratado[clave] else None,
+            })
+
+        total_contratado = round(sum(c['contratado'] for c in columnas), 2)
+        total_cobrado = round(sum(c['cobrado'] for c in columnas), 2)
+
+        return Response({
+            'periodo': {'desde': f'{desde[0]}-{desde[1]:02d}', 'hasta': f'{hasta[0]}-{hasta[1]:02d}'},
+            'meses': columnas,
+            # Barras dobles: por cada mes, lo contratado al lado de lo cobrado (pandas + matplotlib)
+            'grafico': barras_dobles_por_mes(
+                columnas,
+                {
+                    'Contratado (reservas)': [c['contratado'] for c in columnas],
+                    'Cobrado (pagos)': [c['cobrado'] for c in columnas],
+                },
+                'Pesos',
+                pesos_corto,
+            ),
+            # Total, promedio, máximo, mínimo y desvío por mes del saldo pendiente (numpy, ver graficos.py)
+            'agregados': agregados(columnas, [c['saldo'] for c in columnas]),
+            'total_contratado': total_contratado,
+            'total_cobrado': total_cobrado,
+            'total_saldo': round(sum(c['saldo'] for c in columnas), 2),
+            'total_reservas': len(reservas),
+            'total_reservas_con_saldo': sum(c['reservas_con_saldo'] for c in columnas),
+            'porcentaje_cobrado': round(total_cobrado / total_contratado * 100, 1) if total_contratado else None,
+            # La lista para armar el filtro de estado
+            'opciones': {
+                'estados': [{'id': codigo, 'nombre': nombre} for codigo, nombre in ESTADOS_COBRANZA],
             },
         })

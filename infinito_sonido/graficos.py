@@ -5,9 +5,10 @@
 # la muestra con un <img> (y la puede descargar como archivo .png). Así el gráfico siempre
 # coincide con los números de la tabla, porque sale de los mismos datos.
 #
-# Hay cinco tipos de gráfico:
+# Hay seis tipos de gráfico:
 #   barras_por_mes        -> barras simples, una por mes (Uso de equipos, Demanda, Eventos, Carga)
 #   barras_agrupadas      -> dos o más barras juntas por categoría (Comparación de períodos)
+#   barras_dobles_por_mes -> dos barras juntas por mes (Contratado vs. cobrado)
 #   torta                 -> qué parte del total es cada categoría (Demanda por servicio)
 #   lineas_con_tendencia  -> línea mes a mes con su recta de tendencia (Evolución de ingresos)
 #   heatmap               -> mapa de calor de filas x meses (Carga de trabajo de los empleados)
@@ -220,6 +221,48 @@ def barras_agrupadas(categorias, series, eje_y, formato=None):
     ax.spines['left'].set_color(PISO)
     ax.tick_params(axis='y', labelsize=9, colors=TEXTO, length=0)
     ax.tick_params(axis='x', labelsize=8, colors=TEXTO_SUAVE, length=0)
+    # La leyenda arriba del gráfico, en una fila, para que no tape ninguna barra
+    ax.legend(frameon=False, fontsize=9, loc='lower left', bbox_to_anchor=(0, 1.0), ncol=len(series))
+    fig.tight_layout()
+    return {'imagen': _a_png(fig)}
+
+
+# ---------------------------------------------------------------------------
+# BARRAS DOBLES POR MES
+# ---------------------------------------------------------------------------
+
+def barras_dobles_por_mes(meses, series, eje_y, formato=None):
+    """
+    Dibuja dos (o más) barras paradas, una al lado de la otra, por cada mes. Se usa en el
+    reporte Contratado vs. cobrado: por cada mes, lo que se reservó al lado de lo que se pagó.
+    Es como barras_agrupadas, pero vertical y con los meses abajo, que es como se lee una
+    evolución en el tiempo. Devuelve {'imagen': 'data:image/png;base64,...'}.
+
+      meses   -> la lista de meses del reporte: [{'anio': 2026, 'mes': 3, 'etiqueta': 'mar 2026'}, ...]
+      series  -> {nombre de la serie: [valor de cada mes]}, ej: {'Contratado': [...], 'Cobrado': [...]}
+      eje_y   -> qué se mide (ej: "Pesos")
+      formato -> (opcional) cómo se escribe cada número, ej: pesos_corto
+    """
+    formato = formato or (lambda v: f'{v:g}')
+
+    # pandas arma la tabla: una fila por mes ("mar\n2026", el año abajo) y una columna por serie
+    datos = pd.DataFrame(series, index=[m['etiqueta'].replace(' ', '\n') for m in meses], dtype='float')
+
+    fig, ax = plt.subplots(figsize=(TAMANIO[0], TAMANIO[1] + 0.6), dpi=RESOLUCION)
+    datos.plot.bar(ax=ax, color=[VERDE, AZUL, '#c98a1b'][:len(series)], width=0.75, zorder=3)
+
+    # Hasta 12 meses se escribe el número arriba de cada barra, parado (en vertical) para que
+    # dos barras de altura parecida no se pisen los números. Con más meses no entran y se
+    # leen en la tabla.
+    if len(meses) <= 12:
+        for barras in ax.containers:
+            ax.bar_label(barras, labels=[formato(b.get_height()) if b.get_height() else '' for b in barras],
+                         padding=3, fontsize=7, color=TEXTO, rotation=90)
+
+    _estilo_ejes(ax, eje_y, formato)
+    # Lugar de sobra arriba para que entren los números parados
+    ax.set_ylim(0, max(np.nanmax(datos.to_numpy()), 1) * (1.3 if len(meses) <= 12 else 1.15))
+    ax.set_xlabel('Mes del evento', color=TEXTO_SUAVE, fontsize=9, labelpad=6)
     # La leyenda arriba del gráfico, en una fila, para que no tape ninguna barra
     ax.legend(frameon=False, fontsize=9, loc='lower left', bbox_to_anchor=(0, 1.0), ncol=len(series))
     fig.tight_layout()
