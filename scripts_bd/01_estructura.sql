@@ -3,9 +3,8 @@
 -- =====================================================================
 -- Crea todas las tablas (vacías) con sus claves primarias, claves
 -- foráneas, índices y restricciones de unicidad.
--- Generado desde la base después de aplicar todas las migraciones de
--- Django (hasta la 0023) y actualizado a mano con los cambios de la 0024
--- (baja física) y de la 0027 (columna cambios del registro de actividad).
+-- Generado desde una base vacía después de aplicar todas las migraciones
+-- de Django (hasta la 0030), así coincide exacto con lo que crea Docker.
 -- Motor: MySQL 8.0, codificación utf8mb4.
 --
 -- Bajas: eliminar borra el registro, salvo que tenga algo asociado (las
@@ -15,7 +14,7 @@
 --
 -- Orden de carga (sobre una base vacía):
 --   1. 01_estructura.sql        -> tablas
---   2. 02_datos_iniciales.sql   -> permisos, estados de equipo y control de Django
+--   2. 02_datos_iniciales.sql   -> permisos, estados de equipo, parámetros de las alertas y control de Django
 --   3. 03_datos_de_prueba.sql   -> datos de ejemplo (perfiles, usuarios, clientes, reservas...)
 --
 -- Si se usa Docker no hace falta este script: el contenedor web crea
@@ -27,10 +26,13 @@
 --     clientes, servicios, empleados, equipos_x_servicios, pagos, detalles_de_pago
 --   Seguridad: usuarios, perfiles, permisos, permisos_x_perfiles, sesiontoken,
 --     token_recuperacion, registro_actividad
+--   Notificaciones y alertas (Parcial 2, M3): notificacion (los avisos de
+--     cada perfil) y configuracion (los umbrales de las reglas)
 --   Resto: equipos, tipo_equipos, estado_equipos, puestos, puestos_x_empleados,
 --     sueldos, horarios, horarios_x_empleados, metodo_pagos
 -- Las tablas auth_*, django_* son internas de Django.
 -- =====================================================================
+
 
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -184,6 +186,15 @@ CREATE TABLE `infinito_sonido_clientes` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `infinito_sonido_configuracion` (
+  `clave` varchar(50) NOT NULL,
+  `valor` varchar(100) NOT NULL,
+  `descripcion` varchar(255) NOT NULL,
+  PRIMARY KEY (`clave`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `infinito_sonido_detalles_de_pago` (
   `id_detalle_pago` int NOT NULL AUTO_INCREMENT,
   `id_metodo_pago` int NOT NULL,
@@ -296,6 +307,24 @@ CREATE TABLE `infinito_sonido_metodo_pagos` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `infinito_sonido_notificacion` (
+  `id_notificacion` int NOT NULL AUTO_INCREMENT,
+  `fecha` datetime(6) NOT NULL,
+  `tipo` varchar(30) NOT NULL,
+  `mensaje` varchar(255) NOT NULL,
+  `id_objeto` int NOT NULL,
+  `leida` tinyint(1) NOT NULL,
+  `fecha_lectura` datetime(6) DEFAULT NULL,
+  `destino_perfil` int NOT NULL,
+  PRIMARY KEY (`id_notificacion`),
+  UNIQUE KEY `notificacion_sin_repetir` (`tipo`,`id_objeto`,`destino_perfil`),
+  KEY `infinito_sonido_noti_destino_perfil_12cbe6ff_fk_infinito_` (`destino_perfil`),
+  KEY `infinito_sonido_notificacion_fecha_28579d58` (`fecha`),
+  CONSTRAINT `infinito_sonido_noti_destino_perfil_12cbe6ff_fk_infinito_` FOREIGN KEY (`destino_perfil`) REFERENCES `infinito_sonido_perfiles` (`id_perfil`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `infinito_sonido_pagos` (
   `id_pago` int NOT NULL AUTO_INCREMENT,
   `monto` double NOT NULL,
@@ -307,9 +336,9 @@ CREATE TABLE `infinito_sonido_pagos` (
   `id_usuario_anulacion` int DEFAULT NULL,
   PRIMARY KEY (`id_pago`),
   KEY `infinito_sonido_pago_id_reserva_d67b2ef5_fk_infinito_` (`id_reserva`),
-  KEY `infinito_sonido_pago_id_usuario_anulacion_fk_infinito_` (`id_usuario_anulacion`),
+  KEY `infinito_sonido_pago_id_usuario_anulacion_bbd5e7bd_fk_infinito_` (`id_usuario_anulacion`),
   CONSTRAINT `infinito_sonido_pago_id_reserva_d67b2ef5_fk_infinito_` FOREIGN KEY (`id_reserva`) REFERENCES `infinito_sonido_reservas` (`id_reserva`),
-  CONSTRAINT `infinito_sonido_pago_id_usuario_anulacion_fk_infinito_` FOREIGN KEY (`id_usuario_anulacion`) REFERENCES `infinito_sonido_usuarios` (`id_usuario`)
+  CONSTRAINT `infinito_sonido_pago_id_usuario_anulacion_bbd5e7bd_fk_infinito_` FOREIGN KEY (`id_usuario_anulacion`) REFERENCES `infinito_sonido_usuarios` (`id_usuario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

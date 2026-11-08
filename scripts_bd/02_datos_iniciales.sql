@@ -3,14 +3,19 @@
 -- =====================================================================
 -- Datos que el sistema necesita para funcionar, que normalmente cargan
 -- las migraciones de Django:
---   - infinito_sonido_permisos: los 33 permisos (ver_/gestionar_ de cada
---     módulo, ver_registro, anular_reservas y ver_reportes)
+--   - infinito_sonido_permisos: los 36 permisos (ver_/gestionar_ de cada
+--     módulo, ver_registro, anular_reservas, ver_reportes y
+--     ver_reportes_financieros, que es el del reporte sensible de ingresos)
 --   - infinito_sonido_estado_equipos: Disponible, En uso, En reparación
+--   - infinito_sonido_configuracion: los umbrales de las alertas (días de
+--     aviso, desvíos para el monto inusual). Se cambian desde la pantalla
+--     Configuración.
 --   - django_migrations, django_content_type, auth_permission: control
---     interno de Django, para que sepa que la base ya está al día y no
---     intente crear las tablas de nuevo.
+--     interno de Django, para que sepa que la base ya está al día (hasta
+--     la migración 0030) y no intente crear las tablas de nuevo.
 -- Cargar después de 01_estructura.sql.
 -- =====================================================================
+
 
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -59,15 +64,27 @@ INSERT INTO `infinito_sonido_permisos` (`id_permiso`, `nombre_permiso`, `descrip
 INSERT INTO `infinito_sonido_permisos` (`id_permiso`, `nombre_permiso`, `descripcion_permiso`, `estado_permiso`, `codigo`) VALUES (31,'Ver Reportes','Permite ver los reportes del sistema (uso de equipos, etc.).',1,'ver_reportes');
 INSERT INTO `infinito_sonido_permisos` (`id_permiso`, `nombre_permiso`, `descripcion_permiso`, `estado_permiso`, `codigo`) VALUES (32,'Ver Estados de equipo','Permite ver el listado de Estados de equipo.',1,'ver_estados_equipo');
 INSERT INTO `infinito_sonido_permisos` (`id_permiso`, `nombre_permiso`, `descripcion_permiso`, `estado_permiso`, `codigo`) VALUES (33,'Gestionar Estados de equipo','Permite crear, editar y eliminar en Estados de equipo.',1,'gestionar_estados_equipo');
+INSERT INTO `infinito_sonido_permisos` (`id_permiso`, `nombre_permiso`, `descripcion_permiso`, `estado_permiso`, `codigo`) VALUES (34,'Ver Configuración','Permite ver los parámetros de las alertas.',1,'ver_configuracion');
+INSERT INTO `infinito_sonido_permisos` (`id_permiso`, `nombre_permiso`, `descripcion_permiso`, `estado_permiso`, `codigo`) VALUES (35,'Gestionar Configuración','Permite cambiar los parámetros de las alertas y revisarlas en el momento.',1,'gestionar_configuracion');
+INSERT INTO `infinito_sonido_permisos` (`id_permiso`, `nombre_permiso`, `descripcion_permiso`, `estado_permiso`, `codigo`) VALUES (36,'Ver Reportes Financieros','Permite ver los reportes con información de ingresos del negocio (evolución de ingresos).',1,'ver_reportes_financieros');
 /*!40000 ALTER TABLE `infinito_sonido_permisos` ENABLE KEYS */;
 UNLOCK TABLES;
 
 LOCK TABLES `infinito_sonido_estado_equipos` WRITE;
 /*!40000 ALTER TABLE `infinito_sonido_estado_equipos` DISABLE KEYS */;
 INSERT INTO `infinito_sonido_estado_equipos` (`id_estadoeq`, `nombre_estadoeq`) VALUES (1,'Disponible');
-INSERT INTO `infinito_sonido_estado_equipos` (`id_estadoeq`, `nombre_estadoeq`) VALUES (2,'En uso');
 INSERT INTO `infinito_sonido_estado_equipos` (`id_estadoeq`, `nombre_estadoeq`) VALUES (3,'En reparación');
+INSERT INTO `infinito_sonido_estado_equipos` (`id_estadoeq`, `nombre_estadoeq`) VALUES (2,'En uso');
 /*!40000 ALTER TABLE `infinito_sonido_estado_equipos` ENABLE KEYS */;
+UNLOCK TABLES;
+
+LOCK TABLES `infinito_sonido_configuracion` WRITE;
+/*!40000 ALTER TABLE `infinito_sonido_configuracion` DISABLE KEYS */;
+INSERT INTO `infinito_sonido_configuracion` (`clave`, `valor`, `descripcion`) VALUES ('DIAS_AVISO_CONFIRMACION','10','Días antes del evento en que se avisa que una reserva sigue sin confirmar.');
+INSERT INTO `infinito_sonido_configuracion` (`clave`, `valor`, `descripcion`) VALUES ('DIAS_AVISO_SALDO','7','Días antes del evento en que se avisa que una reserva todavía tiene saldo pendiente.');
+INSERT INTO `infinito_sonido_configuracion` (`clave`, `valor`, `descripcion`) VALUES ('FACTOR_MONTO_INUSUAL','3','Cuántos desvíos por encima del promedio tiene que estar el monto de una reserva para avisar que es inusual.');
+INSERT INTO `infinito_sonido_configuracion` (`clave`, `valor`, `descripcion`) VALUES ('MINIMO_RESERVAS_COMPARAR','5','Cuántas reservas anteriores tiene que haber como mínimo para calcular si un monto es inusual.');
+/*!40000 ALTER TABLE `infinito_sonido_configuracion` ENABLE KEYS */;
 UNLOCK TABLES;
 
 LOCK TABLES `django_content_type` WRITE;
@@ -78,6 +95,7 @@ INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (2,'auth',
 INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (4,'auth','user');
 INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (5,'contenttypes','contenttype');
 INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (7,'infinito_sonido','clientes');
+INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (32,'infinito_sonido','configuracion');
 INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (8,'infinito_sonido','detalles_de_pago');
 INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (9,'infinito_sonido','detalles_reservas');
 INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (10,'infinito_sonido','empleados');
@@ -87,6 +105,7 @@ INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (29,'infin
 INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (13,'infinito_sonido','horarios');
 INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (14,'infinito_sonido','horarios_x_empleados');
 INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (15,'infinito_sonido','metodo_pagos');
+INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (33,'infinito_sonido','notificacion');
 INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (16,'infinito_sonido','pagos');
 INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (17,'infinito_sonido','perfiles');
 INSERT INTO `django_content_type` (`id`, `app_label`, `model`) VALUES (26,'infinito_sonido','permisos');
@@ -232,56 +251,67 @@ INSERT INTO `auth_permission` (`id`, `name`, `content_type_id`, `codename`) VALU
 INSERT INTO `auth_permission` (`id`, `name`, `content_type_id`, `codename`) VALUES (122,'Can change Token de recuperación',31,'change_token_recuperacion');
 INSERT INTO `auth_permission` (`id`, `name`, `content_type_id`, `codename`) VALUES (123,'Can delete Token de recuperación',31,'delete_token_recuperacion');
 INSERT INTO `auth_permission` (`id`, `name`, `content_type_id`, `codename`) VALUES (124,'Can view Token de recuperación',31,'view_token_recuperacion');
+INSERT INTO `auth_permission` (`id`, `name`, `content_type_id`, `codename`) VALUES (125,'Can add Parámetro de configuración',32,'add_configuracion');
+INSERT INTO `auth_permission` (`id`, `name`, `content_type_id`, `codename`) VALUES (126,'Can change Parámetro de configuración',32,'change_configuracion');
+INSERT INTO `auth_permission` (`id`, `name`, `content_type_id`, `codename`) VALUES (127,'Can delete Parámetro de configuración',32,'delete_configuracion');
+INSERT INTO `auth_permission` (`id`, `name`, `content_type_id`, `codename`) VALUES (128,'Can view Parámetro de configuración',32,'view_configuracion');
+INSERT INTO `auth_permission` (`id`, `name`, `content_type_id`, `codename`) VALUES (129,'Can add Notificación',33,'add_notificacion');
+INSERT INTO `auth_permission` (`id`, `name`, `content_type_id`, `codename`) VALUES (130,'Can change Notificación',33,'change_notificacion');
+INSERT INTO `auth_permission` (`id`, `name`, `content_type_id`, `codename`) VALUES (131,'Can delete Notificación',33,'delete_notificacion');
+INSERT INTO `auth_permission` (`id`, `name`, `content_type_id`, `codename`) VALUES (132,'Can view Notificación',33,'view_notificacion');
 /*!40000 ALTER TABLE `auth_permission` ENABLE KEYS */;
 UNLOCK TABLES;
 
 LOCK TABLES `django_migrations` WRITE;
 /*!40000 ALTER TABLE `django_migrations` DISABLE KEYS */;
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (1,'contenttypes','0001_initial','2026-10-07 03:22:58.450696');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (2,'auth','0001_initial','2026-10-07 03:22:59.181382');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (3,'admin','0001_initial','2026-10-07 03:22:59.372651');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (4,'admin','0002_logentry_remove_auto_add','2026-10-07 03:22:59.382280');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (5,'admin','0003_logentry_add_action_flag_choices','2026-10-07 03:22:59.390391');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (6,'contenttypes','0002_remove_content_type_name','2026-10-07 03:22:59.535144');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (7,'auth','0002_alter_permission_name_max_length','2026-10-07 03:22:59.612843');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (8,'auth','0003_alter_user_email_max_length','2026-10-07 03:22:59.630500');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (9,'auth','0004_alter_user_username_opts','2026-10-07 03:22:59.639436');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (10,'auth','0005_alter_user_last_login_null','2026-10-07 03:22:59.700742');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (11,'auth','0006_require_contenttypes_0002','2026-10-07 03:22:59.706313');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (12,'auth','0007_alter_validators_add_error_messages','2026-10-07 03:22:59.714084');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (13,'auth','0008_alter_user_username_max_length','2026-10-07 03:22:59.787804');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (14,'auth','0009_alter_user_last_name_max_length','2026-10-07 03:22:59.877263');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (15,'auth','0010_alter_group_name_max_length','2026-10-07 03:22:59.902226');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (16,'auth','0011_update_proxy_permissions','2026-10-07 03:22:59.911914');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (17,'auth','0012_alter_user_first_name_max_length','2026-10-07 03:23:00.004319');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (18,'infinito_sonido','0001_initial','2026-10-07 03:23:00.154687');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (19,'infinito_sonido','0002_empleado','2026-10-07 03:23:00.184508');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (20,'infinito_sonido','0003_equipo_equipoporservicio_tipoequipo_servicio_and_more','2026-10-07 03:23:00.551305');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (21,'infinito_sonido','0004_clientes_detalles_de_pago_detalles_reservas_and_more','2026-10-07 03:23:03.150319');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (22,'infinito_sonido','0005_permisos_permisos_x_perfiles_and_more','2026-10-07 03:23:03.504568');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (23,'infinito_sonido','0006_sesiontoken','2026-10-07 03:23:03.613603');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (24,'infinito_sonido','0007_reservas_nombre_evento_alter_reservas_estado_reserva','2026-10-07 03:23:03.801176');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (25,'infinito_sonido','0008_estado_equipos','2026-10-07 03:23:04.229886');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (26,'infinito_sonido','0009_permisos_codigo_y_seed','2026-10-07 03:23:04.381134');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (27,'infinito_sonido','0010_alter_clientes_telefono_cliente_and_more','2026-10-07 03:23:04.563801');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (28,'infinito_sonido','0011_permisos_puestos_sueldos','2026-10-07 03:23:04.590090');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (29,'infinito_sonido','0012_validar_nombres_y_domicilio','2026-10-07 03:23:04.915066');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (30,'infinito_sonido','0013_permisos_modulos_faltantes','2026-10-07 03:23:04.940251');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (31,'infinito_sonido','0014_usuarios_datos_personales_y_baja','2026-10-07 03:23:05.640623');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (32,'infinito_sonido','0015_alter_pagos_monto','2026-10-07 03:23:05.647416');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (33,'infinito_sonido','0016_reservas_hora_y_duracion','2026-10-07 03:23:05.814913');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (34,'infinito_sonido','0017_usuarios_desde_empleados','2026-10-07 03:23:06.412578');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (35,'infinito_sonido','0018_registro_actividad','2026-10-07 03:23:06.565843');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (36,'infinito_sonido','0019_token_recuperacion','2026-10-07 03:23:06.682381');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (37,'infinito_sonido','0020_reservas_hito3','2026-10-07 03:23:07.218981');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (38,'infinito_sonido','0021_equipos_x_servicios_cantidad','2026-10-07 03:23:07.308564');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (39,'infinito_sonido','0022_usuarios_apellido_inicial','2026-10-07 03:23:07.326707');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (40,'infinito_sonido','0023_baja_logica','2026-10-07 03:23:08.811309');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (41,'sessions','0001_initial','2026-10-07 03:23:08.861887');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (42,'infinito_sonido','0024_baja_fisica','2026-10-12 00:00:00.000000');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (43,'infinito_sonido','0025_permiso_reportes','2026-10-12 00:00:00.000000');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (44,'infinito_sonido','0026_permisos_estados_equipo','2026-10-12 00:00:00.000000');
-INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (45,'infinito_sonido','0027_registro_actividad_cambios','2026-10-16 00:00:00.000000');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (1,'contenttypes','0001_initial','2026-11-08 22:55:27.515677');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (2,'auth','0001_initial','2026-11-08 22:55:28.277938');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (3,'admin','0001_initial','2026-11-08 22:55:28.487597');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (4,'admin','0002_logentry_remove_auto_add','2026-11-08 22:55:28.495107');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (5,'admin','0003_logentry_add_action_flag_choices','2026-11-08 22:55:28.502658');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (6,'contenttypes','0002_remove_content_type_name','2026-11-08 22:55:28.612013');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (7,'auth','0002_alter_permission_name_max_length','2026-11-08 22:55:28.686573');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (8,'auth','0003_alter_user_email_max_length','2026-11-08 22:55:28.705021');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (9,'auth','0004_alter_user_username_opts','2026-11-08 22:55:28.711000');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (10,'auth','0005_alter_user_last_login_null','2026-11-08 22:55:28.782424');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (11,'auth','0006_require_contenttypes_0002','2026-11-08 22:55:28.787243');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (12,'auth','0007_alter_validators_add_error_messages','2026-11-08 22:55:28.794316');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (13,'auth','0008_alter_user_username_max_length','2026-11-08 22:55:28.874160');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (14,'auth','0009_alter_user_last_name_max_length','2026-11-08 22:55:28.949019');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (15,'auth','0010_alter_group_name_max_length','2026-11-08 22:55:28.965261');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (16,'auth','0011_update_proxy_permissions','2026-11-08 22:55:28.972572');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (17,'auth','0012_alter_user_first_name_max_length','2026-11-08 22:55:29.049004');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (18,'infinito_sonido','0001_initial','2026-11-08 22:55:29.171506');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (19,'infinito_sonido','0002_empleado','2026-11-08 22:55:29.199114');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (20,'infinito_sonido','0003_equipo_equipoporservicio_tipoequipo_servicio_and_more','2026-11-08 22:55:29.520959');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (21,'infinito_sonido','0004_clientes_detalles_de_pago_detalles_reservas_and_more','2026-11-08 22:55:31.654363');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (22,'infinito_sonido','0005_permisos_permisos_x_perfiles_and_more','2026-11-08 22:55:31.938299');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (23,'infinito_sonido','0006_sesiontoken','2026-11-08 22:55:32.050811');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (24,'infinito_sonido','0007_reservas_nombre_evento_alter_reservas_estado_reserva','2026-11-08 22:55:32.215506');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (25,'infinito_sonido','0008_estado_equipos','2026-11-08 22:55:32.575920');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (26,'infinito_sonido','0009_permisos_codigo_y_seed','2026-11-08 22:55:32.731773');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (27,'infinito_sonido','0010_alter_clientes_telefono_cliente_and_more','2026-11-08 22:55:32.852656');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (28,'infinito_sonido','0011_permisos_puestos_sueldos','2026-11-08 22:55:32.878751');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (29,'infinito_sonido','0012_validar_nombres_y_domicilio','2026-11-08 22:55:33.179542');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (30,'infinito_sonido','0013_permisos_modulos_faltantes','2026-11-08 22:55:33.206289');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (31,'infinito_sonido','0014_usuarios_datos_personales_y_baja','2026-11-08 22:55:33.872617');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (32,'infinito_sonido','0015_alter_pagos_monto','2026-11-08 22:55:33.880372');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (33,'infinito_sonido','0016_reservas_hora_y_duracion','2026-11-08 22:55:34.063254');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (34,'infinito_sonido','0017_usuarios_desde_empleados','2026-11-08 22:55:34.682794');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (35,'infinito_sonido','0018_registro_actividad','2026-11-08 22:55:34.851829');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (36,'infinito_sonido','0019_token_recuperacion','2026-11-08 22:55:34.966700');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (37,'infinito_sonido','0020_reservas_hito3','2026-11-08 22:55:35.523439');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (38,'infinito_sonido','0021_equipos_x_servicios_cantidad','2026-11-08 22:55:35.624463');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (39,'infinito_sonido','0022_usuarios_apellido_inicial','2026-11-08 22:55:35.639463');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (40,'infinito_sonido','0023_baja_logica','2026-11-08 22:55:37.148009');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (41,'infinito_sonido','0024_baja_fisica','2026-11-08 22:55:38.131074');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (42,'infinito_sonido','0025_permiso_reportes','2026-11-08 22:55:38.149419');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (43,'infinito_sonido','0026_permisos_estados_equipo','2026-11-08 22:55:38.168160');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (44,'infinito_sonido','0027_registro_actividad_cambios','2026-11-08 22:55:38.279015');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (45,'infinito_sonido','0028_notificaciones_y_configuracion','2026-11-08 22:55:38.456293');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (46,'infinito_sonido','0029_configuracion_inicial_y_permisos','2026-11-08 22:55:38.479027');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (47,'infinito_sonido','0030_permiso_reportes_financieros','2026-11-08 22:55:38.498270');
+INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES (48,'sessions','0001_initial','2026-11-08 22:55:38.542882');
 /*!40000 ALTER TABLE `django_migrations` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
