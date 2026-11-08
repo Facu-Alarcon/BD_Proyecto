@@ -89,8 +89,8 @@
   color: var(--navy-950);
 }
 
-/* Nombre de una sección (Reservas, Equipos, ...): es un botón, no un enlace.
-   Al hacer click despliega sus pantallas debajo. */
+/* Nombre de una sección (Comercial, Inventario, ...): es un botón, no un enlace.
+   Un click despliega sus pantallas debajo y otro click las vuelve a esconder. */
 .sidebar-grupo {
   width: 100%;
   border: none;
@@ -98,6 +98,26 @@
   font-family: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+/* Signo "-" a la derecha del nombre de una sección abierta. Está siempre en su lugar pero
+   invisible; se ve al pasar el mouse (o al llegar con el teclado), para avisar que si se
+   vuelve a hacer click la sección se cierra. Se dibuja con una barrita en vez de un
+   carácter, así sale igual de nítido en cualquier tipografía y tema. */
+.sidebar-grupo-cerrar {
+  flex-shrink: 0;
+  width: 12px;
+  height: 2px;
+  margin-left: auto;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar-grupo:hover .sidebar-grupo-cerrar,
+.sidebar-grupo:focus-visible .sidebar-grupo-cerrar {
+  opacity: 1;
 }
 
 /* Las pantallas de una sección abierta: debajo de su nombre, con el fondo apenas más claro y
@@ -179,6 +199,11 @@
     display: none;
   }
 
+  /* Solo íconos: no hay lugar a la derecha del nombre, así que no se muestra el signo "-" */
+  .sidebar-grupo-cerrar {
+    display: none;
+  }
+
   /* Solo íconos: sin sangría; el fondo del contenedor marca qué pantallas son de la sección */
   .sidebar-submenu .sidebar-link {
     padding: 0 10px;
@@ -232,6 +257,10 @@
 
   .sidebar-label {
     display: inline;
+  }
+
+  .sidebar-grupo-cerrar {
+    display: block;
   }
 
   /* Fondo oscuro detrás del menú abierto; tocarlo lo cierra */

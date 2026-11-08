@@ -15,12 +15,12 @@ import './Sidebar.css';
 const ITEM_INICIO = { to: '/', label: 'Inicio', icon: IconInicio, end: true };
 
 // El resto del menú está agrupado en secciones. Al hacer click en el nombre de una sección
-// se despliegan sus pantallas debajo. Una sección que se abrió queda abierta: abrir otra
-// no cierra las que ya estaban abiertas.
+// se despliegan sus pantallas debajo, y otro click la vuelve a cerrar. Pueden estar abiertas
+// varias a la vez: abrir o cerrar una no afecta a las demás.
 // Si el perfil no tiene permiso para ninguna pantalla de una sección, la sección no se muestra.
 const NAV_GRUPOS = [
   {
-    id: 'reservas', label: 'Reservas', icon: IconReservas,
+    id: 'reservas', label: 'Comercial', icon: IconReservas,
     items: [
       { to: '/reservas', label: 'Reservas', icon: IconReservas, modulo: 'reservas' },
       { to: '/clientes', label: 'Clientes', icon: IconClientes, modulo: 'clientes' },
@@ -28,7 +28,7 @@ const NAV_GRUPOS = [
     ],
   },
   {
-    id: 'equipos', label: 'Equipos', icon: IconEquipos,
+    id: 'equipos', label: 'Inventario', icon: IconEquipos,
     items: [
       { to: '/equipos', label: 'Equipos', icon: IconEquipos, modulo: 'equipos' },
       { to: '/tipos-equipo', label: 'Tipos de equipo', icon: IconTiposEquipo, modulo: 'tipos_equipo' },
@@ -36,7 +36,7 @@ const NAV_GRUPOS = [
     ],
   },
   {
-    id: 'empleados', label: 'Empleados', icon: IconEmpleados,
+    id: 'empleados', label: 'Personal', icon: IconEmpleados,
     items: [
       { to: '/empleados', label: 'Empleados', icon: IconEmpleados, modulo: 'empleados' },
       { to: '/puestos', label: 'Puestos', icon: IconPuestos, modulo: 'puestos' },
@@ -45,7 +45,7 @@ const NAV_GRUPOS = [
     ],
   },
   {
-    id: 'usuarios', label: 'Usuarios', icon: IconUsuarios,
+    id: 'usuarios', label: 'Seguridad', icon: IconUsuarios,
     items: [
       { to: '/usuarios', label: 'Usuarios', icon: IconUsuarios, modulo: 'usuarios' },
       { to: '/perfiles', label: 'Perfiles', icon: IconPerfiles, modulo: 'perfiles' },
@@ -53,14 +53,14 @@ const NAV_GRUPOS = [
     ],
   },
   {
-    id: 'pagos', label: 'Pagos', icon: IconPagos,
+    id: 'pagos', label: 'Cobros', icon: IconPagos,
     items: [
       { to: '/pagos', label: 'Pagos', icon: IconPagos, modulo: 'pagos' },
       { to: '/metodos-pago', label: 'Métodos de pago', icon: IconMetodosPago, modulo: 'metodos_pago' },
     ],
   },
   {
-    id: 'actividad', label: 'Actividad', icon: IconReportes,
+    id: 'actividad', label: 'Informes', icon: IconReportes,
     items: [
       // Solo lo ven los perfiles con el permiso "Ver Reportes" (por defecto, el Administrador)
       { to: '/reportes', label: 'Reportes', icon: IconReportes, modulo: 'reportes' },
@@ -102,11 +102,11 @@ export default function Sidebar({ abierto = false }) {
   const permisos = usuario?.permisos || [];
   const compacto = useMenuCompacto();
 
-  // Secciones desplegadas. Solo se les agregan ids: nunca se quitan.
+  // Secciones desplegadas (ids). Puede haber varias; el click en el nombre agrega o quita la suya.
   const [gruposAbiertos, setGruposAbiertos] = useState(() => gruposDeRuta(pathname));
   const [rutaAnterior, setRutaAnterior] = useState(pathname);
   if (rutaAnterior !== pathname) {
-    // Cambió la pantalla: se abre la sección que la contiene (las que ya estaban abiertas siguen igual)
+    // Cambió la pantalla: se abre la sección que la contiene (las demás quedan como estaban)
     setRutaAnterior(pathname);
     setGruposAbiertos((previos) => [...new Set([...previos, ...gruposDeRuta(pathname)])]);
   }
@@ -133,10 +133,13 @@ export default function Sidebar({ abierto = false }) {
 
   useEffect(() => () => clearTimeout(timerOcultar.current), []);
 
-  function abrirGrupo(id) {
-    // Al abrirse la sección el menú se reacomoda, así que el cartelito quedaría mal ubicado
+  // Abre la sección si estaba cerrada y la cierra si estaba abierta. Las demás no se tocan.
+  function alternarGrupo(id) {
+    // Al abrirse o cerrarse la sección el menú se reacomoda, así que el cartelito quedaría mal ubicado
     ocultarTooltip();
-    setGruposAbiertos((previos) => (previos.includes(id) ? previos : [...previos, id]));
+    setGruposAbiertos((previos) =>
+      previos.includes(id) ? previos.filter((g) => g !== id) : [...previos, id],
+    );
   }
 
   // Eventos que muestran el nombre en un cartelito (modo compacto). Los usan los enlaces
@@ -187,11 +190,14 @@ export default function Sidebar({ abierto = false }) {
                 className="sidebar-link sidebar-grupo"
                 aria-expanded={desplegado}
                 aria-controls={`submenu-${grupo.id}`}
-                onClick={() => abrirGrupo(grupo.id)}
+                onClick={() => alternarGrupo(grupo.id)}
                 {...eventosTooltip(grupo.label)}
               >
                 <Icono className="sidebar-icon" aria-hidden="true" />
                 <span className="sidebar-label">{grupo.label}</span>
+                {/* Signo "-": con la sección abierta, aparece al pasar el mouse por el nombre
+                    para indicar que otro click la cierra (ver .sidebar-grupo-cerrar) */}
+                {desplegado && <span className="sidebar-grupo-cerrar" aria-hidden="true" />}
               </button>
 
               {desplegado && (
