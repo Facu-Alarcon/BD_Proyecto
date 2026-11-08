@@ -97,3 +97,30 @@ def enviar_link_recuperacion(usuario, link, minutos_validez):
         logger.exception('No se pudo enviar el link de recuperación a %s', empleado.email_emp)
         return False
     return settings.EMAIL_CONFIGURADO
+
+
+# Manda por correo un aviso del sistema (ver notificaciones.py) a una lista de direcciones.
+# Devuelve True si salió de verdad, igual que las funciones de arriba. Si falla, el aviso
+# igual queda en la bandeja del sistema: el correo es un canal extra.
+def enviar_alerta(destinatarios, titulo, mensaje):
+    asunto = f'Alerta: {titulo} - Infinito Sonido e Iluminación'
+    texto = (
+        f'{mensaje}\n\n'
+        'Podés ver todos los avisos en la bandeja de notificaciones del sistema (la campana de arriba).\n'
+    )
+    html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 480px; color: #05284C;">
+      <h2 style="margin: 0 0 12px;">{titulo}</h2>
+      <div style="background: #fdf1d8; border-radius: 10px; padding: 16px; margin: 16px 0;">
+        <p style="margin: 0;">{mensaje}</p>
+      </div>
+      <p style="color: #6b7590; font-size: 12px;">Podés ver todos los avisos en la bandeja de
+         notificaciones del sistema (la campana de arriba).</p>
+    </div>
+    """
+    try:
+        send_mail(asunto, texto, settings.DEFAULT_FROM_EMAIL, destinatarios, html_message=html)
+    except Exception:
+        logger.exception('No se pudo enviar la alerta a %s', ', '.join(destinatarios))
+        return False
+    return settings.EMAIL_CONFIGURADO

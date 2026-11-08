@@ -72,10 +72,13 @@ services:
     # Con && si un paso falla no se ejecutan los siguientes.
     # makemigrations NO va aca: se corre a mano cuando se cambia models.py,
     # asi no se generan migraciones distintas en cada compu.
+    # Antes del servidor queda corriendo de fondo (con &) el control diario de alertas:
+    # revisa las reglas al arrancar y despues cada 24 horas (86400 segundos).
     command: >
       sh -c "pip install -r requirements.txt &&
              python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
+             { (while true; do python manage.py evaluar_alertas; sleep 86400; done) &
+               python manage.py runserver 0.0.0.0:8000; }"
     stdin_open: true
     tty: true
     # Espera a que MySQL este listo antes de arrancar (si no, migrate falla al conectarse)
