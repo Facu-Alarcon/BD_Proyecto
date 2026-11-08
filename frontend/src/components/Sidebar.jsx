@@ -5,6 +5,7 @@ import {
   IconInicio, IconClientes, IconReservas, IconServicios, IconEquipos, IconTiposEquipo, IconEstadosEquipo,
   IconEmpleados, IconPuestos, IconHorarios, IconSueldos, IconUsuarios, IconPerfiles,
   IconPermisos, IconMetodosPago, IconPagos, IconRegistro, IconReportes,
+  IconComercial, IconInventario, IconPersonal, IconSeguridad, IconCobros, IconInformes,
 } from './icons';
 import './Sidebar.css';
 
@@ -20,7 +21,7 @@ const ITEM_INICIO = { to: '/', label: 'Inicio', icon: IconInicio, end: true };
 // Si el perfil no tiene permiso para ninguna pantalla de una sección, la sección no se muestra.
 const NAV_GRUPOS = [
   {
-    id: 'reservas', label: 'Comercial', icon: IconReservas,
+    id: 'reservas', label: 'Comercial', icon: IconComercial,
     items: [
       { to: '/reservas', label: 'Reservas', icon: IconReservas, modulo: 'reservas' },
       { to: '/clientes', label: 'Clientes', icon: IconClientes, modulo: 'clientes' },
@@ -28,7 +29,7 @@ const NAV_GRUPOS = [
     ],
   },
   {
-    id: 'equipos', label: 'Inventario', icon: IconEquipos,
+    id: 'equipos', label: 'Inventario', icon: IconInventario,
     items: [
       { to: '/equipos', label: 'Equipos', icon: IconEquipos, modulo: 'equipos' },
       { to: '/tipos-equipo', label: 'Tipos de equipo', icon: IconTiposEquipo, modulo: 'tipos_equipo' },
@@ -36,7 +37,7 @@ const NAV_GRUPOS = [
     ],
   },
   {
-    id: 'empleados', label: 'Personal', icon: IconEmpleados,
+    id: 'empleados', label: 'Personal', icon: IconPersonal,
     items: [
       { to: '/empleados', label: 'Empleados', icon: IconEmpleados, modulo: 'empleados' },
       { to: '/puestos', label: 'Puestos', icon: IconPuestos, modulo: 'puestos' },
@@ -45,7 +46,7 @@ const NAV_GRUPOS = [
     ],
   },
   {
-    id: 'usuarios', label: 'Seguridad', icon: IconUsuarios,
+    id: 'usuarios', label: 'Seguridad', icon: IconSeguridad,
     items: [
       { to: '/usuarios', label: 'Usuarios', icon: IconUsuarios, modulo: 'usuarios' },
       { to: '/perfiles', label: 'Perfiles', icon: IconPerfiles, modulo: 'perfiles' },
@@ -53,14 +54,14 @@ const NAV_GRUPOS = [
     ],
   },
   {
-    id: 'pagos', label: 'Cobros', icon: IconPagos,
+    id: 'pagos', label: 'Cobros', icon: IconCobros,
     items: [
       { to: '/pagos', label: 'Pagos', icon: IconPagos, modulo: 'pagos' },
       { to: '/metodos-pago', label: 'Métodos de pago', icon: IconMetodosPago, modulo: 'metodos_pago' },
     ],
   },
   {
-    id: 'actividad', label: 'Informes', icon: IconReportes,
+    id: 'actividad', label: 'Informes', icon: IconInformes,
     items: [
       // Solo lo ven los perfiles con el permiso "Ver Reportes" (por defecto, el Administrador)
       { to: '/reportes', label: 'Reportes', icon: IconReportes, modulo: 'reportes' },
