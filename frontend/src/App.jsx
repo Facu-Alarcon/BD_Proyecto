@@ -65,6 +65,8 @@ import PagoForm from './pages/pagos/PagoForm';
 
 import CambiarClave from './pages/CambiarClave';
 import RegistroActividad from './pages/registro/RegistroActividad';
+import Notificaciones from './pages/notificaciones/Notificaciones';
+import ConfiguracionAlertas from './pages/configuracion/ConfiguracionAlertas';
 import ReportesInicio from './pages/reportes/ReportesInicio';
 import ReporteUsoEquipos from './pages/reportes/ReporteUsoEquipos';
 import ReporteDemandaServicios from './pages/reportes/ReporteDemandaServicios';
@@ -201,6 +203,10 @@ export default function App() {
 
             {/* Registro de actividad: solo consulta, no tiene alta ni edición */}
             <Route path="registro" element={<RequierePermiso modulo="registro"><RegistroActividad /></RequierePermiso>} />
+            {/* Parcial 2 (M3): la bandeja la ve cualquier usuario (cada uno ve los avisos de su perfil);
+                los umbrales de las alertas, solo quien tiene permiso de Configuración */}
+            <Route path="notificaciones" element={<Notificaciones />} />
+            <Route path="configuracion" element={<RequierePermiso modulo="configuracion"><ConfiguracionAlertas /></RequierePermiso>} />
 
             {/* Cualquier dirección que no exista vuelve al Inicio */}
             <Route path="*" element={<Navigate to="/" replace />} />

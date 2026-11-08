@@ -5,7 +5,7 @@ import {
   IconInicio, IconClientes, IconReservas, IconServicios, IconEquipos, IconTiposEquipo, IconEstadosEquipo,
   IconEmpleados, IconPuestos, IconHorarios, IconSueldos, IconUsuarios, IconPerfiles,
   IconPermisos, IconMetodosPago, IconPagos, IconRegistro, IconReportes,
-  IconComercial, IconInventario, IconPersonal, IconSeguridad, IconCobros, IconInformes,
+  IconComercial, IconInventario, IconPersonal, IconSeguridad, IconCobros, IconInformes, IconCampana,
 } from './icons';
 import './Sidebar.css';
 
@@ -67,6 +67,10 @@ const NAV_GRUPOS = [
       { to: '/reportes', label: 'Reportes', icon: IconReportes, modulo: 'reportes' },
       // Solo lo ven los perfiles con el permiso "Ver Registro de actividad" (por defecto, el Administrador)
       { to: '/registro', label: 'Registro de actividad', icon: IconRegistro, modulo: 'registro' },
+      // Sin 'modulo': la bandeja la ven todos (cada uno con los avisos de su perfil)
+      { to: '/notificaciones', label: 'Notificaciones', icon: IconCampana },
+      // Los umbrales de las alertas: solo los perfiles con el permiso "Ver Configuración"
+      { to: '/configuracion', label: 'Configuración de alertas', icon: IconCampana, modulo: 'configuracion' },
     ],
   },
 ];
