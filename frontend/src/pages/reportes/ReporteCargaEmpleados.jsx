@@ -5,7 +5,10 @@ import GraficoBarras from '../../components/GraficoBarras';
 import { IconVolver } from '../../components/icons';
 import BotonImprimirReporte from '../../components/BotonImprimirReporte';
 import GraficoImagen from '../../components/GraficoImagen';
+import { EncabezadoImpresion, PieImpresion } from '../../components/ImpresionReporte';
+import Paginacion from '../../components/Paginacion';
 import ResumenAgregados from '../../components/ResumenAgregados';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import './Reportes.css';
 
 // REPORTE TÁCTICO: CARGA DE TRABAJO DE LOS EMPLEADOS
@@ -108,6 +111,16 @@ export default function ReporteCargaEmpleados() {
   // Los empleados que se pueden elegir: solo los del puesto elegido (si hay uno)
   const opcionesEmpleado = (datos?.opciones.empleados || []).filter((e) => !puesto || e.puestos.includes(Number(puesto)));
 
+  // Las filas de la tabla (empleados o puestos, según "Ver por"), de a 10 por página.
+  // Se usa la misma lista como "reinicio": cambia cuando llegan datos nuevos o cuando se cambia
+  // "Ver por", y en los dos casos se vuelve a la primera página.
+  const filasTabla = (porPuesto ? datos?.puestos : datos?.empleados) || [];
+  const paginacion = usePaginacion(filasTabla, filasTabla);
+  const enPagina = new Set(paginacion.visibles);
+  // Nombres del puesto y del empleado elegidos, para el pie del PDF
+  const nombrePuesto = (datos?.opciones.puestos || []).find((p) => String(p.id) === String(puesto))?.nombre;
+  const nombreEmpleado = (datos?.opciones.empleados || []).find((e) => String(e.id) === String(empleado))?.nombre;
+
   // ---- Frases de la interpretación (se arman solas con los números del reporte) ----
   let interpretacion = [];
   if (datos && !sinDatos) {
@@ -203,6 +216,9 @@ export default function ReporteCargaEmpleados() {
         <BotonImprimirReporte nombreArchivo={nombreArchivo} deshabilitado={cargando || !!error || !datos || !!sinDatos} />
       </div>
 
+      {/* Encabezado institucional: solo sale al imprimir */}
+      <EncabezadoImpresion titulo="Reporte: Carga de trabajo de los empleados" />
+
       {/* ---- Filtros ---- */}
       <div className="card filtros reporte-filtros">
         <SelectorMes id="desde" label="Desde" valor={desde} onChange={setDesde} />
@@ -294,6 +310,7 @@ export default function ReporteCargaEmpleados() {
           {/* ---- Tabla con el detalle de cada empleado o puesto ---- */}
           <div className="card reporte-bloque">
             <h2 className="reporte-subtitulo">Detalle por {porPuesto ? 'puesto' : 'empleado'} (eventos asignados)</h2>
+            <Paginacion paginacion={paginacion} posicion="arriba" />
             {/* La tabla puede ser más ancha que la pantalla (una columna por mes): se desliza hacia el costado */}
             <div className="reporte-tabla-scroll">
               <table className="data-table reporte-tabla">
@@ -309,8 +326,10 @@ export default function ReporteCargaEmpleados() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(porPuesto ? datos.puestos : datos.empleados).map((f) => (
-                    <tr key={porPuesto ? f.id_puesto : f.id_empleado}>
+                  {/* Van todas las filas, pero las que no son de esta página quedan escondidas en
+                      pantalla (al imprimir salen todas, ver Reportes.css) */}
+                  {filasTabla.map((f) => (
+                    <tr key={porPuesto ? f.id_puesto : f.id_empleado} className={enPagina.has(f) ? undefined : 'fila-otra-pagina'}>
                       <td>
                         {porPuesto ? f.nombre_puesto : f.nombre_empleado}
                         {!porPuesto && !f.activo && <span className="badge badge-gray badge-chica" style={{ marginLeft: 6 }}>Dado de baja</span>}
@@ -348,12 +367,21 @@ export default function ReporteCargaEmpleados() {
                 </tfoot>
               </table>
             </div>
+            <Paginacion paginacion={paginacion} />
             {porPuesto && (
               <p className="reporte-descripcion" style={{ margin: '12px 0 0' }}>
                 Cada empleado asignado a un evento suma una asignación a su puesto. Si un empleado tiene más de un puesto, suma en cada uno.
               </p>
             )}
           </div>
+
+          {/* Pie con los filtros, el usuario y la fecha y hora: solo sale al imprimir */}
+          <PieImpresion filtros={[
+            ['Período', `${mesEnPalabras(desde.anio, desde.mes)} a ${mesEnPalabras(hasta.anio, hasta.mes)}`],
+            ['Puesto', nombrePuesto || 'Todos'],
+            ['Empleado', nombreEmpleado || 'Todos'],
+            ['Ver por', porPuesto ? 'Puesto' : 'Empleado'],
+          ]} />
         </>
       )}
     </div>

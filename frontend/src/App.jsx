@@ -196,7 +196,8 @@ export default function App() {
               <Route index element={<ReportesInicio />} />
               <Route path="uso-equipos" element={<ReporteUsoEquipos />} />
               <Route path="demanda-servicios" element={<ReporteDemandaServicios />} />
-              <Route path="evolucion-ingresos" element={<ReporteEvolucionIngresos />} />
+              {/* Reporte sensible: además de Ver Reportes pide "Ver Reportes Financieros" (ver_reportes_financieros) */}
+              <Route path="evolucion-ingresos" element={<RequierePermiso modulo="reportes_financieros"><ReporteEvolucionIngresos /></RequierePermiso>} />
               <Route path="carga-empleados" element={<ReporteCargaEmpleados />} />
               <Route path="comparacion-periodos" element={<ReporteComparacionPeriodos />} />
             </Route>

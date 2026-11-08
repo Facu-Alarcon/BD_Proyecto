@@ -19,7 +19,7 @@ from rest_framework.views import APIView
 from .graficos import agregados, barras_agrupadas, barras_por_mes, heatmap, lineas_con_tendencia, pesos_corto, torta
 from .models import Equipos, Equipos_x_Servicios, Reservas, Reservas_x_Servicios, Servicios, Tipo_Equipos
 from .models import Detalles_Reservas, Empleados, Puestos, Puestos_x_Empleados
-from .permissions import permiso_modulo
+from .permissions import permiso_codigo, permiso_modulo
 
 # Nombres cortos de los meses, para las etiquetas del gráfico
 MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
@@ -355,33 +355,35 @@ class ReporteEvolucionIngresosView(APIView):
     """
     Reporte "Evolución mensual de ingresos contratados y cantidad de eventos".
     Se pide así: /api/reportes/evolucion-ingresos/?desde=2026-01&hasta=2026-12
+    Opcionalmente se le puede agregar &servicio=<id> para ver solo lo que dejó un servicio.
     Los "ingresos contratados" son lo que suman las reservas (monto_total), no lo que
     ya se cobró. Cada reserva cuenta en el mes de su fecha de evento y las anuladas no entran.
+    Si se elige un servicio, los ingresos son lo que se cobró por ese servicio en cada reserva
+    (el precio guardado en Reservas_x_Servicios) y los eventos, las reservas que lo contrataron.
     Si no se manda el período, muestra el año actual completo.
     """
-    # Solo entran los perfiles que tienen el permiso "Ver Reportes"
-    permission_classes = [permiso_modulo('reportes')]
+    # Es el reporte sensible: muestra la plata que entra al negocio, así que no alcanza con
+    # "Ver Reportes", hace falta el permiso "Ver Reportes Financieros" (solo administradores)
+    permission_classes = [permiso_codigo('ver_reportes_financieros')]
 
     def get(self, request):
-        # ---------- 1) Leemos el período que eligió el usuario ----------
-        hoy = timezone.localdate()
-        desde = _leer_mes(request.query_params.get('desde')) or (hoy.year, 1)
-        hasta = _leer_mes(request.query_params.get('hasta')) or (hoy.year, 12)
+        # ---------- 1) Leemos lo que eligió el usuario en los filtros ----------
+        desde, hasta, meses, error = _leer_periodo(request)
+        if error:
+            return error
 
-        if desde > hasta:
-            return Response({'detail': 'El mes "Desde" no puede ser posterior al mes "Hasta".'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        meses = _meses_entre(desde, hasta)
-        if len(meses) > MAXIMO_MESES:
-            return Response({'detail': f'El período no puede tener más de {MAXIMO_MESES} meses.'},
-                            status=status.HTTP_400_BAD_REQUEST)
+        servicio = request.query_params.get('servicio')
+        servicio = int(servicio) if servicio and servicio.isdigit() else None
 
         # ---------- 2) Las reservas del período (sin las anuladas) ----------
-        primer_dia = datetime.date(desde[0], desde[1], 1)
-        ultimo_dia = datetime.date(hasta[0], hasta[1], calendar.monthrange(hasta[0], hasta[1])[1])
-        reservas = Reservas.objects.filter(
-            fecha_evento__range=(primer_dia, ultimo_dia)
-        ).exclude(estado_reserva='ANULADA').values_list('fecha_evento', 'monto_total')
+        # Sin servicio elegido se suma el total de cada reserva; con servicio, solo lo que se
+        # cobró por ese servicio en las reservas que lo contrataron
+        if servicio:
+            reservas = Reservas_x_Servicios.objects.filter(
+                id_reserva__in=_reservas_del_periodo(desde, hasta), id_servicio_id=servicio
+            ).values_list('id_reserva__fecha_evento', 'precio_servicio')
+        else:
+            reservas = _reservas_del_periodo(desde, hasta).values_list('fecha_evento', 'monto_total')
 
         # ---------- 3) Sumamos mes por mes ----------
         # ingresos[(año, mes)] = plata contratada ese mes; eventos[(año, mes)] = cuántas reservas
@@ -436,6 +438,13 @@ class ReporteEvolucionIngresosView(APIView):
             'promedio_mensual_ingresos': round(total_ingresos / len(meses), 2),
             # Variación entre el primer y el último mes del período, para ver el crecimiento general
             'variacion_total_ingresos': _variacion(columnas[-1]['ingresos'], columnas[0]['ingresos']),
+            # La lista para armar el filtro de servicio (igual que en el reporte de Demanda)
+            'opciones': {
+                'servicios': [
+                    {'id': s.pk, 'nombre': s.tipo_servicio, 'activo': s.activo}
+                    for s in Servicios.objects.order_by('tipo_servicio')
+                ],
+            },
         })
 
 

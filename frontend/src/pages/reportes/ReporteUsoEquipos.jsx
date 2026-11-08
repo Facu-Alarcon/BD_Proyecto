@@ -4,7 +4,10 @@ import api from '../../api/client';
 import GraficoBarras from '../../components/GraficoBarras';
 import { IconVolver } from '../../components/icons';
 import BotonImprimirReporte from '../../components/BotonImprimirReporte';
+import { EncabezadoImpresion, PieImpresion } from '../../components/ImpresionReporte';
+import Paginacion from '../../components/Paginacion';
 import ResumenAgregados from '../../components/ResumenAgregados';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import './Reportes.css';
 
 // REPORTE: USO DE EQUIPOS POR MES
@@ -79,6 +82,11 @@ export default function ReporteUsoEquipos() {
     return () => { vigente = false; };
   }, [desde, hasta, tipo, equipo]);
 
+  // La tabla de equipos va de a 10 por página. Cuando llegan datos nuevos (cambió algún
+  // filtro) se vuelve a la primera página.
+  const paginacion = usePaginacion(datos?.equipos || [], datos);
+  const enPagina = new Set(paginacion.visibles);
+
   // Al cambiar el tipo se vuelve a "todos los equipos", porque el equipo elegido puede ser de otro tipo
   function cambiarTipo(valor) {
     setTipo(valor);
@@ -87,6 +95,10 @@ export default function ReporteUsoEquipos() {
 
   // Los equipos que se ofrecen en el desplegable: si hay un tipo elegido, solo los de ese tipo
   const equiposParaElegir = (datos?.opciones.equipos || []).filter((e) => !tipo || String(e.tipo) === String(tipo));
+
+  // Nombres del tipo y del equipo elegidos, para el pie del PDF
+  const nombreTipo = (datos?.opciones.tipos || []).find((t) => String(t.id) === String(tipo))?.nombre;
+  const nombreEquipo = (datos?.opciones.equipos || []).find((e) => String(e.id) === String(equipo))?.nombre;
 
   const periodo = `De ${mesEnPalabras(desde.anio, desde.mes)} a ${mesEnPalabras(hasta.anio, hasta.mes)}`;
   // true cuando en el período no hay ninguna reserva que use los equipos elegidos
@@ -144,6 +156,9 @@ export default function ReporteUsoEquipos() {
         </p>
         <BotonImprimirReporte nombreArchivo={nombreArchivo} deshabilitado={cargando || !!error || !datos || !!sinDatos} />
       </div>
+
+      {/* Encabezado institucional: solo sale al imprimir */}
+      <EncabezadoImpresion titulo="Reporte: Uso de equipos por mes" />
 
       {/* ---- Filtros ---- */}
       <div className="card filtros reporte-filtros">
@@ -212,6 +227,7 @@ export default function ReporteUsoEquipos() {
           {/* ---- Tabla con el detalle de cada equipo ---- */}
           <div className="card reporte-bloque">
             <h2 className="reporte-subtitulo">Detalle por equipo</h2>
+            <Paginacion paginacion={paginacion} posicion="arriba" />
             {/* La tabla puede ser más ancha que la pantalla (una columna por mes): se desliza hacia el costado */}
             <div className="reporte-tabla-scroll">
               <table className="data-table reporte-tabla">
@@ -227,8 +243,10 @@ export default function ReporteUsoEquipos() {
                   </tr>
                 </thead>
                 <tbody>
+                  {/* Van todas las filas, pero las que no son de esta página quedan escondidas en
+                      pantalla (al imprimir salen todas, ver Reportes.css) */}
                   {datos.equipos.map((e) => (
-                    <tr key={e.id_equipo}>
+                    <tr key={e.id_equipo} className={enPagina.has(e) ? undefined : 'fila-otra-pagina'}>
                       <td>{e.nombre_equipo}</td>
                       <td>{e.tipo}</td>
                       {/* Los ceros van en gris clarito para que resalten los meses con uso */}
@@ -263,7 +281,15 @@ export default function ReporteUsoEquipos() {
                 </tfoot>
               </table>
             </div>
+            <Paginacion paginacion={paginacion} />
           </div>
+
+          {/* Pie con los filtros, el usuario y la fecha y hora: solo sale al imprimir */}
+          <PieImpresion filtros={[
+            ['Período', `${mesEnPalabras(desde.anio, desde.mes)} a ${mesEnPalabras(hasta.anio, hasta.mes)}`],
+            ['Tipo de equipo', nombreTipo || 'Todos'],
+            ['Equipo', nombreEquipo || 'Todos'],
+          ]} />
         </>
       )}
     </div>

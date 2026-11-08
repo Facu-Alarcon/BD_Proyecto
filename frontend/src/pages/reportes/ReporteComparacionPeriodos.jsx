@@ -4,6 +4,9 @@ import api from '../../api/client';
 import { IconVolver } from '../../components/icons';
 import BotonImprimirReporte from '../../components/BotonImprimirReporte';
 import GraficoImagen from '../../components/GraficoImagen';
+import { EncabezadoImpresion, PieImpresion } from '../../components/ImpresionReporte';
+import Paginacion from '../../components/Paginacion';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import { formatearPesos } from '../../utils/formato';
 import './Reportes.css';
 
@@ -83,6 +86,10 @@ export default function ReporteComparacionPeriodos() {
   const sinDatos = datos && datos.servicios.length === 0;
   const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 
+  // La tabla de servicios va de a 10 por página. Cuando llegan datos nuevos (cambió algún
+  // filtro) se vuelve a la primera página.
+  const paginacion = usePaginacion(datos?.servicios || [], datos);
+  const enPagina = new Set(paginacion.visibles);
 
   // ---- Frases de la interpretación (se arman solas con los números del reporte) ----
   let interpretacion = [];
@@ -148,6 +155,9 @@ export default function ReporteComparacionPeriodos() {
         <BotonImprimirReporte nombreArchivo={nombreArchivo} deshabilitado={cargando || !!error || !datos || !!sinDatos} />
       </div>
 
+      {/* Encabezado institucional: solo sale al imprimir */}
+      <EncabezadoImpresion titulo="Reporte: Comparación de períodos" />
+
       {/* ---- Filtros ---- */}
       <div className="card filtros reporte-filtros">
         <div className="form-field">
@@ -210,6 +220,7 @@ export default function ReporteComparacionPeriodos() {
           <div className="card reporte-bloque">
             <h2 className="reporte-subtitulo">Detalle por servicio</h2>
             <p className="form-hint">La variación compara este período con el del año anterior. Si antes no hubo ingresos no se puede calcular (—).</p>
+            <Paginacion paginacion={paginacion} posicion="arriba" />
             <div className="reporte-tabla-scroll">
               <table className="data-table reporte-tabla">
                 <thead>
@@ -225,8 +236,10 @@ export default function ReporteComparacionPeriodos() {
                   </tr>
                 </thead>
                 <tbody>
+                  {/* Van todas las filas, pero las que no son de esta página quedan escondidas en
+                      pantalla (al imprimir salen todas, ver Reportes.css) */}
                   {datos.servicios.map((s) => (
-                    <tr key={s.id_servicio}>
+                    <tr key={s.id_servicio} className={enPagina.has(s) ? undefined : 'fila-otra-pagina'}>
                       <td>{s.nombre_servicio}</td>
                       <td className={`numero${s.actual.ingresos === 0 ? ' cero' : ''}`}>{formatearPesos(s.actual.ingresos)}</td>
                       <td className={`numero${s.anterior.ingresos === 0 ? ' cero' : ''}`}>{formatearPesos(s.anterior.ingresos)}</td>
@@ -253,7 +266,14 @@ export default function ReporteComparacionPeriodos() {
                 </tfoot>
               </table>
             </div>
+            <Paginacion paginacion={paginacion} />
           </div>
+
+          {/* Pie con los filtros, el usuario y la fecha y hora: solo sale al imprimir */}
+          <PieImpresion filtros={[
+            ['Período comparado', `${datos.periodo.actual.etiqueta} contra ${datos.periodo.anterior.etiqueta}`],
+            ['Tipo de período', tipo === 'trimestre' ? 'Trimestre' : 'Semestre'],
+          ]} />
         </>
       )}
     </div>

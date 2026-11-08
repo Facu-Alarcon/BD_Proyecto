@@ -5,7 +5,10 @@ import GraficoBarras from '../../components/GraficoBarras';
 import { IconVolver } from '../../components/icons';
 import BotonImprimirReporte from '../../components/BotonImprimirReporte';
 import GraficoImagen from '../../components/GraficoImagen';
+import { EncabezadoImpresion, PieImpresion } from '../../components/ImpresionReporte';
+import Paginacion from '../../components/Paginacion';
 import ResumenAgregados from '../../components/ResumenAgregados';
+import { usePaginacion } from '../../hooks/usePaginacion';
 import './Reportes.css';
 
 // REPORTE TÁCTICO: DEMANDA POR SERVICIO POR MES
@@ -87,6 +90,13 @@ export default function ReporteDemandaServicios() {
     return () => { vigente = false; };
   }, [desde, hasta, servicio]);
 
+  // La tabla de servicios va de a 10 por página. Cuando llegan datos nuevos (cambió algún
+  // filtro) se vuelve a la primera página.
+  const paginacion = usePaginacion(datos?.servicios || [], datos);
+  const enPagina = new Set(paginacion.visibles);
+  // Nombre del servicio elegido, para el pie del PDF
+  const nombreServicio = (datos?.opciones.servicios || []).find((s) => String(s.id) === String(servicio))?.nombre;
+
   const porPlata = verPor === 'ingresos';
   // Cómo se escribe cada número de la tabla según lo que se esté mirando
   const escribir = porPlata ? pesos : (v) => v;
@@ -157,6 +167,9 @@ export default function ReporteDemandaServicios() {
         </p>
         <BotonImprimirReporte nombreArchivo={nombreArchivo} deshabilitado={cargando || !!error || !datos || !!sinDatos} />
       </div>
+
+      {/* Encabezado institucional: solo sale al imprimir */}
+      <EncabezadoImpresion titulo="Reporte: Demanda de servicios por mes" />
 
       {/* ---- Filtros ---- */}
       <div className="card filtros reporte-filtros">
@@ -248,6 +261,7 @@ export default function ReporteDemandaServicios() {
           {/* ---- Tabla con el detalle de cada servicio ---- */}
           <div className="card reporte-bloque">
             <h2 className="reporte-subtitulo">Detalle por servicio {porPlata ? '(ingresos)' : '(contrataciones)'}</h2>
+            <Paginacion paginacion={paginacion} posicion="arriba" />
             {/* La tabla puede ser más ancha que la pantalla (una columna por mes): se desliza hacia el costado */}
             <div className="reporte-tabla-scroll">
               <table className="data-table reporte-tabla">
@@ -267,7 +281,8 @@ export default function ReporteDemandaServicios() {
                   {datos.servicios.map((s) => {
                     const valores = porPlata ? s.ingresos_por_mes : s.por_mes;
                     return (
-                      <tr key={s.id_servicio}>
+                      // Las filas que no son de esta página quedan escondidas en pantalla (al imprimir salen todas)
+                      <tr key={s.id_servicio} className={enPagina.has(s) ? undefined : 'fila-otra-pagina'}>
                         <td>
                           {s.nombre_servicio}
                           {!s.activo && <span className="badge badge-gray badge-chica" style={{ marginLeft: 6 }}>Dado de baja</span>}
@@ -307,7 +322,15 @@ export default function ReporteDemandaServicios() {
                 </tfoot>
               </table>
             </div>
+            <Paginacion paginacion={paginacion} />
           </div>
+
+          {/* Pie con los filtros, el usuario y la fecha y hora: solo sale al imprimir */}
+          <PieImpresion filtros={[
+            ['Período', `${mesEnPalabras(desde.anio, desde.mes)} a ${mesEnPalabras(hasta.anio, hasta.mes)}`],
+            ['Servicio', nombreServicio || 'Todos'],
+            ['Ver por', porPlata ? 'Ingresos' : 'Contrataciones'],
+          ]} />
         </>
       )}
     </div>
