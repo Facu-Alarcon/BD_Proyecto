@@ -22,7 +22,7 @@
   overflow-y: auto;
 }
 
-/* Menú lateral escondido (botón de las tres rayitas, ver BotonMenuLateral.jsx): deja de ocupar
+/* Menú lateral escondido (flechita « de arriba del menú, ver Sidebar.jsx): deja de ocupar
    lugar y el contenido, que ya se centra solo, pasa a centrarse en todo el ancho de la pantalla.
    Solo en pantallas de más de 640px: en el celular el menú es un cajón que se abre desde la
    barra de arriba (ver Sidebar.css). */
@@ -32,8 +32,9 @@
   }
 }
 
-/* Botón que esconde / muestra el menú lateral. El contenedor es "pegajoso" y no ocupa alto,
-   así no empuja el contenido y el botón se queda arriba a la izquierda aunque se scrollee. */
+/* Botón "Menú" que vuelve a mostrar el menú lateral escondido. El contenedor es "pegajoso" y no
+   ocupa alto, así no empuja el contenido y el botón se queda arriba a la izquierda aunque se
+   scrollee. */
 .menu-lateral-ancla {
   position: sticky;
   top: 0;
@@ -41,46 +42,49 @@
   z-index: 20;
 }
 
+/* En azul institucional, como el menú, y de buen tamaño para que no pase desapercibido */
 .menu-lateral-btn {
   position: absolute;
-  top: 6px;
-  left: 10px;
+  top: 10px;
+  left: 12px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 30px;
-  padding: 0 5px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card-bg);
-  color: var(--titulo-fuerte);
+  height: 40px;
+  padding: 0 16px 0 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--navy-900);
+  color: #fff;
   font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+  transition: background-color 0.15s ease, transform 0.15s ease;
 }
 
 .menu-lateral-btn:hover {
-  background: var(--gray-bg);
+  background: var(--navy-950);
+  transform: translateX(2px);
 }
 
-/* Con el menú escondido el botón dice "Menú" (subrayado) a la derecha de las tres rayitas */
-.menu-lateral-btn.con-texto {
-  padding: 0 10px 0 7px;
+/* Tema oscuro: blanco con letras azules, igual que el menú en ese tema */
+:root[data-theme="dark"] .menu-lateral-btn {
+  background: #fff;
+  color: var(--navy-900);
 }
-
-.menu-lateral-texto {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+:root[data-theme="dark"] .menu-lateral-btn:hover {
+  background: #eef2f9;
 }
 
 /* En ventanas angostas el margen a la izquierda del contenido no alcanza para el botón y
-   quedaría encima del título o de la flecha de volver. Ahí el contenido baja un poco (8 a 16px)
-   y el botón queda en la franja de arriba. En ventanas anchas sobra margen y nada cambia. */
+   quedaría encima del título o de la flecha de volver. Ahí, mientras el menú está escondido,
+   el contenido baja un poco y el botón queda en la franja de arriba. En ventanas anchas sobra
+   margen y nada cambia. Con el menú a la vista el botón no está y el contenido queda en su lugar. */
 @media (min-width: 641px) and (max-width: 1490px) {
-  .app-main .app-content {
-    padding-top: 40px;
+  .app-shell.menu-oculto .app-main .app-content {
+    padding-top: 60px;
   }
 }
 

@@ -42,6 +42,48 @@
   min-height: 0;
 }
 
+/* Franja de arriba de todo con la flechita « que esconde el menú. Tiene alto fijo (no se
+   reparte el alto como las filas de abajo) y la flechita va a la izquierda, alineada con
+   los íconos de las secciones. */
+.sidebar-cabecera {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  margin-bottom: 4px;
+  padding-left: 7px;
+}
+
+.sidebar-ocultar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 35px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #b6c2e0;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-ocultar:hover,
+.sidebar-ocultar:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+:root[data-theme="dark"] .sidebar-ocultar {
+  color: var(--navy-900);
+}
+:root[data-theme="dark"] .sidebar-ocultar:hover,
+:root[data-theme="dark"] .sidebar-ocultar:focus-visible {
+  background: #eef2f9;
+  color: var(--navy-950);
+}
+
 /* Cada fila (Inicio, el nombre de una sección o una pantalla de una sección abierta) crece por
    igual (flex: 1) hasta llenar el alto del menú. Al abrir secciones aparecen más filas y todas
    se achican por igual. min-height: 0 deja que se achiquen si la pantalla es baja, así siempre
@@ -199,6 +241,12 @@
     display: none;
   }
 
+  /* Solo íconos: la flechita « va centrada, como los íconos de abajo */
+  .sidebar-cabecera {
+    justify-content: center;
+    padding-left: 0;
+  }
+
   /* Solo íconos: no hay lugar a la derecha del nombre, así que no se muestra el signo "-" */
   .sidebar-grupo-cerrar {
     display: none;
@@ -257,6 +305,12 @@
 
   .sidebar-label {
     display: inline;
+  }
+
+  /* En el cajón del celular la flechita vuelve a la izquierda (ahí cierra el cajón) */
+  .sidebar-cabecera {
+    justify-content: flex-start;
+    padding-left: 7px;
   }
 
   .sidebar-grupo-cerrar {
