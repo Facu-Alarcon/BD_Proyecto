@@ -4,7 +4,7 @@ import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
 import SelectBuscable from '../../components/SelectBuscable';
-import { IconVolver } from '../../components/icons';
+import PantallaAlta from '../../components/PantallaAlta';
 
 // Estados que se pueden elegir al editar (Anulada no: para eso está el botón "Anular")
 const ESTADOS = [
@@ -33,6 +33,20 @@ const VACIO = {
   direccion_evento: '',
   estado_reserva: 'PENDIENTE',
 };
+
+// Arma los números del panel "Resumen de reservas" y la "Última reserva cargada" a partir de la
+// lista de reservas que ya trae la API. "Eventos este mes" no cuenta las anuladas.
+function armarResumen(reservas) {
+  const mesActual = hoyLocal().slice(0, 7); // 'AAAA-MM'
+  // La última cargada es la de id más alto
+  const ultima = reservas.reduce((max, r) => (!max || r.id_reserva > max.id_reserva ? r : max), null);
+  return {
+    pendientes: reservas.filter((r) => r.estado_reserva === 'PENDIENTE').length,
+    confirmadas: reservas.filter((r) => r.estado_reserva === 'CONFIRMADA').length,
+    esteMes: reservas.filter((r) => r.estado_reserva !== 'ANULADA' && r.fecha_evento.startsWith(mesActual)).length,
+    ultima: ultima ? [ultima.nombre_evento, ultima.cliente_nombre].filter(Boolean).join(' - ') : null,
+  };
+}
 
 // Formulario de Reservas (alta y edición): cliente, evento, fecha, hora, duración, servicios y personal.
 // Es el mismo componente para crear y para editar: si la URL trae un id (/.../5/editar)
@@ -64,6 +78,8 @@ export default function ReservaForm() {
   const [empleadosOcupados, setEmpleadosOcupados] = useState(null);
   // Servicio cuyo detalle de equipos está abierto con el botón "Ver equipos"
   const [servicioAbierto, setServicioAbierto] = useState(null);
+  // Números del panel de la derecha (solo en el alta)
+  const [resumen, setResumen] = useState(null);
 
   // Al abrir: clientes, servicios y empleados para elegir; si se está editando, también los
   // datos de la reserva con los servicios y empleados que ya tiene
@@ -101,6 +117,12 @@ export default function ReservaForm() {
       setCargando(false);
     });
   }, [id, editando]);
+
+  // Al crear: se arma el panel de la derecha con las reservas que ya están cargadas
+  useEffect(() => {
+    if (editando) return;
+    api.get('/reservas/').then(({ data }) => setResumen(armarResumen(data))).catch(() => {});
+  }, [editando]);
 
   // Cada vez que cambia la fecha se pide al backend cuántas unidades de cada equipo quedan
   // libres ese día (descontando las otras reservas pendientes y confirmadas). Al editar se
@@ -264,29 +286,31 @@ export default function ReservaForm() {
       {/* Errores de los servicios elegidos (por ejemplo, equipos no disponibles ese día) */}
       {errores.servicios && <div className="alert alert-error">{errores.servicios}</div>}
 
-      <div className="form-field">
-        <label htmlFor="id_cliente">Cliente</label>
-        {/* Se puede escribir el nombre o apellido para filtrar, o abrir la lista con la flechita */}
-        <SelectBuscable
-          id="id_cliente"
-          opciones={clientes.map((c) => ({ value: c.id_cliente, label: `${c.nombre_cliente} ${c.apellido_cliente}` }))}
-          value={form.id_cliente}
-          onChange={(valor) => actualizar('id_cliente', valor)}
-          placeholder="Buscar cliente por nombre o apellido..."
-          sinResultados="No hay clientes con ese nombre."
-          required
-        />
-        {errores.id_cliente && <span className="form-error">{errores.id_cliente}</span>}
-      </div>
+      <div className="form-grid-2">
+        <div className="form-field">
+          <label htmlFor="id_cliente">Cliente</label>
+          {/* Se puede escribir el nombre o apellido para filtrar, o abrir la lista con la flechita */}
+          <SelectBuscable
+            id="id_cliente"
+            opciones={clientes.map((c) => ({ value: c.id_cliente, label: `${c.nombre_cliente} ${c.apellido_cliente}` }))}
+            value={form.id_cliente}
+            onChange={(valor) => actualizar('id_cliente', valor)}
+            placeholder="Buscar cliente por nombre o apellido..."
+            sinResultados="No hay clientes con ese nombre."
+            required
+          />
+          {errores.id_cliente && <span className="form-error">{errores.id_cliente}</span>}
+        </div>
 
-      <div className="form-field">
-        <label htmlFor="nombre_evento">Nombre del evento</label>
-        <input
-          id="nombre_evento"
-          placeholder="Ej: Cumpleaños de 15, Casamiento..."
-          value={form.nombre_evento}
-          onChange={(e) => actualizar('nombre_evento', e.target.value)}
-        />
+        <div className="form-field">
+          <label htmlFor="nombre_evento">Nombre del evento</label>
+          <input
+            id="nombre_evento"
+            placeholder="Ej: Cumpleaños de 15, Casamiento..."
+            value={form.nombre_evento}
+            onChange={(e) => actualizar('nombre_evento', e.target.value)}
+          />
+        </div>
       </div>
 
       {/* Fecha, hora de inicio y duración van en la misma fila */}
@@ -310,9 +334,9 @@ export default function ReservaForm() {
           {errores.hora_evento && <span className="form-error">{errores.hora_evento}</span>}
         </div>
         <div className="form-field">
-          {/* La aclaración va al lado del nombre del campo (y no abajo) para que esta fila
-              no quede más alta que las demás */}
-          <label htmlFor="duracion_evento">Duración <span className="label-aclaracion">(horas:minutos, ej: 04:30)</span></label>
+          {/* La aclaración va debajo del campo: al lado del nombre no entra en una línea cuando
+              el formulario tiene el panel de la derecha, y empujaba el campo hacia abajo */}
+          <label htmlFor="duracion_evento">Duración</label>
           <input
             id="duracion_evento"
             type="time"
@@ -320,36 +344,39 @@ export default function ReservaForm() {
             onChange={(e) => actualizar('duracion_evento', e.target.value)}
             required
           />
+          <span className="form-hint">Horas:minutos, ej: 04:30</span>
           {errores.duracion_evento && <span className="form-error">{errores.duracion_evento}</span>}
         </div>
       </div>
 
-      <div className="form-field">
-        <label htmlFor="direccion_evento">Dirección del evento</label>
-        <input id="direccion_evento" placeholder="Ej: Salón Los Álamos, Av. San Martín 456" value={form.direccion_evento} onChange={(e) => actualizar('direccion_evento', e.target.value)} required />
-        {errores.direccion_evento && <span className="form-error">{errores.direccion_evento}</span>}
-      </div>
+      <div className="form-grid-2">
+        <div className="form-field">
+          <label htmlFor="direccion_evento">Dirección del evento</label>
+          <input id="direccion_evento" placeholder="Ej: Salón Los Álamos, Av. San Martín 456" value={form.direccion_evento} onChange={(e) => actualizar('direccion_evento', e.target.value)} required />
+          {errores.direccion_evento && <span className="form-error">{errores.direccion_evento}</span>}
+        </div>
 
-      <div className="form-field">
-        <label htmlFor="estado_reserva">Estado</label>
-        {/* Al crear, el estado lo pone el sistema (siempre Pendiente). Al editar se puede
-            pasar a Confirmada o Finalizada; para anular está el botón "Anular" de la lista */}
-        {editando ? (
-          <>
-            <select id="estado_reserva" value={form.estado_reserva} onChange={(e) => actualizar('estado_reserva', e.target.value)}>
-              {ESTADOS.map((e) => (
-                <option key={e.value} value={e.value}>{e.label}</option>
-              ))}
-            </select>
-            <span className="form-hint">Las reservas confirmadas pasan solas a Finalizada cuando termina el evento.</span>
-          </>
-        ) : (
-          <>
-            <input id="estado_reserva" value="Pendiente" disabled />
-            <span className="form-hint">Toda reserva nueva queda Pendiente automáticamente.</span>
-          </>
-        )}
-        {errores.estado_reserva && <span className="form-error">{errores.estado_reserva}</span>}
+        <div className="form-field">
+          <label htmlFor="estado_reserva">Estado</label>
+          {/* Al crear, el estado lo pone el sistema (siempre Pendiente). Al editar se puede
+              pasar a Confirmada o Finalizada; para anular está el botón "Anular" de la lista */}
+          {editando ? (
+            <>
+              <select id="estado_reserva" value={form.estado_reserva} onChange={(e) => actualizar('estado_reserva', e.target.value)}>
+                {ESTADOS.map((e) => (
+                  <option key={e.value} value={e.value}>{e.label}</option>
+                ))}
+              </select>
+              <span className="form-hint">Las reservas confirmadas pasan solas a Finalizada cuando termina el evento.</span>
+            </>
+          ) : (
+            <>
+              <input id="estado_reserva" value="Pendiente" disabled />
+              <span className="form-hint">Toda reserva nueva queda Pendiente automáticamente.</span>
+            </>
+          )}
+          {errores.estado_reserva && <span className="form-error">{errores.estado_reserva}</span>}
+        </div>
       </div>
 
       <div className="form-field">
@@ -436,12 +463,15 @@ export default function ReservaForm() {
         )}
       </div>
 
-      <button type="submit" className="btn btn-primary" disabled={guardando}>
-        {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear reserva'}
-      </button>{' '}
-      <button type="button" className="btn btn-secondary" onClick={() => navigate('/reservas')}>
-        {editando ? 'Descartar cambios' : 'Cancelar'}
-      </button>
+      {/* Botones separados del formulario por una línea, como en "Nuevo cliente" */}
+      <div className="form-acciones">
+        <button type="submit" className="btn btn-primary" disabled={guardando}>
+          {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear reserva'}
+        </button>
+        <button type="button" className="btn btn-outline" onClick={() => navigate('/reservas')}>
+          {editando ? 'Descartar cambios' : 'Cancelar'}
+        </button>
+      </div>
     </form>
   );
 
@@ -455,19 +485,24 @@ export default function ReservaForm() {
   }
 
   return (
-    <div>
-      <div className="page-header">
-        {/* Flecha para volver a la lista de reservas, al lado del título */}
-        <div className="titulo-con-volver">
-          <button type="button" className="btn-volver" onClick={() => navigate('/reservas')} title="Volver a Reservas" aria-label="Volver a Reservas">
-            <IconVolver />
-          </button>
-          <h1>Nueva Reserva</h1>
-        </div>
-      </div>
-      <div className="card" style={{ padding: 28 }}>
-        {formulario}
-      </div>
-    </div>
+    <PantallaAlta
+      titulo="Nueva reserva"
+      seccion="Reservas"
+      rutaSeccion="/reservas"
+      tituloFormulario="Datos de la reserva"
+      subtituloFormulario="Completá los datos del evento, los servicios y el personal."
+      aviso="Elegí primero la fecha: así el sistema muestra qué servicios y qué personal están disponibles ese día. Toda reserva nueva queda Pendiente."
+      resumen={{
+        titulo: 'Resumen de reservas',
+        filas: [
+          { etiqueta: 'Reservas pendientes', valor: resumen?.pendientes },
+          { etiqueta: 'Reservas confirmadas', valor: resumen?.confirmadas },
+          { etiqueta: 'Eventos este mes', valor: resumen?.esteMes, verde: true },
+        ],
+      }}
+      ultimo={{ etiqueta: 'Última reserva cargada', texto: resumen?.ultima, vacio: 'Todavía no hay reservas' }}
+    >
+      {formulario}
+    </PantallaAlta>
   );
 }

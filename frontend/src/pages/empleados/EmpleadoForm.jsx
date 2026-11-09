@@ -3,9 +3,25 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
-import { IconVolver } from '../../components/icons';
+import PantallaAlta from '../../components/PantallaAlta';
 
 const VACIO = { dni: '', nombre_emp: '', apellido_emp: '', telefono_emp: '', email_emp: '' };
+
+// Arma los números del panel "Resumen de empleados" y el "Último empleado cargado" a partir de
+// la lista de empleados que ya trae la API. Los números cuentan solo a los activos.
+function armarResumen(empleados) {
+  const activos = empleados.filter((e) => e.activo);
+  // El último cargado es el de id más alto
+  const ultimo = empleados.reduce((max, e) => (!max || e.id_empleado > max.id_empleado ? e : max), null);
+  return {
+    activos: activos.length,
+    sinPuesto: activos.filter((e) => !(e.puestos || []).length).length,
+    conUsuario: activos.filter((e) => e.tiene_usuario).length,
+    ultimo: ultimo
+      ? [`${ultimo.nombre_emp} ${ultimo.apellido_emp}`, (ultimo.puestos || []).join(', ')].filter(Boolean).join(' - ')
+      : null,
+  };
+}
 
 // Formulario de Empleados (alta y edición): datos personales, DNI, los puestos que ocupa
 // y su horario laboral.
@@ -30,6 +46,8 @@ export default function EmpleadoForm() {
   const [guardando, setGuardando] = useState(false);
   // Se prende después de guardar una edición, para mostrar la ventana de éxito
   const [guardadoOk, setGuardadoOk] = useState(false);
+  // Números del panel de la derecha (solo en el alta)
+  const [resumen, setResumen] = useState(null);
 
   // Al abrir: todos los puestos y horarios y, si se está editando, los datos del empleado,
   // qué puestos tiene y cuál es su horario
@@ -56,6 +74,12 @@ export default function EmpleadoForm() {
       });
     }
   }, [id, editando]);
+
+  // Al crear: se arma el panel de la derecha con los empleados que ya están cargados
+  useEffect(() => {
+    if (editando) return;
+    api.get('/empleados/').then(({ data }) => setResumen(armarResumen(data))).catch(() => {});
+  }, [editando]);
 
   // Cambia un solo campo del formulario y deja los demás como estaban
   function actualizar(campo, valor) {
@@ -123,30 +147,34 @@ export default function EmpleadoForm() {
     <form onSubmit={handleSubmit}>
       {errores.detail && <div className="alert alert-error">{errores.detail}</div>}
 
-      {/* DNI del empleado (dato obligatorio) */}
-      <div className="form-field">
-        <label htmlFor="dni">DNI <span className="requerido">*</span></label>
-        <input id="dni" placeholder="Ej: 30123456" inputMode="numeric" minLength={7} maxLength={8} pattern="[0-9]{7,8}" title="Solo números, 7 u 8 dígitos, sin puntos" value={form.dni} onChange={(e) => actualizar('dni', e.target.value)} required />
-        <span className="form-hint">Sin puntos ni espacios.</span>
-        {errores.dni && <span className="form-error">{errores.dni}</span>}
+      <div className="form-grid-2">
+        <div className="form-field">
+          <label htmlFor="nombre_emp">Nombre</label>
+          <input id="nombre_emp" placeholder="Ej: Facundo" maxLength={30} pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü' -]+" title="Solo letras, sin números" value={form.nombre_emp} onChange={(e) => actualizar('nombre_emp', e.target.value)} required />
+          {errores.nombre_emp && <span className="form-error">{errores.nombre_emp}</span>}
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="apellido_emp">Apellido</label>
+          <input id="apellido_emp" placeholder="Ej: Alarcón" maxLength={30} pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü' -]+" title="Solo letras, sin números" value={form.apellido_emp} onChange={(e) => actualizar('apellido_emp', e.target.value)} required />
+          {errores.apellido_emp && <span className="form-error">{errores.apellido_emp}</span>}
+        </div>
       </div>
 
-      <div className="form-field">
-        <label htmlFor="nombre_emp">Nombre</label>
-        <input id="nombre_emp" placeholder="Ej: Facundo" maxLength={30} pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü' -]+" title="Solo letras, sin números" value={form.nombre_emp} onChange={(e) => actualizar('nombre_emp', e.target.value)} required />
-        {errores.nombre_emp && <span className="form-error">{errores.nombre_emp}</span>}
-      </div>
+      <div className="form-grid-2">
+        {/* DNI del empleado (dato obligatorio) */}
+        <div className="form-field">
+          <label htmlFor="dni">DNI <span className="requerido">*</span></label>
+          <input id="dni" placeholder="Ej: 30123456" inputMode="numeric" minLength={7} maxLength={8} pattern="[0-9]{7,8}" title="Solo números, 7 u 8 dígitos, sin puntos" value={form.dni} onChange={(e) => actualizar('dni', e.target.value)} required />
+          <span className="form-hint">Sin puntos ni espacios.</span>
+          {errores.dni && <span className="form-error">{errores.dni}</span>}
+        </div>
 
-      <div className="form-field">
-        <label htmlFor="apellido_emp">Apellido</label>
-        <input id="apellido_emp" placeholder="Ej: Alarcón" maxLength={30} pattern="[A-Za-zÁÉÍÓÚáéíóúÑñÜü' -]+" title="Solo letras, sin números" value={form.apellido_emp} onChange={(e) => actualizar('apellido_emp', e.target.value)} required />
-        {errores.apellido_emp && <span className="form-error">{errores.apellido_emp}</span>}
-      </div>
-
-      <div className="form-field">
-        <label htmlFor="telefono_emp">Teléfono</label>
-        <input id="telefono_emp" placeholder="Ej: 3871234567" type="tel" inputMode="numeric" minLength={10} maxLength={12} pattern="[0-9]{10,12}" value={form.telefono_emp} onChange={(e) => actualizar('telefono_emp', e.target.value)} required />
-        {errores.telefono_emp && <span className="form-error">{errores.telefono_emp}</span>}
+        <div className="form-field">
+          <label htmlFor="telefono_emp">Teléfono</label>
+          <input id="telefono_emp" placeholder="Ej: 3871234567" type="tel" inputMode="numeric" minLength={10} maxLength={12} pattern="[0-9]{10,12}" value={form.telefono_emp} onChange={(e) => actualizar('telefono_emp', e.target.value)} required />
+          {errores.telefono_emp && <span className="form-error">{errores.telefono_emp}</span>}
+        </div>
       </div>
 
       <div className="form-field">
@@ -188,12 +216,15 @@ export default function EmpleadoForm() {
         {errores.id_horario && <span className="form-error">{errores.id_horario}</span>}
       </div>
 
-      <button type="submit" className="btn btn-primary" disabled={guardando}>
-        {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear empleado'}
-      </button>{' '}
-      <button type="button" className="btn btn-secondary" onClick={() => navigate('/empleados')}>
-        {editando ? 'Descartar cambios' : 'Cancelar'}
-      </button>
+      {/* Botones separados del formulario por una línea, como en "Nuevo cliente" */}
+      <div className="form-acciones">
+        <button type="submit" className="btn btn-primary" disabled={guardando}>
+          {guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear empleado'}
+        </button>
+        <button type="button" className="btn btn-outline" onClick={() => navigate('/empleados')}>
+          {editando ? 'Descartar cambios' : 'Cancelar'}
+        </button>
+      </div>
     </form>
   );
 
@@ -212,20 +243,24 @@ export default function EmpleadoForm() {
   }
 
   return (
-    <div>
-      <div className="page-header">
-        {/* Flecha para volver a la lista de empleados, al lado del título */}
-        <div className="titulo-con-volver">
-          <button type="button" className="btn-volver" onClick={() => navigate('/empleados')} title="Volver a Empleados" aria-label="Volver a Empleados">
-            <IconVolver />
-          </button>
-          <h1>Nuevo Empleado</h1>
-        </div>
-      </div>
-      {/* Sin ancho máximo: el formulario ocupa todo el ancho de la sección, igual que la lista */}
-      <div className="card" style={{ padding: 28 }}>
-        {formulario}
-      </div>
-    </div>
+    <PantallaAlta
+      titulo="Nuevo empleado"
+      seccion="Empleados"
+      rutaSeccion="/empleados"
+      tituloFormulario="Datos del empleado"
+      subtituloFormulario="Completá los datos personales, los puestos y el horario del empleado."
+      aviso="Verificá que el DNI no esté ya cargado para otro empleado: no se puede repetir. Los puestos y el horario se pueden cambiar después, editando al empleado."
+      resumen={{
+        titulo: 'Resumen de empleados',
+        filas: [
+          { etiqueta: 'Empleados activos', valor: resumen?.activos },
+          { etiqueta: 'Sin puesto asignado', valor: resumen?.sinPuesto },
+          { etiqueta: 'Con usuario del sistema', valor: resumen?.conUsuario, verde: true },
+        ],
+      }}
+      ultimo={{ etiqueta: 'Último empleado cargado', texto: resumen?.ultimo, vacio: 'Todavía no hay empleados' }}
+    >
+      {formulario}
+    </PantallaAlta>
   );
 }

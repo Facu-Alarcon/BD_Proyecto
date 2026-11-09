@@ -3,7 +3,22 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/client';
 import FormModal from '../../components/FormModal';
 import SuccessModal from '../../components/SuccessModal';
-import { IconVolver } from '../../components/icons';
+import PantallaAlta from '../../components/PantallaAlta';
+import { formatearPesos } from '../../utils/formato';
+
+// Arma los números del panel "Resumen de servicios" y el "Último servicio cargado" a partir de
+// la lista de servicios que ya trae la API. "Sin equipos asignados" cuenta solo a los activos.
+function armarResumen(servicios) {
+  const activos = servicios.filter((s) => s.activo);
+  // El último cargado es el de id más alto
+  const ultimo = servicios.reduce((max, s) => (!max || s.id_servicio > max.id_servicio ? s : max), null);
+  return {
+    cargados: servicios.length,
+    sinEquipos: activos.filter((s) => !(s.equipos_detalle || []).length).length,
+    activos: activos.length,
+    ultimo: ultimo ? `${ultimo.tipo_servicio} - ${formatearPesos(ultimo.precio_servicio)}` : null,
+  };
+}
 
 // Formulario de servicios: nombre, precio y qué equipos usa (y cuántos de cada uno).
 // Los equipos se usan al reservar para controlar que en un mismo día no se pidan
@@ -21,6 +36,8 @@ export default function ServicioForm() {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [guardadoOk, setGuardadoOk] = useState(false);
+  // Números del panel de la derecha (solo en el alta)
+  const [resumen, setResumen] = useState(null);
 
   // Trae todos los equipos y, si se está editando, el servicio con los equipos que ya usa
   useEffect(() => {
@@ -37,6 +54,12 @@ export default function ServicioForm() {
       setCargando(false);
     });
   }, [id, editando]);
+
+  // Al crear: se arma el panel de la derecha con los servicios que ya están cargados
+  useEffect(() => {
+    if (editando) return;
+    api.get('/servicios/').then(({ data }) => setResumen(armarResumen(data))).catch(() => {});
+  }, [editando]);
 
   function actualizar(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -98,16 +121,18 @@ export default function ServicioForm() {
     <form onSubmit={handleSubmit}>
       {errores.detail && <div className="alert alert-error">{errores.detail}</div>}
 
-      <div className="form-field">
-        <label htmlFor="tipo_servicio">Nombre del Servicio</label>
-        <input id="tipo_servicio" placeholder="Ej: Sonido e iluminación" value={form.tipo_servicio} onChange={(e) => actualizar('tipo_servicio', e.target.value)} required />
-        {errores.tipo_servicio && <span className="form-error">{errores.tipo_servicio}</span>}
-      </div>
+      <div className="form-grid-2">
+        <div className="form-field">
+          <label htmlFor="tipo_servicio">Nombre del Servicio</label>
+          <input id="tipo_servicio" placeholder="Ej: Sonido e iluminación" value={form.tipo_servicio} onChange={(e) => actualizar('tipo_servicio', e.target.value)} required />
+          {errores.tipo_servicio && <span className="form-error">{errores.tipo_servicio}</span>}
+        </div>
 
-      <div className="form-field">
-        <label htmlFor="precio_servicio">Precio</label>
-        <input id="precio_servicio" placeholder="Ej: 50000" type="number" step="0.01" min="0" value={form.precio_servicio} onChange={(e) => actualizar('precio_servicio', e.target.value)} required />
-        {errores.precio_servicio && <span className="form-error">{errores.precio_servicio}</span>}
+        <div className="form-field">
+          <label htmlFor="precio_servicio">Precio</label>
+          <input id="precio_servicio" placeholder="Ej: 50000" type="number" step="0.01" min="0" value={form.precio_servicio} onChange={(e) => actualizar('precio_servicio', e.target.value)} required />
+          {errores.precio_servicio && <span className="form-error">{errores.precio_servicio}</span>}
+        </div>
       </div>
 
       {/* Equipos que usa el servicio: se escribe cuántas unidades de cada uno (0 = no lo usa) */}
@@ -165,20 +190,24 @@ export default function ServicioForm() {
   }
 
   return (
-    <div>
-      <div className="page-header">
-        {/* Flecha para volver a la lista de servicios, al lado del título */}
-        <div className="titulo-con-volver">
-          <button type="button" className="btn-volver" onClick={() => navigate('/servicios')} title="Volver a Servicios" aria-label="Volver a Servicios">
-            <IconVolver />
-          </button>
-          <h1>Nuevo Servicio</h1>
-        </div>
-      </div>
-      {/* Sin ancho máximo: el formulario ocupa todo el ancho de la sección, igual que la lista */}
-      <div className="card" style={{ padding: 28 }}>
-        {formulario}
-      </div>
-    </div>
+    <PantallaAlta
+      titulo="Nuevo servicio"
+      seccion="Servicios"
+      rutaSeccion="/servicios"
+      tituloFormulario="Datos del servicio"
+      subtituloFormulario="Completá el nombre, el precio y los equipos que usa el servicio."
+      aviso="Indicá qué equipos usa el servicio y cuántas unidades de cada uno: al reservar, el sistema controla que ese día alcancen."
+      resumen={{
+        titulo: 'Resumen de servicios',
+        filas: [
+          { etiqueta: 'Servicios cargados', valor: resumen?.cargados },
+          { etiqueta: 'Sin equipos asignados', valor: resumen?.sinEquipos },
+          { etiqueta: 'Servicios activos', valor: resumen?.activos, verde: true },
+        ],
+      }}
+      ultimo={{ etiqueta: 'Último servicio cargado', texto: resumen?.ultimo, vacio: 'Todavía no hay servicios' }}
+    >
+      {formulario}
+    </PantallaAlta>
   );
 }
