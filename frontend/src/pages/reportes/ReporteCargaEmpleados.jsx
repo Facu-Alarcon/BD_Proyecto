@@ -112,10 +112,14 @@ export default function ReporteCargaEmpleados() {
   const opcionesEmpleado = (datos?.opciones.empleados || []).filter((e) => !puesto || e.puestos.includes(Number(puesto)));
 
   // Las filas de la tabla (empleados o puestos, según "Ver por"), de a 10 por página.
-  // Se usa la misma lista como "reinicio": cambia cuando llegan datos nuevos o cuando se cambia
-  // "Ver por", y en los dos casos se vuelve a la primera página.
-  const filasTabla = (porPuesto ? datos?.puestos : datos?.empleados) || [];
-  const paginacion = usePaginacion(filasTabla, filasTabla);
+  // La lista que manda el backend se usa como "reinicio": cambia cuando llegan datos nuevos o
+  // cuando se cambia "Ver por", y en los dos casos se vuelve a la primera página.
+  // Ojo: el reinicio no puede ser el "|| []", porque mientras no hay datos eso arma un arreglo
+  // nuevo en cada render, la paginación cree que cambiaron los filtros y se queda
+  // re-renderizando sin parar (la pantalla quedaba en blanco).
+  const filasDelBackend = porPuesto ? datos?.puestos : datos?.empleados;
+  const filasTabla = filasDelBackend || [];
+  const paginacion = usePaginacion(filasTabla, filasDelBackend);
   const enPagina = new Set(paginacion.visibles);
   // Nombres del puesto y del empleado elegidos, para el pie del PDF
   const nombrePuesto = (datos?.opciones.puestos || []).find((p) => String(p.id) === String(puesto))?.nombre;
