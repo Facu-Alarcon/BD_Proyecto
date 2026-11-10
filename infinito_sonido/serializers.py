@@ -739,6 +739,9 @@ class PagosSerializer(serializers.ModelSerializer):
     # No se puede elegir un método de pago desactivado. Pero si el pago ya lo tenía
     # (lo desactivaron después), se lo deja.
     def validate_metodos_pago(self, metodos):
+        # Todo pago tiene que tener al menos un método
+        if not metodos:
+            raise serializers.ValidationError('Elegí al menos un método de pago.')
         ya_estaban = set()
         if self.instance is not None:
             ya_estaban = set(Detalles_de_Pago.objects.filter(id_pago=self.instance).values_list('id_metodo_pago_id', flat=True))
@@ -759,6 +762,9 @@ class PagosSerializer(serializers.ModelSerializer):
         # Un pago anulado ya no se puede modificar, solo mirar
         if self.instance is not None and not self.instance.activo:
             raise serializers.ValidationError({'detail': 'Un pago anulado no se puede modificar.'})
+        # Al crear un pago, los métodos son obligatorios (si no vienen, validate_metodos_pago no se ejecuta)
+        if self.instance is None and not attrs.get('metodos_pago'):
+            raise serializers.ValidationError({'metodos_pago': 'Elegí al menos un método de pago.'})
         reserva = attrs.get('id_reserva', getattr(self.instance, 'id_reserva', None))
         monto = attrs.get('monto', getattr(self.instance, 'monto', 0))
         if reserva is not None:

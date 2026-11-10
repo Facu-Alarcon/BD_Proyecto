@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../api/client';
 import FormModal from '../../components/FormModal';
+import SelectBuscable from '../../components/SelectBuscable';
 import SuccessModal from '../../components/SuccessModal';
 import { IconVolver } from '../../components/icons';
 
@@ -27,6 +28,8 @@ export default function PagoForm() {
   const [guardando, setGuardando] = useState(false);
   // Se prende después de guardar una edición, para mostrar la ventana de éxito
   const [guardadoOk, setGuardadoOk] = useState(false);
+  // Al editar: reserva y monto que tenía el pago antes de cambiarlo (para calcular bien el saldo)
+  const [pagoOriginal, setPagoOriginal] = useState(null);
 
   // Al abrir: reservas y métodos de pago para elegir y, si se está editando, los datos del pago
   useEffect(() => {
@@ -44,6 +47,7 @@ export default function PagoForm() {
       if (pagoRes) {
         const p = pagoRes.data;
         setForm({ id_reserva: p.id_reserva, monto: p.monto });
+        setPagoOriginal({ id_reserva: p.id_reserva, monto: Number(p.monto), activo: !p.anulado });
         setMetodosSel(new Set(p.metodos_pago_detalle.map((m) => Number(m.id_metodo_pago))));
       }
       setCargando(false);
@@ -71,10 +75,26 @@ export default function PagoForm() {
     ? `${reservaSeleccionada.cliente_nombre}${reservaSeleccionada.nombre_evento ? ' · ' + reservaSeleccionada.nombre_evento : ''}`
     : undefined;
 
+  // Lo que falta pagar de una reserva. Al editar, el monto que ya tenía este mismo pago no se
+  // descuenta (se va a reemplazar por el nuevo), igual que lo calcula el backend.
+  function saldoDe(r) {
+    let saldo = Number(r.pagos_detalle?.saldo ?? r.monto_total);
+    if (pagoOriginal?.activo && String(pagoOriginal.id_reserva) === String(r.id_reserva)) {
+      saldo = Math.min(saldo + pagoOriginal.monto, Number(r.monto_total));
+    }
+    return saldo;
+  }
+  const pesos = (n) => `$${Number(n).toLocaleString('es-AR')}`;
+
   // Guardar: si se está editando hace PUT y muestra la ventana de éxito; si es un alta hace
   // POST y vuelve a la lista. Si el backend rechaza los datos (400), se muestran sus errores.
   async function handleSubmit(e) {
     e.preventDefault();
+    // Sin ningún método de pago tildado no se manda nada (el backend también lo controla)
+    if (metodosSel.size === 0) {
+      setErrores({ metodos_pago: 'Elegí al menos un método de pago.' });
+      return;
+    }
     setGuardando(true);
     setErrores({});
     const payload = { ...form, metodos_pago: Array.from(metodosSel) };
@@ -118,14 +138,27 @@ export default function PagoForm() {
 
       <div className="form-field">
         <label htmlFor="id_reserva">Reserva</label>
-        <select id="id_reserva" value={form.id_reserva} onChange={(e) => actualizar('id_reserva', e.target.value)} required>
-          <option value="">Seleccionar...</option>
-          {reservas.map((r) => (
-            <option key={r.id_reserva} value={r.id_reserva}>
-              {r.cliente_nombre}{r.nombre_evento ? ` · ${r.nombre_evento}` : ''} — ${Number(r.monto_total).toLocaleString('es-AR')}
-            </option>
-          ))}
-        </select>
+        {/* Se puede escribir el nombre o apellido del cliente (o el evento) para filtrar la lista */}
+        <SelectBuscable
+          id="id_reserva"
+          opciones={reservas.map((r) => ({
+            value: r.id_reserva,
+            label: `${r.cliente_nombre}${r.nombre_evento ? ` · ${r.nombre_evento}` : ''} — Saldo pendiente ${pesos(saldoDe(r))}`,
+          }))}
+          value={form.id_reserva}
+          onChange={(valor) => actualizar('id_reserva', valor)}
+          placeholder="Escribí el nombre o apellido del cliente..."
+          sinResultados="No hay reservas de ese cliente."
+          required
+        />
+        {/* Resumen de la reserva elegida: cuánto sale, cuánto se pagó y cuánto falta */}
+        {reservaSeleccionada && (
+          <p className="form-hint">
+            Total {pesos(reservaSeleccionada.monto_total)} · Pagado{' '}
+            {pesos(Number(reservaSeleccionada.monto_total) - saldoDe(reservaSeleccionada))} ·{' '}
+            <b>Saldo pendiente {pesos(saldoDe(reservaSeleccionada))}</b>
+          </p>
+        )}
         {errores.id_reserva && <span className="form-error">{errores.id_reserva}</span>}
       </div>
 
@@ -155,6 +188,7 @@ export default function PagoForm() {
             </label>
           ))}
         </div>
+        {errores.metodos_pago && <span className="form-error">{errores.metodos_pago}</span>}
       </div>
 
       <button type="submit" className="btn btn-primary" disabled={guardando}>
