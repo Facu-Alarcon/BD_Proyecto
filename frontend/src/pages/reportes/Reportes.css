@@ -1,38 +1,344 @@
 /* Estilos de las pantallas de Reportes (pages/reportes/) */
 
-/* ---------- Lista de reportes ---------- */
-/* Las tarjetas se acomodan solas: entran las que quepan por fila */
-.reportes-lista {
+/* ---------- Tablero de reportes (pantalla de inicio de Reportes) ---------- */
+/* El contenido de la app tiene un ancho máximo (ver .app-content en Layout.css). En esta
+   pantalla se lo saca, así el tablero ocupa todo el ancho disponible. Las demás no cambian */
+.app-content:has(.reportes-mosaico) {
+  max-width: none;
+}
+
+/* ---------- Indicadores de arriba del tablero (ver IndicadoresReportes.jsx) ---------- */
+/* Una fila con las 4 tarjetas (o 2, si el perfil no ve los financieros) */
+.indicadores {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.indicadores-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.indicador {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  min-height: 128px;
+  padding: 16px 18px 14px;
+  overflow: hidden;
+  animation: mosaico-aparecer 0.45s ease both;
+  animation-delay: calc(var(--orden, 0) * 70ms);
+}
+
+.indicador-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Círculo de color con el ícono (--color se pone en IndicadoresReportes.jsx) */
+.indicador-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--color);
+  background: color-mix(in srgb, var(--color) 14%, var(--card-bg));
+}
+
+.indicador-icono svg {
+  width: 20px;
+  height: 20px;
+}
+
+.indicador-titulo {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.indicador-valor {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(22px, 2vw, 30px);
+  font-weight: 800;
+  color: var(--titulo);
+  font-variant-numeric: tabular-nums; /* así el número no "baila" mientras corre */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.indicador-pie {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  /* Que el texto no quede encima de la lineíta */
+  max-width: 62%;
+}
+
+.indicador-variacion {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.indicador-variacion.sube { color: var(--green); }
+.indicador-variacion.baja { color: var(--red); }
+
+.indicador-pie-texto {
+  color: var(--text-muted);
+}
+
+/* La lineíta va abajo a la derecha, por detrás del texto */
+.indicador-lineita {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 45%;
+  height: 52px;
+}
+
+/* Tarjeta vacía mientras llegan los primeros números */
+.indicador-cargando {
+  background: linear-gradient(90deg, var(--card-bg) 25%, var(--gray-bg) 50%, var(--card-bg) 75%);
+  background-size: 200% 100%;
+  animation: mosaico-brillo 1.2s linear infinite;
+}
+
+@media (max-width: 1100px) {
+  .indicadores { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .indicadores, .indicadores-2 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Mosaico de 12 columnas y filas bajitas. Cada recuadro dice en qué columna y fila empieza
+   y cuántas ocupa (ver "lugar" en ReportesInicio.jsx). Como las filas son chicas, los
+   recuadros pueden tener altos distintos y quedar escalonados en vez de en filas parejas.
+   Las filas crecen un poco con el ancho de la pantalla (entre 56px y 80px). */
+.reportes-mosaico {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-auto-rows: clamp(56px, 4.2vw, 80px);
   gap: 16px;
 }
 
-.reporte-tarjeta {
+.reporte-mosaico-item {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 20px;
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  gap: 6px;
+  min-width: 0;
+  padding: 18px 18px 16px;
+  overflow: hidden;
+  grid-column: var(--columna) / span var(--ancho);
+  grid-row: var(--fila) / span var(--alto);
+  /* Cada recuadro tiene su color (--acento, se pone en ReportesInicio.jsx): la línea de arriba
+     y un degradé muy suave de ese color que se va perdiendo hacia abajo */
+  border-top: 4px solid var(--acento, var(--verde));
+  background: linear-gradient(160deg, color-mix(in srgb, var(--acento, var(--verde)) 9%, var(--card-bg)) 0%, var(--card-bg) 55%);
+  /* Al entrar, los recuadros aparecen subiendo, uno detrás del otro */
+  animation: mosaico-aparecer 0.45s ease both;
+  animation-delay: calc(var(--orden, 0) * 70ms);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
-/* Al pasar el mouse la tarjeta se levanta un poquito, para que se note que es un link */
-.reporte-tarjeta:hover {
-  border-color: var(--verde-claro);
-  transform: translateY(-2px);
+/* Círculo decorativo del color del recuadro, medio escondido en la esquina de arriba a la derecha */
+.reporte-mosaico-item::before {
+  content: '';
+  position: absolute;
+  top: -70px;
+  right: -50px;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: var(--acento, var(--verde));
+  opacity: 0.08;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+  pointer-events: none;
 }
 
-.reporte-tarjeta h2 {
+/* Lo de adentro del recuadro va por encima del círculo */
+.reporte-mosaico-item > * {
+  position: relative;
+}
+
+/* Al pasar el mouse el recuadro se levanta, el círculo crece y el gráfico se agranda un poquito */
+.reporte-mosaico-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.13);
+}
+
+.reporte-mosaico-item:hover::before {
+  transform: scale(1.35);
+  opacity: 0.13;
+}
+
+.reporte-mosaico-item:hover .reporte-tarjeta-grafico img {
+  transform: scale(1.03);
+}
+
+.reporte-mosaico-item h2 {
   margin: 0;
-  font-size: 17px;
+  font-size: 16px;
   color: var(--titulo);
 }
 
-.reporte-tarjeta p {
+.reporte-mosaico-item p {
   margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+@keyframes mosaico-aparecer {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.reporte-tablero-sub {
+  margin: 4px 0 0;
   font-size: 14px;
   color: var(--text-muted);
-  line-height: 1.5;
+}
+
+.reporte-tarjeta-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* El gráfico ocupa todo el lugar que queda en el recuadro */
+.reporte-tarjeta-grafico {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.reporte-tarjeta-grafico img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transition: transform 0.25s ease;
+}
+
+/* Torta con leyenda: la torta a la izquierda y la lista de servicios a la derecha */
+.reporte-tarjeta-grafico.con-leyenda {
+  gap: 14px;
+  padding: 10px 14px;
+}
+
+.reporte-tarjeta-grafico.con-leyenda img {
+  flex: 0 1 auto;
+  max-width: 50%;
+}
+
+.reporte-tarjeta-leyenda {
+  flex: 1;
+  min-width: 0;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.reporte-tarjeta-leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #142042; /* el fondo del gráfico es siempre blanco, también en modo oscuro */
+}
+
+.leyenda-color {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+/* Los nombres largos se cortan con "..." (el nombre completo sale al dejar el mouse encima) */
+.leyenda-nombre {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.leyenda-porcentaje {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* En pantallas angostas la leyenda va debajo de la torta */
+@media (max-width: 700px) {
+  .reporte-tarjeta-grafico.con-leyenda { flex-direction: column; }
+  .reporte-tarjeta-grafico.con-leyenda img { max-width: 100%; max-height: 55%; }
+  .reporte-tarjeta-leyenda { width: 100%; }
+}
+
+.reporte-tarjeta-aviso {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Mientras carga: rectángulo gris con un brillo que pasa de izquierda a derecha */
+.reporte-tarjeta-cargando {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--gray-bg) 25%, var(--border) 50%, var(--gray-bg) 75%);
+  background-size: 200% 100%;
+  animation: mosaico-brillo 1.2s linear infinite;
+}
+
+@keyframes mosaico-brillo {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* Tablet: dos columnas, sin escalonar. El primer recuadro ocupa las dos */
+@media (max-width: 1100px) {
+  .reportes-mosaico { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 64px; }
+  .reporte-mosaico-item { grid-column: auto / span 1; grid-row: auto / span 4; }
+  .reporte-mosaico-item:first-child { grid-column: auto / span 2; }
+}
+
+/* Celular: uno debajo del otro, todos del mismo alto */
+@media (max-width: 700px) {
+  .reportes-mosaico { grid-template-columns: minmax(0, 1fr); }
+  .reporte-mosaico-item, .reporte-mosaico-item:first-child { grid-column: auto / span 1; grid-row: auto / span 4; }
+}
+
+/* Si la compu pide menos movimiento, no hay animaciones */
+@media (prefers-reduced-motion: reduce) {
+  .reporte-mosaico-item, .reporte-tarjeta-cargando { animation: none; }
+  .reporte-mosaico-item, .reporte-tarjeta-grafico img { transition: none; }
+  .reporte-mosaico-item:hover, .reporte-mosaico-item:hover::before, .reporte-mosaico-item:hover .reporte-tarjeta-grafico img { transform: none; }
+  .reporte-mosaico-item::before { transition: none; }
 }
 
 /* ---------- Pantalla de un reporte ---------- */

@@ -45,6 +45,8 @@ urlpatterns = [
     path('reportes/comparacion-periodos/', reportes.ReporteComparacionPeriodosView.as_view(), name='api_reporte_comparacion_periodos'),
     path('reportes/carga-empleados/', reportes.ReporteCargaEmpleadosView.as_view(), name='api_reporte_carga_empleados'),
     path('reportes/contratado-cobrado/', reportes.ReporteContratadoCobradoView.as_view(), name='api_reporte_contratado_cobrado'),
+    # Los 4 indicadores de arriba del tablero de Reportes (se recalculan en cada pedido)
+    path('reportes/indicadores/', reportes.IndicadoresView.as_view(), name='api_reporte_indicadores'),
     # Al final, todas las URLs que armó el router
     path('', include(router.urls)),
 ]

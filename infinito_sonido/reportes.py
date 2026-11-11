@@ -20,7 +20,7 @@ from rest_framework.views import APIView
 from .graficos import agregados, barras_agrupadas, barras_dobles_por_mes, barras_por_mes, heatmap, lineas_con_tendencia, pesos_corto, torta
 from .models import Equipos, Equipos_x_Servicios, Pagos, Reservas, Reservas_x_Servicios, Servicios, Tipo_Equipos
 from .models import Detalles_Reservas, Empleados, Puestos, Puestos_x_Empleados
-from .permissions import permiso_codigo, permiso_modulo
+from .permissions import permiso_codigo, permiso_modulo, permisos_del_usuario
 
 # Nombres cortos de los meses, para las etiquetas del gráfico
 MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
@@ -321,6 +321,9 @@ class ReporteDemandaServiciosView(APIView):
                 'contrataciones': torta([f['nombre_servicio'] for f in filas], [f['total'] for f in filas]),
                 'ingresos': torta([f['nombre_servicio'] for f in filas], [f['ingresos'] for f in filas], pesos_corto),
             },
+            # La misma torta de contrataciones pero sin la leyenda al costado: es la vista previa
+            # chica del tablero de Reportes (ver ReportesInicio.jsx)
+            'vista_previa': torta([f['nombre_servicio'] for f in filas], [f['total'] for f in filas], leyenda=False),
             # Total, promedio, máximo, mínimo y desvío por mes (numpy, ver graficos.py)
             'agregados': {
                 'contrataciones': agregados(columnas, [c['contrataciones'] for c in columnas]),
@@ -881,3 +884,141 @@ class ReporteContratadoCobradoView(APIView):
                 'estados': [{'id': codigo, 'nombre': nombre} for codigo, nombre in ESTADOS_COBRANZA],
             },
         })
+
+
+# ---------------------------------------------------------------------------
+# INDICADORES DEL TABLERO DE REPORTES
+# ---------------------------------------------------------------------------
+
+# Cuántos meses entran en la lineíta (sparkline) de cada indicador, contando el actual
+MESES_LINEA = 6
+
+
+def _meses_hacia_atras(hoy, cantidad):
+    """Los últimos 'cantidad' meses terminando en el de hoy, del más viejo al actual: [(2026, 6), ..., (2026, 11)]."""
+    anio, mes = hoy.year, hoy.month
+    lista = []
+    for _ in range(cantidad):
+        lista.append((anio, mes))
+        mes -= 1
+        if mes == 0:
+            anio, mes = anio - 1, 12
+    return list(reversed(lista))
+
+
+def _mismo_dia_mes_anterior(hoy):
+    """El mismo día del mes anterior. Si ese mes es más corto (ej: 31 de marzo -> febrero), su último día."""
+    anio, mes = (hoy.year, hoy.month - 1) if hoy.month > 1 else (hoy.year - 1, 12)
+    return datetime.date(anio, mes, min(hoy.day, calendar.monthrange(anio, mes)[1]))
+
+
+class IndicadoresView(APIView):
+    """
+    Los 4 números de arriba del tablero de Reportes. Se calculan en el momento con lo que hay
+    en la base, así que cambian solos cuando se carga una reserva, se finaliza un evento o
+    se registra un pago (la pantalla los vuelve a pedir cada tanto, ver ReportesInicio.jsx).
+    Se pide así: /api/reportes/indicadores/
+
+    Cada indicador trae su valor, cuánto cambió contra el mes anterior (en %) y los valores de
+    los últimos 6 meses para dibujar la lineíta:
+      - reservas: las reservas REGISTRADAS este mes (por fecha_registro), sin las anuladas.
+                  Se compara contra el mismo tramo del mes anterior (del 1 al mismo día), porque
+                  el mes actual todavía no terminó.
+      - eventos:  los eventos REALIZADOS este mes (reservas finalizadas con fecha de evento en
+                  el mes). Se compara igual que las reservas, del 1 al mismo día.
+      - ingresos: lo contratado en las reservas con evento este mes, igual que el reporte
+                  "Evolución de ingresos". Se compara contra el mes anterior completo.
+      - saldo:    lo que falta cobrar de todas las reservas no anuladas, calculado reserva por
+                  reserva como en "Contratado vs. cobrado". No es "del mes" sino lo que se debe
+                  hoy, por eso en vez del % trae en cuántas reservas está repartido, y su
+                  lineíta es de este mes y los 5 que siguen (lo que falta cobrar de esos eventos).
+    Ingresos y saldo son plata del negocio: solo se mandan si el perfil tiene
+    "Ver Reportes Financieros". Si no, esas dos claves vienen en null y la pantalla no las muestra.
+    """
+    permission_classes = [permiso_modulo('reportes')]
+
+    def get(self, request):
+        hoy = timezone.localdate()
+        meses = _meses_hacia_atras(hoy, MESES_LINEA)
+        primer_dia = datetime.date(meses[0][0], meses[0][1], 1)
+        no_anuladas = Reservas.objects.exclude(estado_reserva='ANULADA')
+
+        # ---------- Reservas registradas por mes (fecha_registro guarda también la hora) ----------
+        registradas = defaultdict(int)
+        fechas_registro = [
+            timezone.localtime(f).date()
+            for f in no_anuladas.filter(fecha_registro__date__gte=primer_dia).values_list('fecha_registro', flat=True)
+        ]
+        for f in fechas_registro:
+            registradas[(f.year, f.month)] += 1
+
+        # ---------- Eventos realizados (finalizados) e ingresos contratados, por mes del evento ----------
+        realizados = defaultdict(int)
+        ingresos = defaultdict(float)
+        fechas_realizados = []
+        for fecha, monto, estado in no_anuladas.filter(fecha_evento__gte=primer_dia).values_list(
+                'fecha_evento', 'monto_total', 'estado_reserva'):
+            mes = (fecha.year, fecha.month)
+            ingresos[mes] += monto
+            if estado == 'FINALIZADA':
+                realizados[mes] += 1
+                fechas_realizados.append(fecha)
+
+        # Para comparar "del 1 al mismo día" con el mes anterior
+        mes_actual, mes_anterior = meses[-1], meses[-2]
+        tope_anterior = _mismo_dia_mes_anterior(hoy)
+
+        def hasta_el_dia(fechas, mes, tope):
+            return sum(1 for f in fechas if (f.year, f.month) == mes and f <= tope)
+
+        resultado = {
+            'meses': [f'{MESES[m - 1]} {a}' for a, m in meses],
+            'reservas': {
+                'valor': registradas[mes_actual],
+                'variacion': _variacion(hasta_el_dia(fechas_registro, mes_actual, hoy),
+                                        hasta_el_dia(fechas_registro, mes_anterior, tope_anterior)),
+                'linea': [registradas[m] for m in meses],
+            },
+            'eventos': {
+                'valor': realizados[mes_actual],
+                'variacion': _variacion(hasta_el_dia(fechas_realizados, mes_actual, hoy),
+                                        hasta_el_dia(fechas_realizados, mes_anterior, tope_anterior)),
+                'linea': [realizados[m] for m in meses],
+            },
+            'ingresos': None,
+            'saldo': None,
+        }
+
+        # ---------- Lo de plata, solo para los perfiles que pueden verlo ----------
+        if 'ver_reportes_financieros' in permisos_del_usuario(request.user):
+            # Lo pagado de cada reserva (los pagos anulados no cuentan)
+            pagado = defaultdict(float)
+            for id_reserva, monto in Pagos.objects.activos().values_list('id_reserva_id', 'monto'):
+                pagado[id_reserva] += monto
+
+            saldo_total = 0.0
+            reservas_con_saldo = 0
+            saldo_por_mes = defaultdict(float)  # por mes del evento, para la lineíta
+            for id_reserva, fecha, monto_total in no_anuladas.values_list('id_reserva', 'fecha_evento', 'monto_total'):
+                debe = max(monto_total - pagado[id_reserva], 0)
+                if debe > 0:
+                    saldo_total += debe
+                    reservas_con_saldo += 1
+                    saldo_por_mes[(fecha.year, fecha.month)] += debe
+
+            resultado['ingresos'] = {
+                'valor': round(ingresos[mes_actual], 2),
+                'variacion': _variacion(ingresos[mes_actual], ingresos[mes_anterior]),
+                'linea': [round(ingresos[m], 2) for m in meses],
+            }
+            # La lineíta del saldo mira para adelante: casi todo lo que falta cobrar es de eventos
+            # que todavía no pasaron, así que muestra cuánto se debe de los eventos de este mes y
+            # de los 5 que siguen
+            proximos = [(hoy.year + (hoy.month - 1 + i) // 12, (hoy.month - 1 + i) % 12 + 1) for i in range(MESES_LINEA)]
+            resultado['saldo'] = {
+                'valor': round(saldo_total, 2),
+                'reservas': reservas_con_saldo,
+                'linea': [round(saldo_por_mes[m], 2) for m in proximos],
+            }
+
+        return Response(resultado)

@@ -277,12 +277,15 @@ def barras_dobles_por_mes(meses, series, eje_y, formato=None):
 MAXIMO_PORCIONES = 8
 
 
-def torta(etiquetas, valores, formato=None):
+def torta(etiquetas, valores, formato=None, leyenda=True):
     """
     Dibuja un gráfico de torta: qué parte del total representa cada categoría.
     Las categorías en cero no se dibujan, y si hay muchas, las más chicas se juntan
     en "Otros". Devuelve {'imagen': 'data:image/png;base64,...'}, o None si todo es cero
     (no hay nada que repartir).
+    Con leyenda=False se dibuja solo la torta, sin la lista de nombres al costado: es la
+    versión chica que se usa de vista previa en el tablero de Reportes. En ese caso, además
+    de la imagen devuelve 'leyenda': [{'nombre', 'color', 'porcentaje'}] para armarla en la pantalla.
     """
     formato = formato or (lambda v: f'{v:g}')
     datos = pd.Series(valores, index=etiquetas, dtype='float')
@@ -293,10 +296,16 @@ def torta(etiquetas, valores, formato=None):
         otros = datos.iloc[MAXIMO_PORCIONES - 1:].sum()
         datos = pd.concat([datos.iloc[:MAXIMO_PORCIONES - 1], pd.Series({'Otros': otros})])
 
-    # La torta va en un lugar fijo a la izquierda, ocupando toda la altura, y la leyenda a su
-    # derecha. Así los nombres largos de la leyenda no achican la torta.
-    fig = plt.figure(figsize=(10, 4.4), dpi=RESOLUCION)
-    ax = fig.add_axes([0.02, 0.06, 0.40, 0.88])
+    if leyenda:
+        # La torta va en un lugar fijo a la izquierda, ocupando toda la altura, y la leyenda a su
+        # derecha. Así los nombres largos de la leyenda no achican la torta.
+        fig = plt.figure(figsize=(10, 4.4), dpi=RESOLUCION)
+        ax = fig.add_axes([0.02, 0.06, 0.40, 0.88])
+    else:
+        # Sin leyenda: una figura cuadrada y la torta ocupando casi todo (deja un margen
+        # para los porcentajes, que van afuera de cada porción)
+        fig = plt.figure(figsize=(5, 5), dpi=RESOLUCION)
+        ax = fig.add_axes([0.08, 0.08, 0.84, 0.84])
     colores = [COLOR_OTROS if nombre == 'Otros' else COLORES_TORTA[i % len(COLORES_TORTA)]
                for i, nombre in enumerate(datos.index)]
     porciones, _, textos = ax.pie(
@@ -308,8 +317,20 @@ def torta(etiquetas, valores, formato=None):
     )
     for t in textos:
         t.set_color(TEXTO)
-        t.set_fontsize(8)
+        t.set_fontsize(8 if leyenda else 11)
     ax.axis('equal')  # para que sea un círculo y no un óvalo
+
+    if not leyenda:
+        # Sin la leyenda dibujada, pero con sus datos aparte (nombre, color y porcentaje de cada
+        # porción), para que la pantalla la arme como texto al lado de la torta
+        total = datos.sum()
+        return {
+            'imagen': _a_png(fig),
+            'leyenda': [
+                {'nombre': nombre, 'color': color, 'porcentaje': round(float(v) * 100 / float(total), 1)}
+                for (nombre, v), color in zip(datos.items(), colores)
+            ],
+        }
 
     # Leyenda al costado: nombre (partido en dos renglones si es largo), valor y porcentaje
     # (con coma decimal, como se escribe acá)
