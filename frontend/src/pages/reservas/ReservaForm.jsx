@@ -197,6 +197,10 @@ export default function ReservaForm() {
   const hoy = hoyLocal();
   const fechaMinima = fechaOriginal && fechaOriginal < hoy ? fechaOriginal : hoy;
 
+  // Sin fecha no se sabe qué servicios y qué personal están libres, así que hasta
+  // que no se elige no se puede tildar ninguno
+  const sinFecha = !form.fecha_evento;
+
   // Cambia un solo campo del formulario y deja los demás como estaban
   function actualizar(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -349,35 +353,31 @@ export default function ReservaForm() {
         </div>
       </div>
 
-      <div className="form-grid-2">
+      {/* Al editar, la dirección comparte la fila con el estado; en el alta va sola a todo el ancho */}
+      <div className={editando ? 'form-grid-2' : undefined}>
         <div className="form-field">
           <label htmlFor="direccion_evento">Dirección del evento</label>
           <input id="direccion_evento" placeholder="Ej: Salón Los Álamos, Av. San Martín 456" value={form.direccion_evento} onChange={(e) => actualizar('direccion_evento', e.target.value)} required />
           {errores.direccion_evento && <span className="form-error">{errores.direccion_evento}</span>}
         </div>
 
-        <div className="form-field">
-          <label htmlFor="estado_reserva">Estado</label>
-          {/* Al crear, el estado lo pone el sistema (siempre Pendiente). Al editar se puede
-              pasar a Confirmada o Finalizada; para anular está el botón "Anular" de la lista */}
-          {editando ? (
-            <>
-              <select id="estado_reserva" value={form.estado_reserva} onChange={(e) => actualizar('estado_reserva', e.target.value)}>
-                {ESTADOS.map((e) => (
-                  <option key={e.value} value={e.value}>{e.label}</option>
-                ))}
-              </select>
-              <span className="form-hint">Las reservas confirmadas pasan solas a Finalizada cuando termina el evento.</span>
-            </>
-          ) : (
-            <>
-              <input id="estado_reserva" value="Pendiente" disabled />
-              <span className="form-hint">Toda reserva nueva queda Pendiente automáticamente.</span>
-            </>
-          )}
-          {errores.estado_reserva && <span className="form-error">{errores.estado_reserva}</span>}
-        </div>
+        {/* El estado solo se muestra al editar: toda reserva nueva queda Pendiente sola.
+            Al editar se puede pasar a Confirmada o Finalizada; para anular está el botón "Anular" de la lista */}
+        {editando && (
+          <div className="form-field">
+            <label htmlFor="estado_reserva">Estado</label>
+            <select id="estado_reserva" value={form.estado_reserva} onChange={(e) => actualizar('estado_reserva', e.target.value)}>
+              {ESTADOS.map((e) => (
+                <option key={e.value} value={e.value}>{e.label}</option>
+              ))}
+            </select>
+            <span className="form-hint">Las reservas confirmadas pasan solas a Finalizada cuando termina el evento.</span>
+            {errores.estado_reserva && <span className="form-error">{errores.estado_reserva}</span>}
+          </div>
+        )}
       </div>
+      {/* Si el backend rechazara el estado en un alta, el error igual se ve */}
+      {!editando && errores.estado_reserva && <div className="alert alert-error">{errores.estado_reserva}</div>}
 
       <div className="form-field">
         <label>Servicios</label>
@@ -393,10 +393,10 @@ export default function ReservaForm() {
             const bloqueado = Boolean(faltante) && !tildado;
             const abierto = servicioAbierto === s.id_servicio;
             return (
-              <div key={s.id_servicio} className={`servicio-fila${bloqueado ? ' servicio-no-disponible' : ''}`}>
+              <div key={s.id_servicio} className={`servicio-fila${bloqueado || sinFecha ? ' servicio-no-disponible' : ''}`}>
                 <div className="servicio-fila-principal">
                   <label className="servicio-nombre">
-                    <input type="checkbox" checked={tildado} disabled={bloqueado} onChange={() => toggleServicio(s.id_servicio)} />
+                    <input type="checkbox" checked={tildado} disabled={bloqueado || sinFecha} onChange={() => toggleServicio(s.id_servicio)} />
                     <span>{s.tipo_servicio}</span>
                     {bloqueado && <span className="badge badge-red badge-chica">No disponible</span>}
                   </label>
@@ -446,12 +446,12 @@ export default function ReservaForm() {
                 // (al editar) se deja destildar, pero no volver a tildar.
                 const ocupado = Boolean(empleadosOcupados?.has(Number(e.id_empleado))) && !tildado;
                 return (
-                  <label key={e.id_empleado} className={ocupado ? 'personal-no-disponible' : ''}>
+                  <label key={e.id_empleado} className={ocupado || sinFecha ? 'personal-no-disponible' : ''}>
                     <span>
                       {e.nombre_emp} {e.apellido_emp}
                       {ocupado && <span className="badge badge-red badge-chica" style={{ marginLeft: 8 }}>No disponible</span>}
                     </span>
-                    <input type="checkbox" checked={tildado} disabled={ocupado} onChange={() => toggleEmpleado(e.id_empleado)} />
+                    <input type="checkbox" checked={tildado} disabled={ocupado || sinFecha} onChange={() => toggleEmpleado(e.id_empleado)} />
                   </label>
                 );
               })}
