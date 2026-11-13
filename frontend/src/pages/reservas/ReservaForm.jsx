@@ -13,6 +13,12 @@ const ESTADOS = [
   { value: 'FINALIZADA', label: 'Finalizada' },
 ];
 
+// Opciones de los desplegables de la duración: de 0 a 12 horas (un evento no dura más de 12 horas)
+// y los minutos de a cuarto de hora. Con 12 horas solo se puede elegir 00 minutos, así el tope es 12:00
+const MAXIMO_HORAS_DURACION = 12;
+const HORAS_DURACION = Array.from({ length: MAXIMO_HORAS_DURACION + 1 }, (_, i) => String(i).padStart(2, '0'));
+const MINUTOS_DURACION = ['00', '15', '30', '45'];
+
 // Devuelve la fecha de hoy como 'AAAA-MM-DD' usando la hora de la compu.
 // No se usa toISOString() porque ese toma la hora UTC y después de las 21 hs
 // (en Argentina) ya daría el día siguiente.
@@ -206,6 +212,28 @@ export default function ReservaForm() {
     setForm((f) => ({ ...f, [campo]: valor }));
   }
 
+  // Duración: en el formulario se guarda como "HH:MM" (así la espera el backend) y en pantalla
+  // se muestra partida en dos desplegables, horas y minutos
+  const [durHoras = '', durMinutos = ''] = form.duracion_evento ? form.duracion_evento.split(':') : [];
+  const enElTope = Number(durHoras) >= MAXIMO_HORAS_DURACION;
+  // Si una reserva vieja tiene un valor que no está en la lista (ej: 14 horas, o 04:20), se agrega
+  // a las opciones para no perderlo al editarla
+  const horasDuracion = durHoras && !HORAS_DURACION.includes(durHoras) ? [...HORAS_DURACION, durHoras] : HORAS_DURACION;
+  const minutosBase = enElTope ? ['00'] : MINUTOS_DURACION;
+  const minutosDuracion = durMinutos && !minutosBase.includes(durMinutos) ? [...minutosBase, durMinutos].sort() : minutosBase;
+
+  // Junta las horas y los minutos elegidos en "HH:MM". Si se eligió uno solo, el otro arranca
+  // en 00 (ej: se eligen 4 horas -> "04:00"); si se vuelven a dejar los dos vacíos, queda vacío.
+  // Con 12 horas los minutos pasan a 00, para no pasarse del tope (12:30 no se puede)
+  function cambiarDuracion(horas, minutos) {
+    if (!horas && !minutos) {
+      actualizar('duracion_evento', '');
+      return;
+    }
+    const minutosFinal = Number(horas) === MAXIMO_HORAS_DURACION ? '00' : minutos || '00';
+    actualizar('duracion_evento', `${horas || '00'}:${minutosFinal}`);
+  }
+
   // Tilda o destilda un servicio (el total se recalcula solo)
   function toggleServicio(idServicio) {
     const id = Number(idServicio);
@@ -341,14 +369,32 @@ export default function ReservaForm() {
           {/* La aclaración va debajo del campo: al lado del nombre no entra en una línea cuando
               el formulario tiene el panel de la derecha, y empujaba el campo hacia abajo */}
           <label htmlFor="duracion_evento">Duración</label>
-          <input
-            id="duracion_evento"
-            type="time"
-            value={form.duracion_evento}
-            onChange={(e) => actualizar('duracion_evento', e.target.value)}
-            required
-          />
-          <span className="form-hint">Horas:minutos, ej: 04:30</span>
+          {/* Dos desplegables (horas y minutos) en vez de un campo de hora: el campo de hora del
+              navegador es para un horario del día y en algunas compus pide a. m./p. m., que para
+              una duración no tiene sentido. Por atrás se sigue guardando "HH:MM" (ver cambiarDuracion) */}
+          <div className="selector-duracion">
+            <select
+              id="duracion_evento"
+              aria-label="Horas de duración"
+              value={durHoras}
+              onChange={(e) => cambiarDuracion(e.target.value, durMinutos)}
+              required
+            >
+              <option value="">Horas</option>
+              {horasDuracion.map((h) => (
+                <option key={h} value={h}>{Number(h)} {Number(h) === 1 ? 'hora' : 'horas'}</option>
+              ))}
+            </select>
+            <select
+              aria-label="Minutos de duración"
+              value={durMinutos}
+              onChange={(e) => cambiarDuracion(durHoras, e.target.value)}
+              required
+            >
+              <option value="">Min</option>
+              {minutosDuracion.map((m) => <option key={m} value={m}>{m} min</option>)}
+            </select>
+          </div>
           {errores.duracion_evento && <span className="form-error">{errores.duracion_evento}</span>}
         </div>
       </div>

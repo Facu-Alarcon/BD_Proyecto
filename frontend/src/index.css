@@ -1210,6 +1210,17 @@ button {
   margin-bottom: 10px;
 }
 
+/* Duración de la reserva: los desplegables de horas y minutos, uno al lado del otro */
+.selector-duracion {
+  display: flex;
+  gap: 6px;
+}
+
+.selector-duracion select {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Aclaración chiquita al lado del nombre de un campo (ej: "Duración (horas:minutos...)") */
 .label-aclaracion {
   font-weight: 400;
